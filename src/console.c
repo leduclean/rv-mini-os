@@ -1,4 +1,5 @@
 #include "console.h"
+#include "font.h"
 #include "platform.h"
 
 // Macro definition for memory mapped container
@@ -114,3 +115,38 @@ int init_screen() {
     return -1;
   return 0;
 };
+
+/* Pixel writing */
+int pixel(uint32_t x, uint32_t y, uint32_t color) {
+  if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
+    return -1; // error out of range
+  }
+  static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
+      (uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
+          BOCHS_DISPLAY_BASE_ADDRESS;
+  // usage
+  (*display_base)[y][x] = color;
+
+  return 0; // success
+};
+
+/* Char writing */
+int write_car(uint32_t row, uint32_t col, char c, uint32_t color,
+              uint32_t bg_color) {
+  char *tab = font8x8_basic[(uint8_t)c];
+  for (int row_off = 0; row_off < 8; row_off++) {
+    for (int c_off = 0; c_off < 8; c_off++) {
+      if ((uint8_t)tab[row_off] & (1 << c_off)) {
+        if (pixel(col + c_off, row + row_off, color) != 0)
+          return -1;
+      } else {
+        if (pixel(col + c_off, row + row_off, bg_color) != 0)
+          return -1;
+      }
+    }
+  }
+  return 0;
+};
+
+/* Cursor position handling */
+void set_cursor(uint32_t lig, uint32_t col) {}
