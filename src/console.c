@@ -1,6 +1,8 @@
 #include "console.h"
 #include "font.h"
 #include "platform.h"
+#include <stdint.h>
+#include <string.h>
 
 // Macro definition for memory mapped container
 #define MMIO8(addr) (*(volatile uint8_t *)(addr))
@@ -14,6 +16,9 @@
  * bit 2 = screen reach enable
  * */
 #define COMMAND_CONFIG 0b111
+
+#define BG_COLOR 0x000000
+#define TEXT_COLOR 0xFFFFFF
 
 void init_uart() {
   uint16_t rate = (UART_CLOCK_FREQ / (16 * UART_BAUD_RATE));
@@ -41,14 +46,6 @@ void init_uart() {
 };
 
 void treat_car_uart(char c) { MMIO8(UART_BASE + UART_THR) = c; };
-
-void console_putbytes(const char *s, int len) {
-  // uart init
-  init_uart();
-  for (int i = 0; i < len; i++) {
-    treat_car_uart(s[i]);
-  };
-};
 
 // Make PCI ECAM address
 static inline uintptr_t make_device_addr(uint32_t bus, uint32_t dev,
@@ -131,8 +128,8 @@ int pixel(uint32_t x, uint32_t y, uint32_t color) {
 };
 
 /* Char writing */
-int write_car(uint32_t row, uint32_t col, char c, uint32_t color,
-              uint32_t bg_color) {
+int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
+               uint32_t bg_color) {
   char *tab = font8x8_basic[(uint8_t)c];
   for (int row_off = 0; row_off < 8; row_off++) {
     for (int c_off = 0; c_off < 8; c_off++) {
@@ -148,5 +145,140 @@ int write_car(uint32_t row, uint32_t col, char c, uint32_t color,
   return 0;
 };
 
+// Cursor position init
+uint32_t cursor_row = 1;
+uint32_t cursor_col = 0;
+
 /* Cursor position handling */
-void set_cursor(uint32_t lig, uint32_t col) {}
+void draw_line(uint32_t row, uint32_t col, uint32_t color) {
+  for (int offset = 0; offset < 8; offset++) {
+    pixel(col + offset, row, color);
+  }
+};
+
+static inline void draw_cursor() {
+  draw_line(cursor_row * 8 + 7, cursor_col * 8, TEXT_COLOR);
+}
+
+static inline void undraw_cursor() {
+  draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
+}
+
+/* Move screen display to an upper line */
+void defilement() {
+  static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
+      (uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
+          BOCHS_DISPLAY_BASE_ADDRESS;
+
+  memmove(display_base[0], display_base[1],
+          (DISPLAY_HEIGHT - 1) * sizeof(uint32_t) * DISPLAY_WIDTH);
+  // Remove the last line
+  for (int x = 0; x < DISPLAY_WIDTH; x++) {
+    (*display_base)[DISPLAY_HEIGHT - 1][x] = BG_COLOR;
+  }
+}
+
+#define MAX_COLS (DISPLAY_WIDTH / 8)
+#define MAX_ROWS (DISPLAY_HEIGHT / 8)
+
+int set_cursor(int row, int col) {
+  if (row < 0 || row >= MAX_ROWS || col < 0 || col >= MAX_COLS) {
+    return -1; // out of range
+  }
+  undraw_cursor();
+  // Update
+  cursor_row = row;
+  cursor_col = col;
+
+  // Redraw the cursor
+  draw_cursor();
+  return 0;
+}
+
+void advance_cursor() {
+  undraw_cursor();
+  cursor_col++;
+  if (cursor_col >= MAX_COLS) {
+    cursor_col = 0;
+    cursor_row++;
+  }
+
+  if (cursor_row >= MAX_ROWS) {
+    cursor_row = MAX_ROWS - 1;
+    defilement(); // scroll up
+  }
+  draw_cursor();
+}
+
+void put_char(char c) {
+  // write char
+  write_char(cursor_row * 8, cursor_col * 8, c, TEXT_COLOR, BG_COLOR);
+  advance_cursor();
+}
+
+/* Remove all the char on the screen */
+void clear_screen() {
+  for (int y = 0; y < DISPLAY_HEIGHT; y++) {
+    for (int x = 0; x < DISPLAY_WIDTH; x++) {
+      pixel(x, y, BG_COLOR);
+    }
+  }
+  set_cursor(1, 0);
+}
+
+/*/
+ * Control char handling helpers
+ */
+
+static inline void tab() {
+  int distance = (-cursor_col) & 7;
+  if (distance + cursor_col >= MAX_COLS) {
+    set_cursor(cursor_row + 1, 0);
+  } else {
+    set_cursor(cursor_row, cursor_col + distance);
+  }
+}
+
+static inline void backspace() {
+  if (cursor_col > 0) {
+    set_cursor(cursor_row, cursor_col - 1);
+  }
+}
+
+static inline void newline() { set_cursor(cursor_row + 1, 0); }
+static inline void carriage_return() { set_cursor(cursor_row, 0); }
+
+/* Handle char type -> print if char or do action if control */
+void handle_char(char c) {
+  // We only treat those char
+  if (c >= 32 && c < 127) {
+    put_char(c);
+  } else {
+    // Control char handling
+    switch (c) {
+    case '\b':
+      backspace();
+      break;
+    case '\t':
+      tab();
+      break;
+    case '\n':
+      newline();
+      break;
+    case '\f':
+      clear_screen();
+      break;
+    case '\r':
+      carriage_return();
+      break;
+    }
+  }
+};
+
+/* Main fonction used to pipe char to UART and to screen dipslay */
+void console_putbytes(const char *s, int len) {
+  for (int i = 0; i < len; i++) {
+    treat_car_uart(s[i]);
+    handle_char(s[i]);
+  };
+};
