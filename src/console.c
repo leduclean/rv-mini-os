@@ -164,20 +164,6 @@ static inline void undraw_cursor() {
   draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
 
-/* Move screen display to an upper line */
-void defilement() {
-  static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
-      (uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
-          BOCHS_DISPLAY_BASE_ADDRESS;
-
-  memmove(display_base[0], display_base[1],
-          (DISPLAY_HEIGHT - 1) * sizeof(uint32_t) * DISPLAY_WIDTH);
-  // Remove the last line
-  for (int x = 0; x < DISPLAY_WIDTH; x++) {
-    (*display_base)[DISPLAY_HEIGHT - 1][x] = BG_COLOR;
-  }
-}
-
 #define MAX_COLS (DISPLAY_WIDTH / 8)
 #define MAX_ROWS (DISPLAY_HEIGHT / 8)
 
@@ -193,6 +179,21 @@ int set_cursor(int row, int col) {
   // Redraw the cursor
   draw_cursor();
   return 0;
+}
+
+/* Move screen display to an upper line */
+void defilement() {
+  static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
+      (uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
+          BOCHS_DISPLAY_BASE_ADDRESS;
+
+  memmove(display_base[0], display_base[1],
+          (DISPLAY_HEIGHT - 1) * sizeof(uint32_t) * DISPLAY_WIDTH);
+  // Remove the last line
+  for (int x = 0; x < DISPLAY_WIDTH; x++) {
+    (*display_base)[DISPLAY_HEIGHT - 1][x] = BG_COLOR;
+  }
+  set_cursor(cursor_row - 1, cursor_col);
 }
 
 void advance_cursor() {
