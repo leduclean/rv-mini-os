@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+extern void mon_traitant(void);
 /* on peut s'entrainer a utiliser GDB avec ce code de base */
 /* par exemple afficher les valeurs de n et res avec la commande display */
 /* une fonction bien connue */
@@ -24,6 +25,7 @@ void kernel_start() {
   };
 
   enable_it();
+  init_traitant(mon_traitant);
   enable_timer();
   printf("Truc\nSalut\n1\t2\t3\nAB\bC\nBEEF\rRABBIT");
   for (int i = 0; i < 90; i++) {
