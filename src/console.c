@@ -130,7 +130,14 @@ int pixel(uint32_t x, uint32_t y, uint32_t color) {
 /* Char writing */
 int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
                uint32_t bg_color) {
+  // Pixel conversion
+  row *= 8;
+  col *= 8;
+
+  // Load font
   char *tab = font8x8_basic[(uint8_t)c];
+
+  // Color the pixels of the 8x8 char
   for (int row_off = 0; row_off < 8; row_off++) {
     for (int c_off = 0; c_off < 8; c_off++) {
       if ((uint8_t)tab[row_off] & (1 << c_off)) {
@@ -146,8 +153,8 @@ int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 };
 
 // Cursor position init
-uint32_t cursor_row = 1;
-uint32_t cursor_col = 0;
+uint8_t cursor_row = 1;
+uint8_t cursor_col = 0;
 
 /* Cursor position handling */
 void draw_line(uint32_t row, uint32_t col, uint32_t color) {
@@ -211,7 +218,7 @@ void advance_cursor() {
 
 void put_char(char c) {
   // write char
-  write_char(cursor_row * 8, cursor_col * 8, c, TEXT_COLOR, BG_COLOR);
+  write_char(cursor_row, cursor_col, c, TEXT_COLOR, BG_COLOR);
   advance_cursor();
 }
 
