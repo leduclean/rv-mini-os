@@ -284,3 +284,16 @@ void console_putbytes(const char *s, int len) {
     handle_char(s[i]);
   };
 };
+
+void display_top_right(const char *s, int len) {
+  if (len > MAX_COLS) {
+    s += len - MAX_COLS; // remove remaining text
+    len = MAX_COLS;
+  }
+
+  uint8_t col = MAX_COLS - len;
+  for (int i = 0; i < len; i++) {
+    treat_car_uart(s[i]);
+    write_char(0, col + i, s[i], TEXT_COLOR, BG_COLOR);
+  }
+}
