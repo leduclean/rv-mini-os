@@ -8,5 +8,5 @@
 extern void console_putbytes(const char *s, int len);
 
 extern void init_uart();
-extern int init_screen();
+extern int init_ecran();
 #endif

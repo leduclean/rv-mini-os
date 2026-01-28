@@ -21,7 +21,7 @@ void kernel_start() {
   uint32_t x = fact(5);
   init_uart();
   printf("> Test [printf UART] (1/1)\n");
-  if (init_screen() != 0) {
+  if (init_ecran() != 0) {
     printf("Screen init FAILED\n will only display in UART");
   };
   printf("Truc\nSalut\n1\t2\t3\nAB\bC\nBEEF\rRABBIT");
