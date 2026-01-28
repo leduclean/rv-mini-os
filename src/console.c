@@ -167,11 +167,31 @@ static inline void undraw_cursor() {
 #define MAX_COLS (DISPLAY_WIDTH / 8)
 #define MAX_ROWS (DISPLAY_HEIGHT / 8)
 
+/* Move screen display to an upper line */
+void defilement() {
+  // each caractere line has a width of 8 pixel
+  static uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
+      (uint32_t (*)[DISPLAY_WIDTH * 8]) BOCHS_DISPLAY_BASE_ADDRESS;
+
+  // Move all the line to up
+  memmove(display_base, display_base + 1,
+          (DISPLAY_HEIGHT - 1) * DISPLAY_WIDTH * sizeof(uint32_t));
+
+  // Remove last line
+  memset(display_base[DISPLAY_HEIGHT - 1], BG_COLOR,
+         1 * DISPLAY_WIDTH * sizeof(uint32_t));
+}
+
 int set_cursor(int row, int col) {
-  if (row < 0 || row >= MAX_ROWS || col < 0 || col >= MAX_COLS) {
-    return -1; // out of range
-  }
   undraw_cursor();
+  while (row >= MAX_ROWS) {
+    defilement();
+    row--;
+  }
+
+  if (row < 0)
+    return -1; // Not Supported
+
   // Update
   cursor_row = row;
   cursor_col = col;
@@ -181,34 +201,12 @@ int set_cursor(int row, int col) {
   return 0;
 }
 
-/* Move screen display to an upper line */
-void defilement() {
-  static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
-      (uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
-          BOCHS_DISPLAY_BASE_ADDRESS;
-
-  memmove(display_base[0], display_base[1],
-          (DISPLAY_HEIGHT - 1) * sizeof(uint32_t) * DISPLAY_WIDTH);
-  // Remove the last line
-  for (int x = 0; x < DISPLAY_WIDTH; x++) {
-    (*display_base)[DISPLAY_HEIGHT - 1][x] = BG_COLOR;
-  }
-  set_cursor(cursor_row - 1, cursor_col);
-}
-
 void advance_cursor() {
-  undraw_cursor();
-  cursor_col++;
-  if (cursor_col >= MAX_COLS) {
-    cursor_col = 0;
-    cursor_row++;
+  if (cursor_col + 1 < MAX_COLS) {
+    set_cursor(cursor_row, cursor_col + 1);
+  } else {
+    set_cursor(cursor_row + 1, 0);
   }
-
-  if (cursor_row >= MAX_ROWS) {
-    cursor_row = MAX_ROWS - 1;
-    defilement(); // scroll up
-  }
-  draw_cursor();
 }
 
 void put_char(char c) {
