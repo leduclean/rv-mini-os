@@ -9,8 +9,6 @@
 #define ITFREQ 20
 #define DELAY (TIMER_FREQ / ITFREQ)
 
-extern void mon_traitant(void);
-
 // Gloabl irq compteur
 static uint32_t tirqcnt = 0;
 static uint32_t previous_s = -1;
@@ -51,8 +49,6 @@ void enable_timer() {
 
   // Timer irq support
   __asm__("csrs mie, %0" ::"r"(1 << IRQ_M_TMR));
-
-  init_traitant(mon_traitant);
 }
 
 void disable_timer() { __asm__("csrc mie, %0" ::"r"(IRQ_M_TMR)); }
