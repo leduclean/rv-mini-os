@@ -1,3 +1,4 @@
+#include "time.h"
 #include <console.h>
 #include <cpu.h>
 #include <stdint.h>
@@ -17,23 +18,22 @@ uint32_t fact(uint32_t n) {
 }
 
 void kernel_start() {
-
-  uint32_t x = fact(5);
   init_uart();
-  printf("> Test [printf UART] (1/1)\n");
   if (init_ecran() != 0) {
     printf("Screen init FAILED\n will only display in UART");
   };
+
+  enable_it();
+  enable_timer();
   printf("Truc\nSalut\n1\t2\t3\nAB\bC\nBEEF\rRABBIT");
   for (int i = 0; i < 90; i++) {
     printf("%d\n", i);
   }
   printf("Hello\n");
-  /* quand on saura gerer l'ecran, on pourra afficher x */
-  printf("factorial(5) = %d\n ", x);
-  /* on ne doit jamais sortir de kernel_start */
+
+  // /* on ne doit jamais sortir de kernel_start */
   while (1) {
     /* cette fonction arrete le processeur */
-    // hlt();
+    hlt();
   }
 }
