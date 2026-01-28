@@ -105,7 +105,7 @@ int config_screen() {
 /*
  * System graphic card configuration
  * */
-int init_screen() {
+int init_ecran() {
   if (config_pcie() != 0)
     return -1;
   if (config_screen() != 0)
