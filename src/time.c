@@ -2,6 +2,7 @@
 #include "console.h"
 #include "include/mmio.h"
 #include "platform.h"
+#include "scheduler.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -32,6 +33,7 @@ void trap_handler(uint64_t mcause, uint64_t mie, uint64_t mip) {
       char buf[16];
       sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
       display_top_right(buf, 10);
+      ordonnance();
       previous_s = s;
     };
     // Relaunch another interupt
