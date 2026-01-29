@@ -7,10 +7,7 @@
 #define PROC_TABLE_SIZE 32
 
 // Process State table
-typedef enum {
-  ELECTED,
-  ACTIVABLE,
-} state;
+typedef enum { RUNNING, READY, SLEEPING } state;
 
 // Process declaration
 typedef struct {
