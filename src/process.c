@@ -7,8 +7,21 @@
 
 #define RA_INDEX 0
 #define SP_INDEX 1
+#define S0_INDEX 4
 
 extern void ctx_sw(uintptr_t old_context_addr, uintptr_t new_context_addr);
+
+/** Terminate a processus **/
+void fin_processus() {
+  actif->state = TERMINATED;
+  ordonnance();
+}
+
+/* Launcher to handle launch and terminaison of a proc */
+void proc_launcher(void proc()) {
+  proc();
+  fin_processus();
+}
 
 /* Create a new processus returning his pid number */
 int8_t creer_processus(void code(), char *nom) {
@@ -24,9 +37,14 @@ int8_t creer_processus(void code(), char *nom) {
   // Initiate the name
   strncpy(created->name, nom, MAXNAME - 1);
   created->state = READY;
-  // We need to save the stack pointer and the ctx
-  created->ctx[SP_INDEX] = (uint64_t)&created->stack[STACK_SIZE - 1];
-  created->ctx[RA_INDEX] = (uintptr_t)code;
+  if (current_pid == 0) {
+    created->ctx[RA_INDEX] = (uintptr_t)idle;
+  } else {
+    // We need to save the stack pointer and the ctx
+    created->ctx[SP_INDEX] = (uint64_t)&created->stack[STACK_SIZE - 1];
+    created->ctx[RA_INDEX] = (uintptr_t)proc_launcher;
+    created->ctx[S0_INDEX] = (uintptr_t)code;
+  }
   proc_table.current_pid++;
   return current_pid;
 }
