@@ -7,7 +7,7 @@
 #define PROC_TABLE_SIZE 32
 
 // Process State table
-typedef enum { RUNNING, READY, SLEEPING } state;
+typedef enum { RUNNING, READY, SLEEPING, TERMINATED } state;
 
 // Process declaration
 typedef struct {
@@ -34,3 +34,4 @@ extern void idle();
 extern void init_proc();
 extern int8_t creer_processus(void code(), char *name);
 extern void dors(uint64_t nbr_secondes);
+extern void fin_processus();
