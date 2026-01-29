@@ -1,7 +1,8 @@
 #include "process.h"
+#include "cpu.h"
+#include "time.h"
 #include <scheduler.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #define RA_INDEX 0
@@ -40,7 +41,15 @@ void init_proc() {
 /** IDLE Processus declaration  **/
 void idle() {
   for (;;) {
-    printf("[%s] pid = %i\n", mon_nom(), mon_pid());
-    ordonnance();
+    enable_it();
+    hlt();
+    disable_it();
   }
+}
+
+/** Set a program to sleeping state **/
+void dors(uint64_t nbr_secs) {
+  actif->wake_up_time = nbr_secs + nbr_secondes();
+  actif->state = SLEEPING;
+  ordonnance();
 }

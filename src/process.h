@@ -16,6 +16,7 @@ typedef struct {
   state state;
   uint64_t ctx[MAX_REG_SAVED];
   uint64_t stack[STACK_SIZE];
+  uint64_t wake_up_time;
 } process_t;
 
 // Process table
@@ -32,3 +33,4 @@ extern void idle();
 
 extern void init_proc();
 extern int8_t creer_processus(void code(), char *name);
+extern void dors(uint64_t nbr_secondes);

@@ -12,22 +12,35 @@ process_t *actif;
 extern void mon_traitant(void);
 void proc1() {
   for (;;) {
-    printf("[%s] pid = %i\n", mon_nom(), mon_pid());
-    ordonnance();
+    printf("[temps = %u] processus %s pid = %i\n", nbr_secondes(), mon_nom(),
+           mon_pid());
+    dors(2);
   }
 }
 
 void proc2() {
   for (;;) {
-    printf("[%s] pid = %i\n", mon_nom(), mon_pid());
-    ordonnance();
+    printf("[temps = %u] processus %s pid = %i\n", nbr_secondes(), mon_nom(),
+           mon_pid());
+    dors(3);
+  }
+}
+
+void proc3() {
+  for (;;) {
+    printf("[temps = %u] processus %s pid = %i\n", nbr_secondes(), mon_nom(),
+           mon_pid());
+    dors(5);
   }
 }
 
 void kernel_start() {
   init_proc();
   init_ecran();
-  creer_processus(proc1, "proc1");
-  creer_processus(proc2, "marius");
+  enable_timer();
+  init_traitant(mon_traitant);
+  creer_processus(proc1, "bob1");
+  creer_processus(proc2, "bob2");
+  creer_processus(proc3, "bob3");
   idle();
 }
