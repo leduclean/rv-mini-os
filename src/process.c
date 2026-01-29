@@ -22,17 +22,10 @@ int8_t creer_processus(void code(), char *nom) {
   created->pid = current_pid;
   // Initiate the name
   strncpy(created->name, nom, MAXNAME - 1);
-  if (current_pid == 0) {
-    // Idle case
-    // no need to keep ra and rs in the ctx
-    created->state = ELECTED;
-  } else {
-    // Other process is by default activable
-    created->state = ACTIVABLE;
-    // We need to save the stack pointer and the ctx
-    created->ctx[SP_INDEX] = (uint64_t)&created->stack[STACK_SIZE - 1];
-    created->ctx[RA_INDEX] = (uintptr_t)code;
-  }
+  created->state = READY;
+  // We need to save the stack pointer and the ctx
+  created->ctx[SP_INDEX] = (uint64_t)&created->stack[STACK_SIZE - 1];
+  created->ctx[RA_INDEX] = (uintptr_t)code;
   proc_table.current_pid++;
   return current_pid;
 }
@@ -41,6 +34,7 @@ int8_t creer_processus(void code(), char *nom) {
 void init_proc() {
   uint8_t init_pid = creer_processus(idle, "idle");
   actif = &proc_table.table[init_pid];
+  actif->state = RUNNING;
 }
 
 /** IDLE Processus declaration  **/
