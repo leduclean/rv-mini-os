@@ -2,6 +2,7 @@
 #include "platform.h"
 #include "process.h"
 #include "time.h"
+#include <stddef.h>
 #include <stdint.h>
 
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
@@ -21,25 +22,29 @@ void try_wake_up(process_t *proc) {
 }
 /* Choose the next process to switch on considering the active one */
 void ordonnance() {
-  int64_t new_pid = mon_pid() + 1;
-  process_t *new;
+  int64_t pid = mon_pid();
+  process_t *new = NULL;
   for (uint8_t scanned = 0; scanned < proc_table.current_pid; scanned++) {
-    if (new_pid >= proc_table.current_pid) {
-      // The next pid is going to be idle in this case
-      // (no upper process created )
-      new_pid = 0;
-    }
-    new = &proc_table.table[new_pid];
+    pid = (pid + 1) % proc_table.current_pid;
+    process_t *candidate = &proc_table.table[pid];
 
-    if (new->state == SLEEPING) {
-      try_wake_up(new);
+    if (candidate->state == TERMINATED)
+      continue; // Skip terminated processes explicitly
+
+    if (candidate->state == SLEEPING) {
+      try_wake_up(candidate);
     }
 
-    // Choose if WAITING -> either waked up
+    // Choose if READY -> either waked up
     // or already activable
-    if (new->state == READY)
+    if (candidate->state == READY) {
+      new = candidate;
       break;
-    new_pid++;
+    }
+  }
+  // fallback sur idle si rien n’est READY
+  if (!new) {
+    new = &proc_table.table[0]; // idle
   }
   if (actif->state == RUNNING) {
     // Only a RUNNING processus comeback to ready
