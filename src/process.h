@@ -4,6 +4,7 @@
 #define MAXNAME 16
 #define MAX_REG_SAVED 18
 #define STACK_SIZE 4096
+#define PROC_TABLE_SIZE 32
 
 // Process State table
 typedef enum {
@@ -20,7 +21,17 @@ typedef struct {
   uint64_t stack[STACK_SIZE];
 } process_t;
 
-// Process declaration
+// Process table
+typedef struct {
+  uint8_t current_pid;
+  process_t table[PROC_TABLE_SIZE];
+} ptable_t;
+
+extern ptable_t proc_table;
+extern process_t *actif;
+
+// Idle Process declaration
 extern void idle();
-extern void proc1();
+
 extern void init_proc();
+extern int8_t creer_processus(void code(), char *name);
