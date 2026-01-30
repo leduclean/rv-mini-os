@@ -59,7 +59,7 @@ char *mon_nom() { return active->name; }
 
 /* Init processus handling */
 void init_proc() {
-  uint8_t init_pid = creer_processus(idle, "idle");
+  uint8_t init_pid = cree_processus(idle, "idle");
   active = &proc_table.table[init_pid];
   active->state = RUNNING;
 }
