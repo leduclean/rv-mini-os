@@ -12,27 +12,32 @@
 
 // Gloabl irq compteur
 static uint32_t tirqcnt = 0;
-// static uint32_t previous_s = -1;
 
 inline uint32_t nbr_secondes() { return tirqcnt / ITFREQ; }
+
+void timer_interrupt_handler(void) {
+  // Treat the timer interupt
+  tirqcnt++;
+  uint32_t s = nbr_secondes();
+
+  uint32_t m = (s / 60) % 60;
+  uint32_t h = s / 3600;
+
+  char buf[16];
+  sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
+  display_top_right(buf, 10);
+
+  // SLEEPING gestion of the sleeping process
+  wake_up_sleeping();
+  ordonnance();
+}
 
 void trap_handler(uint64_t mcause, uint64_t mie, uint64_t mip) {
   // Ignore the bit 63
   mcause &= ~(1ULL << 63);
   // Check if timer interrupt is enable
   if ((mie & (1 << IRQ_M_TMR)) && (mcause == 7)) {
-    // Treat the timer interupt
-    tirqcnt++;
-    uint32_t s = nbr_secondes();
-
-    uint32_t m = (s / 60) % 60;
-    uint32_t h = s / 3600;
-
-    char buf[16];
-    sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
-    display_top_right(buf, 10);
-
-    ordonnance();
+    timer_interrupt_handler();
     // Relaunch another interupt
     MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
   }
