@@ -41,6 +41,6 @@ extern run_queue_t run_queue;
 // Idle Process declaration
 extern void idle();
 extern void init_proc();
-extern int8_t creer_processus(void code(), char *name);
+extern int8_t cree_processus(void code(), char *name);
 extern uint8_t mon_pid();
 extern char *mon_nom();
