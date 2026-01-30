@@ -41,7 +41,7 @@ process_t *find_slot() {
 }
 
 /* Create a new processus returning his pid number */
-int8_t creer_processus(void code(), char *nom) {
+int8_t cree_processus(void code(), char *nom) {
   if (proc_table.active_process >= PROC_TABLE_SIZE) {
     return -1; // Error already max processus launched
   }
