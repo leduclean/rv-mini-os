@@ -26,13 +26,21 @@ typedef struct {
   process_t table[PROC_TABLE_SIZE];
 } ptable_t;
 
+// Run Queue
+typedef struct {
+  process_t *queue[PROC_TABLE_SIZE];
+  uint8_t head; // Idx active
+  uint8_t tail; // Idx for next insertion
+  uint8_t size; // number of active element
+} run_queue_t;
+
 extern ptable_t proc_table;
-extern process_t *actif;
+extern process_t *active;
+extern run_queue_t run_queue;
 
 // Idle Process declaration
 extern void idle();
-
 extern void init_proc();
 extern int8_t creer_processus(void code(), char *name);
-extern void dors(uint64_t nbr_secondes);
-extern void fin_processus();
+extern uint8_t mon_pid();
+extern char *mon_nom();

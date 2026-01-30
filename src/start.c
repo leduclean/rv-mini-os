@@ -3,11 +3,12 @@
 #include "time.h"
 #include <console.h>
 #include <cpu.h>
+#include <stddef.h>
 #include <stdio.h>
-
 // Process init
 ptable_t proc_table = {.next_pid = 0};
-process_t *actif;
+run_queue_t run_queue = {.head = 0, .tail = 0};
+process_t *active;
 
 extern void mon_traitant(void);
 
