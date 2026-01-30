@@ -33,7 +33,7 @@ void proc2() {
     printf("[temps = %u] processus %s pid = %i\n", nbr_secondes(), mon_nom(),
            mon_pid());
     if (i == 1) {
-      creer_processus(proc3, "bob3");
+      cree_processus(proc3, "bob3");
     }
     dors(3);
   }
@@ -46,7 +46,7 @@ void kernel_start() {
   init_ecran();
   enable_timer();
   init_traitant(mon_traitant);
-  creer_processus(proc1, "bob1");
-  creer_processus(proc2, "bob2");
+  cree_processus(proc1, "bob1");
+  cree_processus(proc2, "bob2");
   idle();
 }
