@@ -7,11 +7,11 @@
 #define PROC_TABLE_SIZE 32
 
 // Process State table
-typedef enum { RUNNING, READY, SLEEPING, TERMINATED } state;
+typedef enum { FREE = 0, RUNNING, READY, SLEEPING, TERMINATED } state;
 
 // Process declaration
 typedef struct {
-  int8_t pid;
+  uint8_t pid;
   char name[MAXNAME];
   state state;
   uint64_t ctx[MAX_REG_SAVED];
@@ -21,7 +21,8 @@ typedef struct {
 
 // Process table
 typedef struct {
-  uint8_t current_pid;
+  uint8_t next_pid;
+  uint8_t active_process; // Not TERMINATED
   process_t table[PROC_TABLE_SIZE];
 } ptable_t;
 

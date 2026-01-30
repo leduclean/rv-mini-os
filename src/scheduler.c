@@ -1,5 +1,3 @@
-#include "include/mmio.h"
-#include "platform.h"
 #include "process.h"
 #include "time.h"
 #include <stddef.h>
@@ -8,7 +6,7 @@
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
 
 /* Return active pid */
-int8_t mon_pid() { return actif->pid; }
+uint8_t mon_pid() { return actif->pid; }
 
 /* Return the active name */
 char *mon_nom() { return actif->name; }
@@ -20,38 +18,42 @@ void try_wake_up(process_t *proc) {
     proc->state = READY;
   }
 }
-/* Choose the next process to switch on considering the active one */
-void ordonnance() {
-  int64_t pid = mon_pid();
-  process_t *new = NULL;
-  for (uint8_t scanned = 0; scanned < proc_table.current_pid; scanned++) {
-    pid = (pid + 1) % proc_table.current_pid;
-    process_t *candidate = &proc_table.table[pid];
 
-    if (candidate->state == TERMINATED)
-      continue; // Skip terminated processes explicitly
+process_t *find_next() {
+  uint8_t pid = mon_pid();
+  process_t *new = NULL;
+  for (int8_t scanned = 0; scanned < PROC_TABLE_SIZE; scanned++) {
+    pid = (pid + 1) % PROC_TABLE_SIZE;
+    process_t *candidate = &proc_table.table[pid];
+    if (candidate->state == TERMINATED || (candidate->state == FREE)) {
+      continue;
+    };
 
     if (candidate->state == SLEEPING) {
       try_wake_up(candidate);
     }
 
-    // Choose if READY -> either waked up
-    // or already activable
     if (candidate->state == READY) {
       new = candidate;
       break;
     }
   }
+  return new;
+}
+
+/* Choose the next process to switch on considering the active one */
+void ordonnance() {
+  process_t *next = find_next();
   // fallback sur idle si rien n’est READY
-  if (!new) {
-    new = &proc_table.table[0]; // idle
+  if (!next) {
+    next = &proc_table.table[0]; // idle
   }
   if (actif->state == RUNNING) {
     // Only a RUNNING processus comeback to ready
     actif->state = READY;
   }
-  new->state = RUNNING;
+  next->state = RUNNING;
   uintptr_t current_ctx = (uintptr_t)&actif->ctx;
-  actif = new;
-  ctx_sw(current_ctx, (uintptr_t)&new->ctx);
+  actif = next;
+  ctx_sw(current_ctx, (uintptr_t)&next->ctx);
 }
