@@ -1,6 +1,5 @@
 #include "process.h"
 #include "cpu.h"
-#include "time.h"
 #include <scheduler.h>
 #include <stdint.h>
 #include <string.h>
@@ -8,21 +7,6 @@
 #define RA_INDEX 0
 #define SP_INDEX 1
 #define S0_INDEX 4
-
-extern void ctx_sw(uintptr_t old_context_addr, uintptr_t new_context_addr);
-
-/** Terminate a processus **/
-void fin_processus() {
-  actif->state = TERMINATED;
-  proc_table.active_process--;
-  ordonnance();
-}
-
-/* Launcher to handle launch and terminaison of a proc */
-void proc_launcher(void proc()) {
-  proc();
-  fin_processus();
-}
 
 /* Processus Table setter */
 int8_t set_process(void code(), char *nom, process_t *slot) {
@@ -41,19 +25,19 @@ int8_t set_process(void code(), char *nom, process_t *slot) {
   }
   proc_table.active_process++;
   proc_table.next_pid++;
+  enqueue(slot);
   return slot->pid;
 }
 
 /** Find an empty slot for a processus **/
 process_t *find_slot() {
-  process_t *candidate = NULL;
   for (uint8_t slot_idx = 0; slot_idx < PROC_TABLE_SIZE; slot_idx++) {
-    candidate = &proc_table.table[slot_idx];
+    process_t *candidate = &proc_table.table[slot_idx];
     if (candidate->state == FREE || candidate->state == TERMINATED) {
-      break;
+      return candidate;
     }
   }
-  return candidate;
+  return NULL;
 }
 
 /* Create a new processus returning his pid number */
@@ -67,11 +51,17 @@ int8_t creer_processus(void code(), char *nom) {
   return set_process(code, nom, slot);
 }
 
+/* Return active pid */
+uint8_t mon_pid() { return active->pid; }
+
+/* Return the active name */
+char *mon_nom() { return active->name; }
+
 /* Init processus handling */
 void init_proc() {
   uint8_t init_pid = creer_processus(idle, "idle");
-  actif = &proc_table.table[init_pid];
-  actif->state = RUNNING;
+  active = &proc_table.table[init_pid];
+  active->state = RUNNING;
 }
 
 /** IDLE Processus declaration  **/
@@ -81,11 +71,4 @@ void idle() {
     hlt();
     disable_it();
   }
-}
-
-/** Set a program to sleeping state **/
-void dors(uint64_t nbr_secs) {
-  actif->wake_up_time = nbr_secs + nbr_secondes();
-  actif->state = SLEEPING;
-  ordonnance();
 }
