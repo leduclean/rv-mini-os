@@ -14,6 +14,7 @@ extern void ctx_sw(uintptr_t old_context_addr, uintptr_t new_context_addr);
 /** Terminate a processus **/
 void fin_processus() {
   actif->state = TERMINATED;
+  proc_table.active_process--;
   ordonnance();
 }
 
@@ -23,30 +24,47 @@ void proc_launcher(void proc()) {
   fin_processus();
 }
 
-/* Create a new processus returning his pid number */
-int8_t creer_processus(void code(), char *nom) {
-  uint8_t current_pid = proc_table.current_pid;
-  if (current_pid >= PROC_TABLE_SIZE) {
-    return -1; // Error
-  }
-  // Get the current process
-  process_t *created = &proc_table.table[current_pid];
-
+/* Processus Table setter */
+int8_t set_process(void code(), char *nom, process_t *slot) {
   // Set the parameter for the created process
-  created->pid = current_pid;
+  slot->pid = proc_table.next_pid;
   // Initiate the name
-  strncpy(created->name, nom, MAXNAME - 1);
-  created->state = READY;
-  if (current_pid == 0) {
-    created->ctx[RA_INDEX] = (uintptr_t)idle;
+  strncpy(slot->name, nom, MAXNAME - 1);
+  slot->state = READY;
+  if (slot == &proc_table.table[0]) {
+    slot->ctx[RA_INDEX] = (uintptr_t)idle;
   } else {
     // We need to save the stack pointer and the ctx
-    created->ctx[SP_INDEX] = (uint64_t)&created->stack[STACK_SIZE - 1];
-    created->ctx[RA_INDEX] = (uintptr_t)proc_launcher;
-    created->ctx[S0_INDEX] = (uintptr_t)code;
+    slot->ctx[SP_INDEX] = (uint64_t)&slot->stack[STACK_SIZE - 1];
+    slot->ctx[RA_INDEX] = (uintptr_t)proc_launcher;
+    slot->ctx[S0_INDEX] = (uintptr_t)code;
   }
-  proc_table.current_pid++;
-  return current_pid;
+  proc_table.active_process++;
+  proc_table.next_pid++;
+  return slot->pid;
+}
+
+/** Find an empty slot for a processus **/
+process_t *find_slot() {
+  process_t *candidate = NULL;
+  for (uint8_t slot_idx = 0; slot_idx < PROC_TABLE_SIZE; slot_idx++) {
+    candidate = &proc_table.table[slot_idx];
+    if (candidate->state == FREE || candidate->state == TERMINATED) {
+      break;
+    }
+  }
+  return candidate;
+}
+
+/* Create a new processus returning his pid number */
+int8_t creer_processus(void code(), char *nom) {
+  if (proc_table.active_process >= PROC_TABLE_SIZE) {
+    return -1; // Error already max processus launched
+  }
+  process_t *slot = find_slot();
+  if (!slot)
+    return -1;
+  return set_process(code, nom, slot);
 }
 
 /* Init processus handling */

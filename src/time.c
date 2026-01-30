@@ -12,7 +12,7 @@
 
 // Gloabl irq compteur
 static uint32_t tirqcnt = 0;
-static uint32_t previous_s = -1;
+// static uint32_t previous_s = -1;
 
 inline uint32_t nbr_secondes() { return tirqcnt / ITFREQ; }
 
