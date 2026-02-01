@@ -27,8 +27,7 @@ static void timer_interrupt_handler(void) {
   sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
   display_top_right(buf, 10);
 
-  // TODO implement wake up sleeping and then decomment
-  //  wake_up_sleeping();
+  wake_up_sleeping();
   scheduler_rotate();
 }
 

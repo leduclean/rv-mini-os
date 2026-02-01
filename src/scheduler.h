@@ -14,6 +14,9 @@ typedef struct {
 
 extern int enqueue(process_t *proc);
 
+// Sleeping queue functions
+extern void wake_up_sleeping();
+
 // Scheduling function
 extern void scheduler_sleep(uint32_t nbr_secondes);
 extern void scheduler_terminate();

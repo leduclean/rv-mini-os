@@ -15,6 +15,8 @@ typedef struct process process_t;
 extern process_t *get_active();
 extern uint64_t *get_ctx(process_t *proc);
 extern uint32_t get_wake_up(process_t *proc);
+extern process_t *get_next_sleeping(process_t *proc);
+extern void set_next_sleeping(process_t *proc, process_t *next);
 extern uint8_t get_active_pid();
 extern char *get_active_name();
 extern void switch_active(process_t *next);
