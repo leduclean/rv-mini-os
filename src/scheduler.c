@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "circ_queue.h"
 #include "process.h"
 #include "time.h"
 #include <stddef.h>
@@ -13,59 +14,6 @@ static void do_ctx_switch(process_t *next) {
   switch_active(next);
   ctx_sw((uintptr_t)old_ctx, (uintptr_t)get_ctx(next));
 }
-
-/** ROUND ROBING circular queue structure and interface **/
-typedef struct {
-  process_t *queue[MAX_PROC];
-  uint8_t head; // Idx active
-  uint8_t tail; // Idx for next insertion
-  uint8_t size; // number of active element
-} circ_queue_t;
-
-/** Get the active process **/
-static inline process_t *peek_head(circ_queue_t *q) {
-  if (q->size == 0)
-    return NULL;
-  return q->queue[q->head];
-}
-
-/** Round Robin circular gestion of a queue **/
-static inline void rotate_head_to_tail(circ_queue_t *q) {
-  // Nothing to do if 0 or 1 element
-  if (q->size <= 1)
-    return;
-
-  process_t *p = q->queue[q->head];
-  q->queue[q->tail] = p;
-
-  q->tail = (q->tail + 1) % MAX_PROC;
-  q->head = (q->head + 1) % MAX_PROC;
-}
-
-/** Add a new process to a circular queue **/
-static int enqueue(circ_queue_t *q, process_t *proc) {
-  if (q->size >= MAX_PROC)
-    return -1; // queue is full
-
-  q->queue[q->tail] = proc;
-  q->tail = (q->tail + 1) % MAX_PROC;
-  q->size++;
-
-  return 0;
-}
-
-/** Remove the head process from a circular queue **/
-int dequeue(circ_queue_t *q) {
-  if (q->size == 0)
-    return -1;
-
-  q->head = (q->head + 1) % MAX_PROC;
-  q->size--;
-
-  return 0;
-}
-
-static inline uint8_t is_empty(circ_queue_t *q) { return q->size == 0; }
 
 /** Priority handling **/
 
