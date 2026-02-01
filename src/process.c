@@ -17,6 +17,8 @@ struct process {
   uint64_t ctx[MAX_REG_SAVED];
   uint64_t stack[STACK_SIZE];
   uint64_t wake_up_time;
+  // sleeping chained list pointer
+  process_t *next_sleeping;
 };
 
 // Active process init
@@ -26,12 +28,20 @@ static process_t *active = NULL;
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 void set_state(process_t *proc, state state) { proc->state = state; }
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
+
 /** Set a processus in sleeping state with a timer **/
 void process_sleep(uint32_t delay) {
   active->state = SLEEPING;
   active->wake_up_time = delay + seconds();
 }
 
+/** Get next element in the sleeping queue **/
+process_t *get_next_sleeping(process_t *proc) { return proc->next_sleeping; }
+
+/** Set the next element in the sleeping **/
+void set_next_sleeping(process_t *proc, process_t *next) {
+  proc->next_sleeping = next;
+}
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
   if (proc->state == SLEEPING) {
