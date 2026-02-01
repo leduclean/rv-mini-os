@@ -1,6 +1,6 @@
 #include "time.h"
 #include "console.h"
-#include "include/mmio.h"
+#include "mmio.h"
 #include "platform.h"
 #include "scheduler.h"
 #include <stdint.h>
@@ -13,12 +13,12 @@
 // Gloabl irq compteur
 static uint32_t tirqcnt = 0;
 
-inline uint32_t nbr_secondes() { return tirqcnt / ITFREQ; }
+inline uint32_t seconds() { return tirqcnt / ITFREQ; }
 
-void timer_interrupt_handler(void) {
+static void timer_interrupt_handler(void) {
   // Treat the timer interupt
   tirqcnt++;
-  uint32_t s = nbr_secondes();
+  uint32_t s = seconds();
 
   uint32_t m = (s / 60) % 60;
   uint32_t h = s / 3600;
@@ -27,9 +27,9 @@ void timer_interrupt_handler(void) {
   sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
   display_top_right(buf, 10);
 
-  // SLEEPING gestion of the sleeping process
-  wake_up_sleeping();
-  ordonnance();
+  // TODO implement wake up sleeping and then decomment
+  //  wake_up_sleeping();
+  scheduler_rotate();
 }
 
 void trap_handler(uint64_t mcause, uint64_t mie, uint64_t mip) {
