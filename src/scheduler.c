@@ -1,12 +1,13 @@
 #include "scheduler.h"
 #include "process.h"
+#include "time.h"
 #include <stddef.h>
 #include <stdint.h>
 
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
 static circ_queu_t run_queue = {0};
 
-/** Queue gestion **/
+/** Circular run queue gestion **/
 static inline process_t *peek_head(void) {
   if (run_queue.size == 0)
     return NULL;
@@ -41,6 +42,28 @@ static int dequeue(void) {
   run_queue.head = (run_queue.head + 1) % MAX_PROC;
   run_queue.size--;
   return 0;
+}
+
+/** Sleeping queue handling **/
+static process_t *sleeping_head = NULL;
+
+static void insert_sleep(process_t *proc) {
+  // If no sleeping head
+  if (!sleeping_head || get_wake_up(proc) < get_wake_up(sleeping_head)) {
+    set_next_sleeping(proc, sleeping_head);
+    sleeping_head = proc;
+    return;
+  }
+  process_t *prev = sleeping_head;
+  process_t *current = get_next_sleeping(prev);
+
+  while (current && get_wake_up(current) <= get_wake_up(proc)) {
+    prev = current;
+    current = get_next_sleeping(current);
+  }
+
+  set_next_sleeping(proc, current);
+  set_next_sleeping(prev, proc);
 }
 
 static void do_ctx_switch(process_t *next) {
@@ -79,6 +102,7 @@ void proc_launcher(void proc()) {
 /** Set a program to sleeping state **/
 void scheduler_sleep(uint32_t nbr_secs) {
   process_sleep(nbr_secs);
+  insert_sleep(get_active());
   switch_out_active();
 }
 
@@ -88,9 +112,13 @@ static void scheduler_wake(process_t *proc) {
   enqueue(proc);
 }
 
-/** Try to  wake up a single prog **/
-static void try_wake_up(process_t *proc, uint32_t now) {
-  if (get_wake_up(proc) <= now) {
-    scheduler_wake(proc);
+/** Wake up the process wakable in the sleeping queue **/
+void wake_up_sleeping() {
+  uint32_t now = seconds();
+  while (sleeping_head && get_wake_up(sleeping_head) <= now) {
+    process_t *next = get_next_sleeping(sleeping_head);
+    scheduler_wake(sleeping_head);
+    set_next_sleeping(sleeping_head, NULL);
+    sleeping_head = next;
   }
 }
