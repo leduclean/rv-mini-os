@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "time.h"
 #include <scheduler.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -19,6 +20,7 @@ struct process {
   uint64_t wake_up_time;
   // sleeping chained list pointer
   process_t *next_sleeping;
+  priority priority;
 };
 
 // Active process init
@@ -28,6 +30,14 @@ static process_t *active = NULL;
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 void set_state(process_t *proc, state state) { proc->state = state; }
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
+priority get_priority(process_t *proc) { return proc->priority; }
+
+/** Boolean condition helper to dermine if a process has higher priority.
+ * We consider that priority are sorted decremental.
+ * **/
+uint8_t higher_priority(priority prior, priority other) {
+  return prior < other;
+}
 
 /** Set a processus in sleeping state with a timer **/
 void process_sleep(uint32_t delay) {
@@ -79,9 +89,11 @@ void process_terminate() {
 /* Processus Table setter */
 
 /** Config a process in it slot in the process table  **/
-static void config_process(void code(), char *nom, process_t *slot) {
+static void config_process(void code(), char *nom, priority prior,
+                           process_t *slot) {
   slot->pid = proc_table.next_pid;
   strncpy(slot->name, nom, MAXNAME - 1);
+  slot->priority = prior;
   slot->state = READY;
 
   if (slot == &proc_table.table[0]) {
@@ -97,7 +109,7 @@ static void config_process(void code(), char *nom, process_t *slot) {
 static int8_t add_process_to_scheduler(process_t *slot) {
   proc_table.active_process++;
   proc_table.next_pid++;
-  enqueue(slot);
+  scheduler_admit(slot);
   return slot->pid;
 }
 
@@ -113,14 +125,14 @@ static process_t *find_slot() {
 }
 
 /** Spawn a process **/
-int8_t spawn_process(void code(), char *nom) {
+int8_t spawn_process(void code(), char *nom, priority prior) {
   if (proc_table.active_process >= MAX_PROC) {
     return -1; // Error already max processus launched
   }
   process_t *slot = find_slot();
   if (!slot)
     return -1;
-  config_process(code, nom, slot);
+  config_process(code, nom, prior, slot);
   return add_process_to_scheduler(slot);
 }
 
@@ -135,7 +147,7 @@ void init_proc_table() { memset(&proc_table, 0, sizeof(proc_table)); }
 
 /* Create the idle processus */
 void init_idle() {
-  uint8_t init_pid = spawn_process(idle, "idle");
+  uint8_t init_pid = spawn_process(idle, "idle", IDLE);
   active = &proc_table.table[init_pid];
   active->state = RUNNING;
 }
