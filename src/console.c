@@ -1,6 +1,6 @@
 #include "console.h"
 #include "font.h"
-#include "include/mmio.h"
+#include "mmio.h"
 #include "platform.h"
 #include <stdint.h>
 #include <string.h>
