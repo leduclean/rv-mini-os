@@ -6,8 +6,8 @@
 /** We prefer an english semantic for uniformity
  * and code clarity but we need aliases for CI eval **/
 
-int8_t cree_processus(void (*entry)(void), char *name) {
-  return spawn_process(entry, name);
+int8_t cree_processus(void (*entry)(void), char *name, priority prior) {
+  return spawn_process(entry, name, prior);
 }
 
 void ordonnance(void) { scheduler_rotate(); }

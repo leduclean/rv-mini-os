@@ -28,7 +28,7 @@ void proc2() {
     printf("[temps = %u] processus %s pid = %i\n", seconds(), get_active_name(),
            get_active_pid());
     if (i == 1) {
-      spawn_process(proc3, "bob3");
+      spawn_process(proc3, "bob3", HIGH);
     }
     scheduler_sleep(3);
   }
@@ -41,7 +41,7 @@ void kernel_start() {
   init_ecran();
   enable_timer();
   init_traitant(mon_traitant);
-  spawn_process(proc1, "bob1");
-  spawn_process(proc2, "bob2");
+  spawn_process(proc1, "bob1", HIGH);
+  spawn_process(proc2, "bob2", NORMAL);
   idle();
 }

@@ -8,6 +8,7 @@
 
 // Process State table
 typedef enum { FREE = 0, RUNNING, READY, SLEEPING, TERMINATED } state;
+typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 
 // Process definition
 typedef struct process process_t;
@@ -15,6 +16,8 @@ typedef struct process process_t;
 extern process_t *get_active();
 extern uint64_t *get_ctx(process_t *proc);
 extern uint32_t get_wake_up(process_t *proc);
+extern priority get_priority(process_t *proc);
+extern uint8_t higher_priority(priority prior, priority other);
 extern process_t *get_next_sleeping(process_t *proc);
 extern void set_next_sleeping(process_t *proc, process_t *next);
 extern uint8_t get_active_pid();
@@ -27,4 +30,4 @@ extern void process_terminate();
 // Idle Process declaration
 extern void idle();
 extern void init_proc();
-extern int8_t spawn_process(void code(), char *name);
+extern int8_t spawn_process(void code(), char *name, priority prior);

@@ -4,15 +4,7 @@
 
 extern void scheduler_rotate();
 
-// Run Queue
-typedef struct {
-  process_t *queue[MAX_PROC];
-  uint8_t head; // Idx active
-  uint8_t tail; // Idx for next insertion
-  uint8_t size; // number of active element
-} circ_queu_t;
-
-extern int enqueue(process_t *proc);
+extern void scheduler_admit(process_t *proc);
 
 // Sleeping queue functions
 extern void wake_up_sleeping();
