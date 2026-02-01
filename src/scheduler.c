@@ -6,45 +6,168 @@
 #include <string.h>
 
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
-static circ_queu_t run_queue;
 
-static void init_run_queue() { memset(&run_queue, 0, sizeof(run_queue)); };
+/** Main rescheduling function called to change context between proc**/
+static void do_ctx_switch(process_t *next) {
+  uint64_t *old_ctx = get_ctx(get_active());
+  switch_active(next);
+  ctx_sw((uintptr_t)old_ctx, (uintptr_t)get_ctx(next));
+}
 
-/** Circular run queue gestion **/
-static inline process_t *peek_head(void) {
-  if (run_queue.size == 0)
+/** ROUND ROBING circular queue structure and interface **/
+typedef struct {
+  process_t *queue[MAX_PROC];
+  uint8_t head; // Idx active
+  uint8_t tail; // Idx for next insertion
+  uint8_t size; // number of active element
+} circ_queue_t;
+
+/** Get the active process **/
+static inline process_t *peek_head(circ_queue_t *q) {
+  if (q->size == 0)
     return NULL;
-  return run_queue.queue[run_queue.head];
+  return q->queue[q->head];
 }
 
-/** Round Robin circular gestion of the run queue **/
-static void rotate_head_to_tail(void) {
-  // Nothing to do if 1 or  0 element
-  if (run_queue.size <= 1)
+/** Round Robin circular gestion of a queue **/
+static inline void rotate_head_to_tail(circ_queue_t *q) {
+  // Nothing to do if 0 or 1 element
+  if (q->size <= 1)
     return;
-  process_t *p = run_queue.queue[run_queue.head];
-  run_queue.queue[run_queue.tail] = p;
-  run_queue.tail = (run_queue.tail + 1) % MAX_PROC;
-  run_queue.head = (run_queue.head + 1) % MAX_PROC;
+
+  process_t *p = q->queue[q->head];
+  q->queue[q->tail] = p;
+
+  q->tail = (q->tail + 1) % MAX_PROC;
+  q->head = (q->head + 1) % MAX_PROC;
 }
 
-/** Add a new process to the run_queue **/
-int enqueue(process_t *proc) {
-  if (run_queue.size >= MAX_PROC)
+/** Add a new process to a circular queue **/
+static int enqueue(circ_queue_t *q, process_t *proc) {
+  if (q->size >= MAX_PROC)
     return -1; // queue is full
-  run_queue.queue[run_queue.tail] = proc;
-  run_queue.tail = (run_queue.tail + 1) % MAX_PROC;
-  run_queue.size++;
+
+  q->queue[q->tail] = proc;
+  q->tail = (q->tail + 1) % MAX_PROC;
+  q->size++;
+
   return 0;
 }
 
-/** Remove the active process frome the run_queue **/
-static int dequeue(void) {
-  if (run_queue.size == 0)
-    return -1; // Should not happend since idle is always here
-  run_queue.head = (run_queue.head + 1) % MAX_PROC;
-  run_queue.size--;
+/** Remove the head process from a circular queue **/
+int dequeue(circ_queue_t *q) {
+  if (q->size == 0)
+    return -1;
+
+  q->head = (q->head + 1) % MAX_PROC;
+  q->size--;
+
   return 0;
+}
+
+static inline uint8_t is_empty(circ_queue_t *q) { return q->size == 0; }
+
+/** Priority handling **/
+
+/* Priority mapped running queue table */
+static circ_queue_t run_queues[PRIORITY_COUNT];
+
+/* Keep track the highest non empty ready priority */
+static priority highest_ready_tracking;
+
+void static init_run_queues() {
+  memset(&run_queues, 0, sizeof(run_queues));
+  // The initiate prioity should be IDLE
+  highest_ready_tracking = IDLE;
+}
+
+/** Pick the highest priority non-empty queue **/
+static inline circ_queue_t *pick_highest(void) {
+  return &run_queues[highest_ready_tracking];
+}
+
+/** Refresh the highest_ready_tracking state if the queue is empty **/
+void refresh_high_prio() {
+  // Test the supposate highest prio
+  if (!is_empty(&run_queues[highest_ready_tracking])) {
+    return;
+  }
+
+  // scan the other queues (lower priority state are higher in priority index )
+  for (int p = highest_ready_tracking + 1; p < PRIORITY_COUNT; p++) {
+    if (!is_empty(&run_queues[p])) {
+      // Update the new highest prio
+      highest_ready_tracking = p;
+      break;
+    }
+  }
+}
+
+/** Enqueue the process in the correct priority queuee **/
+static void enqueue_process(process_t *proc) {
+  priority prior_class = get_priority(proc);
+  circ_queue_t *rq = &run_queues[prior_class];
+  enqueue(rq, proc);
+}
+
+/** Dequeue the process in the correct priority queuee **/
+static void dequeue_process(process_t *proc) {
+  priority prior_class = get_priority(proc);
+  circ_queue_t *rq = &run_queues[prior_class];
+  dequeue(rq);
+}
+
+/** Check if premption is needed and do it if needed **/
+static void check_and_preempt(process_t *proc) {
+  priority prior = get_priority(proc);
+  priority current_prior = get_priority(get_active());
+  if (higher_priority(prior, current_prior)) {
+    // Immediatly switch to this process
+    do_ctx_switch(proc);
+  }
+}
+
+/** Check if a process should update highest ready priority queue and do it **/
+static void update_highest(process_t *proc) {
+  priority prior_class = get_priority(proc);
+  if (higher_priority(prior_class, highest_ready_tracking)) {
+    highest_ready_tracking = prior_class;
+  }
+}
+
+/** Admit a process with a level of priority in the corresponding queue **/
+void scheduler_admit(process_t *proc) {
+  enqueue_process(proc);
+  update_highest(proc);
+  check_and_preempt(proc);
+}
+
+/* Schedule function trigered by an interupt */
+void scheduler_rotate() {
+  circ_queue_t *current_runqueue = pick_highest();
+  rotate_head_to_tail(current_runqueue);
+  do_ctx_switch(peek_head(current_runqueue));
+}
+
+/* Schedule function trigered by an inactivity of the process
+ * ie terminason, or sleep
+ * */
+static void switch_out_active() {
+  refresh_high_prio();
+  do_ctx_switch(peek_head(pick_highest()));
+}
+
+/** Terminate a processus **/
+void scheduler_terminate() {
+  dequeue_process(get_active());
+  process_terminate();
+  switch_out_active();
+}
+
+/* Launcher to handle launch and terminaison of a proc */
+void proc_launcher(void proc()) {
+  proc();
+  scheduler_terminate();
 }
 
 /** Sleeping queue handling **/
@@ -71,67 +194,46 @@ static void insert_sleep(process_t *proc) {
   set_next_sleeping(prev, proc);
 }
 
-void init_scheduler_queues() {
-  init_run_queue();
-  init_sleep_queue();
-}
-
-static void do_ctx_switch(process_t *next) {
-  uint64_t *old_ctx = get_ctx(get_active());
-  switch_active(next);
-  ctx_sw((uintptr_t)old_ctx, (uintptr_t)get_ctx(next));
-}
-
-/* Schedule function trigered by an interupt */
-void scheduler_rotate() {
-  rotate_head_to_tail();
-  process_t *head = peek_head();
-  if (head) {
-    do_ctx_switch(peek_head());
-  }
-}
-
-/* Schedule function trigered by an inactivity of the process
- * ie terminason, or sleep
- * */
-static void switch_out_active() {
-  // Remove the active process from the running queue
-  dequeue();
-  do_ctx_switch(peek_head());
-}
-
-/** Terminate a processus **/
-void scheduler_terminate() {
-  process_terminate();
-  switch_out_active();
-}
-
-/* Launcher to handle launch and terminaison of a proc */
-void proc_launcher(void proc()) {
-  proc();
-  scheduler_terminate();
-}
-
 /** Set a program to sleeping state **/
 void scheduler_sleep(uint32_t nbr_secs) {
+  process_t *proc = get_active();
+  dequeue_process(proc);
   process_sleep(nbr_secs);
-  insert_sleep(get_active());
+  insert_sleep(proc);
   switch_out_active();
 }
 
 /** Wake up a process and reschedule it in the running queue **/
 static void scheduler_wake(process_t *proc) {
+  // Wake the process
   process_wake(proc);
-  enqueue(proc);
+
+  // Update the highest if needed
+  update_highest(proc);
+
+  // Insert in the correct run queue
+  enqueue_process(proc);
+
+  // Preempt if needed
+  check_and_preempt(proc);
 }
 
 /** Wake up the process wakable in the sleeping queue **/
 void wake_up_sleeping() {
   uint32_t now = seconds();
   while (sleeping_head && get_wake_up(sleeping_head) <= now) {
-    process_t *next = get_next_sleeping(sleeping_head);
-    scheduler_wake(sleeping_head);
-    set_next_sleeping(sleeping_head, NULL);
+    process_t *proc = sleeping_head;
+    process_t *next = get_next_sleeping(proc);
+
+    // detach first
+    set_next_sleeping(proc, NULL);
     sleeping_head = next;
+
+    scheduler_wake(proc);
   }
+}
+
+void init_scheduler_queues() {
+  init_run_queues();
+  init_sleep_queue();
 }
