@@ -57,7 +57,7 @@ typedef struct {
 } ptable_t;
 
 // Process table init
-static ptable_t proc_table = {0};
+static ptable_t proc_table;
 
 process_t *get_active() { return active; }
 
@@ -130,11 +130,21 @@ uint8_t get_active_pid() { return active->pid; }
 /* Return the active name */
 char *get_active_name() { return active->name; }
 
-/* Init processus handling */
-void init_proc() {
+/* Init the processus table */
+void init_proc_table() { memset(&proc_table, 0, sizeof(proc_table)); }
+
+/* Create the idle processus */
+void init_idle() {
   uint8_t init_pid = spawn_process(idle, "idle");
   active = &proc_table.table[init_pid];
   active->state = RUNNING;
+}
+
+/* Init processus handling */
+void init_proc() {
+  init_proc_table();
+  init_idle();
+  init_scheduler_queues();
 }
 
 /** IDLE Processus declaration  **/

@@ -3,9 +3,12 @@
 #include "time.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
 
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
-static circ_queu_t run_queue = {0};
+static circ_queu_t run_queue;
+
+static void init_run_queue() { memset(&run_queue, 0, sizeof(run_queue)); };
 
 /** Circular run queue gestion **/
 static inline process_t *peek_head(void) {
@@ -45,7 +48,9 @@ static int dequeue(void) {
 }
 
 /** Sleeping queue handling **/
-static process_t *sleeping_head = NULL;
+static process_t *sleeping_head;
+
+static void init_sleep_queue() { sleeping_head = NULL; }
 
 static void insert_sleep(process_t *proc) {
   // If no sleeping head
@@ -64,6 +69,11 @@ static void insert_sleep(process_t *proc) {
 
   set_next_sleeping(proc, current);
   set_next_sleeping(prev, proc);
+}
+
+void init_scheduler_queues() {
+  init_run_queue();
+  init_sleep_queue();
 }
 
 static void do_ctx_switch(process_t *next) {
