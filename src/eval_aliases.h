@@ -1,5 +1,4 @@
-#include "process.h"
-#include "scheduler.h"
+#pragma once
 
 /** We prefer an english semantic for uniformity
  * and code clarity but we need aliases for CI eval **/
