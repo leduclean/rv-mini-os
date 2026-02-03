@@ -18,6 +18,7 @@ extern int enqueue(process_t *proc);
 extern void wake_up_sleeping();
 
 // Scheduling function
+extern void init_scheduler_queues();
 extern void scheduler_sleep(uint32_t nbr_secondes);
 extern void scheduler_terminate();
 extern void proc_launcher(void proc());
