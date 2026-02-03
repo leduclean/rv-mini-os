@@ -12,6 +12,7 @@
 
 // Gloabl irq compteur
 static uint32_t tirqcnt = 0;
+static uint32_t previous_s = -1;
 
 inline uint32_t seconds() { return tirqcnt / ITFREQ; }
 
@@ -20,12 +21,16 @@ static void timer_interrupt_handler(void) {
   tirqcnt++;
   uint32_t s = seconds();
 
-  uint32_t m = (s / 60) % 60;
-  uint32_t h = s / 3600;
+  // We only display when seconds changes
+  if (s != previous_s) {
+    uint32_t m = (s / 60) % 60;
+    uint32_t h = s / 3600;
 
-  char buf[16];
-  sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
-  display_top_right(buf, 10);
+    char buf[16];
+    sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
+    display_top_right(buf, 10);
+    previous_s = s;
+  };
 
   wake_up_sleeping();
   scheduler_rotate();
