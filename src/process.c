@@ -143,8 +143,8 @@ void init_idle() {
 /* Init processus handling */
 void init_proc() {
   init_proc_table();
-  init_idle();
   init_scheduler_queues();
+  init_idle();
 }
 
 /** IDLE Processus declaration  **/
