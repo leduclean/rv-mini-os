@@ -1,7 +1,11 @@
-#include "eval_aliases.h"
+#include "console.h"
+#include "cpu.h"
+#include "process.h"
+#include "scheduler.h"
 #include "time.h"
-#include <console.h>
-#include <cpu.h>
+
+#include "eval_aliases.h"
+
 #include <stddef.h>
 #include <stdio.h>
 
