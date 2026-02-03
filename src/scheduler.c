@@ -75,7 +75,10 @@ static void do_ctx_switch(process_t *next) {
 /* Schedule function trigered by an interupt */
 void scheduler_rotate() {
   rotate_head_to_tail();
-  do_ctx_switch(peek_head());
+  process_t *head = peek_head();
+  if (head) {
+    do_ctx_switch(peek_head());
+  }
 }
 
 /* Schedule function trigered by an inactivity of the process
