@@ -1,5 +1,42 @@
+#include "uart.h"
 #include "mmio.h"
 #include "platform.h"
+#include <stdint.h>
+
+#define UART_RX_BUFFER_SIZE 128
+
+/** We define a ring buffer to read the inner char **/
+typedef struct {
+  char buf[UART_RX_BUFFER_SIZE];
+  volatile uint32_t head;
+  volatile uint32_t tail;
+} uart_ring_buffer_t;
+
+static uart_ring_buffer_t rx_buffer;
+
+static inline int buffer_empty(uart_ring_buffer_t *b) {
+  return b->head == b->tail;
+}
+
+static inline int buffer_full(uart_ring_buffer_t *b) {
+  return ((b->head + 1) % UART_RX_BUFFER_SIZE) == b->tail;
+}
+
+static inline void buffer_put(uart_ring_buffer_t *b, char c) {
+  if (!buffer_full(b)) {
+    b->buf[b->head] = c;
+    b->head = (b->head + 1) % UART_RX_BUFFER_SIZE;
+  }
+}
+
+static inline char buffer_get(uart_ring_buffer_t *b) {
+  if (!buffer_empty(b)) {
+    char c = b->buf[b->tail];
+    b->tail = (b->tail + 1) % UART_RX_BUFFER_SIZE;
+    return c;
+  }
+  return 0;
+}
 
 static inline void uart_enable_fifo() {
   // Enable fifo waiting list
@@ -39,5 +76,32 @@ void uart_init() {
   uart_enable_rxirq();
 };
 
+/* Write a character in the THR FIFO buffer (a transmitted char) */
 void uart_putchar(char c) { MMIO8(UART_BASE + UART_THR) = c; };
-char uart_getchar() { return MMIO8(UART_BASE + UART_RBR); };
+
+/* Get a character in the RBR FIFO buffer (a received char)*/
+static char uart_getchar() { return MMIO8(UART_BASE + UART_RBR); };
+
+/* Signals that data is available in rx */
+static inline uint8_t uart_rx_data_ready() {
+  return MMIO8(UART_BASE + UART_LSR) & 1;
+}
+
+/* Fill the rx buffer while rx contain data */
+static void uart_fill_rx_buff() {
+  while (uart_rx_data_ready()) {
+    buffer_put(&rx_buffer, uart_getchar());
+  }
+}
+
+/* Read the data in the RX buffer if available*/
+int uart_read(char *c) {
+  if (!buffer_empty(&rx_buffer)) {
+    *c = buffer_get(&rx_buffer);
+    return 0;
+  }
+  return -1;
+}
+
+/* Handler for the external interupt trigerred by the uart */
+void uart_irq_handler() { uart_fill_rx_buff(); }

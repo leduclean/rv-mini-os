@@ -3,4 +3,5 @@
 void uart_init();
 
 void uart_putchar(char);
-char uart_getchar();
+void uart_irq_handler();
+int uart_read(char *c);
