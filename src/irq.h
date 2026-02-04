@@ -12,3 +12,6 @@ void enable_timer();
 // External interrupts
 void enable_external();
 void disable_external();
+
+// Plic Config
+void plic_uart_config();

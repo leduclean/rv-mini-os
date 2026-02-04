@@ -72,6 +72,8 @@
 
 // PLIC pushbutton irq
 #define PLIC_IRQ_2 0x2
+#define PLIC_UART_ID 10
+#define PLIC_ENABLE_UART (1 << PLIC_UART_ID)
 
 // CLINT registers addresses
 #define CLINT_MSIP 0x02000000
