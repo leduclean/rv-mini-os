@@ -1,4 +1,5 @@
 #include "console.h"
+#include "irq.h"
 #include "process.h"
 #include "scheduler.h"
 #include "time.h"
@@ -40,7 +41,7 @@ void kernel_start() {
   init_proc();
   init_ecran();
   enable_timer();
-  init_traitant(mon_traitant);
+  init_trap_entry(mon_traitant);
   spawn_process(proc1, "bob1", HIGH);
   spawn_process(proc2, "bob2", NORMAL);
   idle();

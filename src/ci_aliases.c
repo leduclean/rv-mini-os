@@ -1,3 +1,4 @@
+#include "irq.h"
 #include "process.h"
 #include "scheduler.h"
 #include "time.h"
@@ -21,3 +22,5 @@ uint8_t mon_pid(void) { return get_active_pid(); }
 char *mon_nom(void) { return get_active_name(); }
 
 uint32_t nbr_secondes(void) { return seconds(); }
+
+void init_traitant(void (*traitant)(void)) { return init_trap_entry(traitant); }
