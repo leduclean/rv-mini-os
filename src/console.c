@@ -2,6 +2,7 @@
 #include "font.h"
 #include "mmio.h"
 #include "platform.h"
+#include "uart.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -15,33 +16,6 @@
 
 #define BG_COLOR 0x000000
 #define TEXT_COLOR 0xFFFFFF
-
-void init_uart() {
-  uint16_t rate = (UART_CLOCK_FREQ / (16 * UART_BAUD_RATE));
-  // Load all current value
-  uintptr_t lcr_addr = UART_BASE + UART_LCR;
-  uint8_t lcr = MMIO8(lcr_addr);
-  // Enable rating registers
-  lcr |= UART_LCR_DLAB;
-  MMIO8(lcr_addr) = lcr;
-
-  // Divisor rate writing
-  MMIO8(UART_BASE + UART_DLL) = (uint8_t)(rate);
-  MMIO8(UART_BASE + UART_DLH) = (uint8_t)(rate >> 8);
-
-  // fifo writing
-  uint8_t fifo = MMIO8(UART_BASE + UART_FCR);
-  fifo |= UART_FCR_EWL;
-  MMIO8(UART_BASE + UART_FCR) = fifo;
-
-  // 8 bits transmition config
-  lcr = MMIO8(lcr_addr);
-  lcr |= UART_LCR_8BIT | UART_LCR_PODD; // bits 0, 1,
-  lcr &= ~(UART_LCR_DLAB);              // unset bit 7
-  MMIO8(lcr_addr) = lcr;
-};
-
-void treat_car_uart(char c) { MMIO8(UART_BASE + UART_THR) = c; };
 
 // Make PCI ECAM address
 static inline uintptr_t make_device_addr(uint32_t bus, uint32_t dev,
@@ -280,7 +254,7 @@ void handle_char(char c) {
 /* Main fonction used to pipe char to UART and to screen dipslay */
 void console_putbytes(const char *s, int len) {
   for (int i = 0; i < len; i++) {
-    treat_car_uart(s[i]);
+    uart_putchar(s[i]);
     handle_char(s[i]);
   };
 };
@@ -293,7 +267,7 @@ void display_top_right(const char *s, int len) {
 
   uint8_t col = MAX_COLS - len;
   for (int i = 0; i < len; i++) {
-    treat_car_uart(s[i]);
+    uart_putchar(s[i]);
     write_char(0, col + i, s[i], TEXT_COLOR, BG_COLOR);
   }
 }
