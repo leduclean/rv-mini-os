@@ -42,7 +42,7 @@ void timer_irq_handler(void) {
     prev = s;
   };
 
-  wake_up_sleeping();
+  scheduler_wake_sleeping();
   scheduler_rotate();
   update_timer();
 }

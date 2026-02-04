@@ -151,8 +151,16 @@ void scheduler_sleep(uint32_t nbr_secs) {
   switch_out_active();
 }
 
+/** Block on a specific queue relative to a peripheric **/
+void scheduler_block_on(circ_queue_t *q) {
+  process_t *proc = get_active();
+  dequeue_process(proc);
+  enqueue(q, proc);
+  switch_out_active();
+}
+
 /** Wake up a process and reschedule it in the running queue **/
-static void scheduler_wake(process_t *proc) {
+static void scheduler_ready_process(process_t *proc) {
   // Wake the process
   process_wake(proc);
 
@@ -167,7 +175,7 @@ static void scheduler_wake(process_t *proc) {
 }
 
 /** Wake up the process wakable in the sleeping queue **/
-void wake_up_sleeping() {
+void scheduler_wake_sleeping() {
   uint32_t now = seconds();
   while (sleeping_head && get_wake_up(sleeping_head) <= now) {
     process_t *proc = sleeping_head;
@@ -177,7 +185,15 @@ void wake_up_sleeping() {
     set_next_sleeping(proc, NULL);
     sleeping_head = next;
 
-    scheduler_wake(proc);
+    scheduler_ready_process(proc);
+  }
+}
+
+/** Wake all the process from a peripheric queue **/
+void scheduler_wake_blocked_queue(circ_queue_t *q) {
+  for (int i = 0; i < q->size; i++) {
+    process_t *p = pop(q);
+    scheduler_ready_process(p);
   }
 }
 
