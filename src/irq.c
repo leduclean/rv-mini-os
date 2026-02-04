@@ -26,4 +26,10 @@ void enable_timer() {
 }
 
 /** Disable the timer irq **/
-void disable_timer() { __asm__("csrc mie, %0" ::"r"(IRQ_M_TMR)); }
+void disable_timer() { __asm__("csrc mie, %0" ::"r"(1 << IRQ_M_TMR)); }
+
+/** Enable machine external irq **/
+void enable_external() { __asm__("csrs mie, %0" ::"r"(1 << IRQ_M_EXT)); }
+
+/** Disable Machine external interrupt **/
+void disable_external() { __asm__("csrc mie, %0" ::"r"(1 << IRQ_M_EXT)); }
