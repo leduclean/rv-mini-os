@@ -45,4 +45,11 @@ int dequeue(circ_queue_t *q) {
   return 0;
 }
 
+/** Remove and get the head process from the queue **/
+process_t *pop(circ_queue_t *q) {
+  process_t *proc = peek_head(q);
+  dequeue(q);
+  return proc;
+}
+
 uint8_t is_empty(circ_queue_t *q) { return q->size == 0; }
