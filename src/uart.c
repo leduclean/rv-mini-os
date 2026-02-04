@@ -1,9 +1,23 @@
 #include "uart.h"
+#include "circ_queue.h"
 #include "mmio.h"
 #include "platform.h"
+#include "scheduler.h"
 #include <stdint.h>
+#include <string.h>
 
 #define UART_RX_BUFFER_SIZE 128
+
+/** Sleeping queue relative to uart IO.
+ * All of it process should be waken on irq.
+ **/
+static circ_queue_t uart_sleeping_queue;
+
+static void uart_init_queue() {
+  memset(&uart_sleeping_queue, 0, sizeof(circ_queue_t));
+}
+
+circ_queue_t *uart_get_wait_queue() { return &uart_sleeping_queue; }
 
 /** We define a ring buffer to read the inner char **/
 typedef struct {
@@ -70,6 +84,7 @@ static inline void uart_enable_rxirq() {
 
 /** Init the uart to receive char and get char **/
 void uart_init() {
+  uart_init_queue();
   uart_set_baud();
   uart_enable_fifo();
   uart_config_lcr();
@@ -104,4 +119,7 @@ int uart_read(char *c) {
 }
 
 /* Handler for the external interupt trigerred by the uart */
-void uart_irq_handler() { uart_fill_rx_buff(); }
+void uart_irq_handler() {
+  uart_fill_rx_buff();
+  scheduler_wake_blocked_queue(&uart_sleeping_queue);
+}
