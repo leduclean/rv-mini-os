@@ -40,7 +40,7 @@ void console_reader() {
   for (;;) {
     char c;
     while (uart_read(&c) == -1) {
-      scheduler_sleep(1);
+      scheduler_block_on(uart_get_wait_queue());
     }
     printf("%c", c);
   }

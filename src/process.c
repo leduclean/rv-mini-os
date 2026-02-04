@@ -45,6 +45,9 @@ void process_sleep(uint32_t delay) {
   active->wake_up_time = delay + seconds();
 }
 
+/** Set a processus to blocked state (waiting for IO irq) **/
+void process_block() { active->state = BLOCKED; }
+
 /** Get next element in the sleeping queue **/
 process_t *get_next_sleeping(process_t *proc) { return proc->next_sleeping; }
 
@@ -54,7 +57,7 @@ void set_next_sleeping(process_t *proc, process_t *next) {
 }
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
-  if (proc->state == SLEEPING) {
+  if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
     proc->state = RUNNING;
   }
 }

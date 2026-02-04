@@ -7,7 +7,7 @@
 #define MAX_PROC 32
 
 // Process State table
-typedef enum { FREE = 0, RUNNING, READY, SLEEPING, TERMINATED } state;
+typedef enum { FREE = 0, RUNNING, READY, SLEEPING, BLOCKED, TERMINATED } state;
 typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 
 // Process definition
