@@ -3,6 +3,7 @@
 #include "process.h"
 #include "scheduler.h"
 #include "time.h"
+#include "uart.h"
 #include <stddef.h>
 #include <stdio.h>
 
@@ -35,13 +36,28 @@ void proc2() {
   }
 }
 
-void proc4() {}
+void console_reader() {
+  for (;;) {
+    char c;
+    while (uart_read(&c) == -1) {
+      scheduler_sleep(1);
+    }
+    printf("%c", c);
+  }
+}
 
 void kernel_start() {
+  // Plic config
+  plic_uart_config();
   init_proc();
   init_ecran();
-  enable_timer();
+  uart_init();
+  // Interupt handling
   init_trap_entry(mon_traitant);
+  enable_external();
+  enable_timer();
+
+  spawn_process(console_reader, "console", NORMAL);
   spawn_process(proc1, "bob1", HIGH);
   spawn_process(proc2, "bob2", NORMAL);
   idle();
