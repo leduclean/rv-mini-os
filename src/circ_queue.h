@@ -1,3 +1,4 @@
+#pragma once
 #include "process.h"
 
 /** ROUND ROBING circular queue structure and interface **/
@@ -18,4 +19,5 @@ extern int enqueue(circ_queue_t *q, process_t *proc);
 
 /** Remove the head process from a circular queue **/
 extern int dequeue(circ_queue_t *q);
+extern process_t *pop(circ_queue_t *q);
 extern uint8_t is_empty(circ_queue_t *q);
