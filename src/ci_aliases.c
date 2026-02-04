@@ -2,11 +2,13 @@
 #include "process.h"
 #include "scheduler.h"
 #include "time.h"
+#include "uart.h"
 #include <stdint.h>
 
 /** We prefer an english semantic for uniformity
  * and code clarity but we need aliases for CI eval **/
 
+void init_uart() { return uart_init(); }
 int8_t cree_processus(void (*entry)(void), char *name, priority prior) {
   return spawn_process(entry, name, prior);
 }
