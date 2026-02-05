@@ -1,9 +1,11 @@
+#include "cmd_registry.h"
 #include "console.h"
 #include "parser.h"
 #include "process.h"
 #include "programs.h"
+#include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 static void builtin_ps() {
   // TODO when dynamic allocation.
@@ -11,66 +13,64 @@ static void builtin_ps() {
 
 /* Builtin shell Command to list all the prog launchable */
 static void builtin_help() {
-  printf("You can run the following programs: \n");
-  for (int i = 0; prog_tab[i].name; i++) {
-    printf("- %s \n", prog_tab[i].name);
-  }
-}
-
-/* builtin */
-static prog_t builtin_tab[] = {
-    {"help", builtin_help},
-    {"ps", builtin_ps},
-    {NULL, NULL},
-};
-
-static char line_buffer[MAX_COLS];
-
-/** Cmd match in the prog table */
-static prog_t *match(shell_cmd_desc_t *cmd, prog_t tab[]) {
-  prog_t *matched = NULL;
-  char *cmd_id = cmd->argv[0];
-  for (int i = 0; tab[i].name; i++) {
-    if (strcmp(cmd_id, tab[i].name) == 0) {
-      matched = &tab[i];
+  printf("Available commands: \n");
+  const cmd_desc_t *cmd = NULL;
+  for (uint8_t i = 0; i < registry_get_size(); i++) {
+    cmd = registry_get_nth(i);
+    switch (cmd->type) {
+    case CMD_BUILTIN:
+      printf("- [builtin] %s\n", cmd->name);
+      break;
+    case CMD_PROG:
+      printf("- [program] %s (priority: %d)\n", cmd->name, cmd->cmd.prog.prior);
       break;
     }
   }
-  return matched;
+}
+
+void init_builtins() {
+  register_builtin("help", builtin_help);
+  register_builtin("ps", builtin_ps);
 }
 
 /** Handle the user shell command **/
-static void cmd_handler(shell_cmd_desc_t *cmd) {
+static void cmd_handler(shell_cmd_tokens_t *cmd) {
   if (cmd->argc == 0)
     return;
 
-  // Check if it's a builtin command
-  prog_t *matched = match(cmd, builtin_tab);
-  if (matched) {
-    matched->fn(); // Builtin executed directly in shell
-    return;
-  }
-
-  // Check if it's a spawnable program
-  matched = match(cmd, prog_tab);
+  // Lookup the command in the registry
+  const cmd_desc_t *matched = command_lookup(cmd->argv[0]);
   if (!matched) {
     printf("Unknown command entered. Please refer to `help`.\n");
     return;
   }
 
-  // Spawn the program
+  // Builtin: executed directly
+  if (matched->type == CMD_BUILTIN) {
+    matched->cmd.builtin();
+    return;
+  }
+
+  // Program: spawn background or foreground
   if (cmd->background) {
-    spawn_process(matched->fn, matched->name, NORMAL); // background: no wait
+    spawn_process(matched->cmd.prog.fn, matched->name,
+                  matched->cmd.prog.prior); // background: no wait
   } else {
-    spawn_foreground(matched->fn, matched->name, NORMAL); // foreground: wait
+    spawn_foreground(
+        matched->cmd.prog.fn, matched->name,
+        matched->cmd.prog.prior); // foreground: blocks until child terminates
   }
 }
 
+static char line_buffer[MAX_COLS];
+
 /** Shell main process **/
 void shell() {
+  init_builtins();
+  init_programs();
   for (;;) {
     if (parser_read_line(line_buffer) != 0) {
-      shell_cmd_desc_t cmd = parser_get_cmd(line_buffer);
+      shell_cmd_tokens_t cmd = parser_get_cmd(line_buffer);
       cmd_handler(&cmd);
     }
   }
