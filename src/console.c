@@ -1,7 +1,6 @@
 #include "console.h"
 #include "font.h"
 #include "mmio.h"
-#include "platform.h"
 #include "uart.h"
 #include <stdint.h>
 #include <string.h>
@@ -140,9 +139,6 @@ static inline void draw_cursor() {
 static inline void undraw_cursor() {
   draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
-
-#define MAX_COLS (DISPLAY_WIDTH / 8)
-#define MAX_ROWS (DISPLAY_HEIGHT / 8)
 
 /* Move screen display to an upper line */
 void defilement() {
