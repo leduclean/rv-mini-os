@@ -151,16 +151,17 @@ void scheduler_sleep(uint32_t nbr_secs) {
   switch_out_active();
 }
 
-/** Block on a specific queue relative to a peripheric **/
+/** Block on a specific waiting queue relative to a signal **/
 void scheduler_block_on(circ_queue_t *q) {
   process_t *proc = get_active();
   dequeue_process(proc);
+  process_block();
   enqueue(q, proc);
   switch_out_active();
 }
 
 /** Wake up a process and reschedule it in the running queue **/
-static void scheduler_ready_process(process_t *proc) {
+void scheduler_ready_process(process_t *proc) {
   // Wake the process
   process_wake(proc);
 

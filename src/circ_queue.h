@@ -1,5 +1,9 @@
 #pragma once
-#include "process.h"
+#include <stdint.h>
+#define MAX_PROC 32
+
+struct process; // forward declaration
+typedef struct process process_t;
 
 /** ROUND ROBING circular queue structure and interface **/
 typedef struct {
@@ -21,3 +25,4 @@ extern int enqueue(circ_queue_t *q, process_t *proc);
 extern int dequeue(circ_queue_t *q);
 extern process_t *pop(circ_queue_t *q);
 extern uint8_t is_empty(circ_queue_t *q);
+process_t *circ_remove_by_pid(circ_queue_t *q, int8_t pid);

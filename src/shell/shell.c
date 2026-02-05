@@ -39,26 +39,31 @@ static prog_t *match(shell_cmd_desc_t *cmd, prog_t tab[]) {
   return matched;
 }
 
-/** Handle the matched prog **/
-static inline void handle_prog(prog_t *prog) {
-  spawn_process(prog->fn, prog->name, NORMAL);
-}
-
 /** Handle the user shell command **/
 static void cmd_handler(shell_cmd_desc_t *cmd) {
   if (cmd->argc == 0)
     return;
 
+  // Check if it's a builtin command
   prog_t *matched = match(cmd, builtin_tab);
-  if (!matched)
-    matched = match(cmd, prog_tab);
-
-  if (!matched) {
-    printf("Unknown command entered. Please refer to `help` cmd.\n");
+  if (matched) {
+    matched->fn(); // Builtin executed directly in shell
     return;
   }
 
-  handle_prog(matched);
+  // Check if it's a spawnable program
+  matched = match(cmd, prog_tab);
+  if (!matched) {
+    printf("Unknown command entered. Please refer to `help`.\n");
+    return;
+  }
+
+  // Spawn the program
+  if (cmd->background) {
+    spawn_process(matched->fn, matched->name, NORMAL); // background: no wait
+  } else {
+    spawn_foreground(matched->fn, matched->name, NORMAL); // foreground: wait
+  }
 }
 
 /** Shell main process **/

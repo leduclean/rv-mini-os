@@ -1,5 +1,7 @@
 #include "process.h"
+#include "circ_queue.h"
 #include "cpu.h"
+#include "sync.h"
 #include "time.h"
 #include <scheduler.h>
 #include <stddef.h>
@@ -20,6 +22,12 @@ struct process {
   uint64_t wake_up_time;
   // sleeping chained list pointer
   process_t *next_sleeping;
+
+  // Zombie state handling with parent
+  process_t *parent;
+  circ_queue_t zombies;
+  circ_queue_t wait_child_queue;
+
   priority priority;
 };
 
@@ -29,8 +37,13 @@ static process_t *active = NULL;
 // Getters and setter on public fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 void set_state(process_t *proc, state state) { proc->state = state; }
+uint8_t get_pid(process_t *proc) { return proc->pid; };
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
 priority get_priority(process_t *proc) { return proc->priority; }
+circ_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
+circ_queue_t *get_wait_child_queue(process_t *proc) {
+  return &proc->wait_child_queue;
+};
 
 /** Boolean condition helper to dermine if a process has higher priority.
  * We consider that priority are sorted decremental.
@@ -85,7 +98,18 @@ void switch_active(process_t *next) {
 
 /** Switch to terminated state **/
 void process_terminate() {
-  active->state = TERMINATED;
+  process_t *parent = active->parent;
+  if (parent) {
+    active->state = ZOMBIE;
+    enqueue(&parent->zombies, active);
+    if (parent->state == BLOCKED) {
+      // Parent is waiting so we wake him up
+      // to check if he can stop wait.
+      scheduler_wake_blocked_queue(get_wait_child_queue(parent));
+    }
+  } else {
+    active->state = TERMINATED;
+  }
   proc_table.active_process--;
 }
 
@@ -109,11 +133,11 @@ static void config_process(void code(), char *nom, priority prior,
 }
 
 /** Add a process to the running queue **/
-static int8_t add_process_to_scheduler(process_t *slot) {
+static process_t *add_process_to_scheduler(process_t *slot) {
   proc_table.active_process++;
   proc_table.next_pid++;
   scheduler_admit(slot);
-  return slot->pid;
+  return slot;
 }
 
 /** Find an empty slot for a processus **/
@@ -128,16 +152,25 @@ static process_t *find_slot() {
 }
 
 /** Spawn a process **/
-int8_t spawn_process(void code(), char *nom, priority prior) {
+process_t *spawn_process(void code(), char *nom, priority prior) {
   if (proc_table.active_process >= MAX_PROC) {
-    return -1; // Error already max processus launched
+    return NULL; // Error already max processus launched
   }
   process_t *slot = find_slot();
   if (!slot)
-    return -1;
+    return NULL;
   config_process(code, nom, prior, slot);
   return add_process_to_scheduler(slot);
 }
+
+/** Spawn a child process in foreground and wait for it **/
+uint8_t spawn_foreground(void code(), char *name, priority prior) {
+  process_t *parent = get_active();
+  process_t *child = spawn_process(code, name, prior);
+  child->parent = parent;
+  wait_pid(child->pid);
+  return child->pid;
+};
 
 /* Return active pid */
 uint8_t get_active_pid() { return active->pid; }
@@ -150,8 +183,8 @@ void init_proc_table() { memset(&proc_table, 0, sizeof(proc_table)); }
 
 /* Create the idle processus */
 void init_idle() {
-  uint8_t init_pid = spawn_process(idle, "idle", IDLE);
-  active = &proc_table.table[init_pid];
+  process_t *init_proc = spawn_process(idle, "idle", IDLE);
+  active = &proc_table.table[init_proc->pid];
   active->state = RUNNING;
 }
 
