@@ -41,10 +41,18 @@ int parser_read_line(char *buf) {
   }
 }
 
+/** If last cmd argument is & then set backround to true and remove the last arg
+ * **/
+static void check_background(shell_cmd_tokens_t *cmd) {
+  if ((cmd->argc > 0) && strcmp(cmd->argv[cmd->argc - 1], "&") == 0) {
+    cmd->background = 1;
+    cmd->argc--;
+  }
+}
+
 /** Tokenize the line and convert it into shell command **/
-shell_cmd_desc_t parser_get_cmd(char *buf) {
-  shell_cmd_desc_t cmd;
-  cmd.argc = 0;
+shell_cmd_tokens_t parser_get_cmd(char *buf) {
+  shell_cmd_tokens_t cmd = {0};
   char *token = NULL;
   token = strtok(buf, " ");
   while (token && (cmd.argc < MAX_ARGS)) {
@@ -52,14 +60,6 @@ shell_cmd_desc_t parser_get_cmd(char *buf) {
     token = strtok(NULL, " ");
   }
 
+  check_background(&cmd);
   return cmd;
-}
-
-/** If last cmd argument is & then set backround to true and remove the last arg
- * **/
-void check_background(shell_cmd_desc_t *cmd) {
-  if ((cmd->argc > 0) && strcmp(cmd->argv[cmd->argc - 1], "&") == 0) {
-    cmd->background = 1;
-    cmd->argc--;
-  }
 }

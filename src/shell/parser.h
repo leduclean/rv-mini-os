@@ -6,7 +6,7 @@ typedef struct {
   int argc;
   char *argv[MAX_ARGS];
   int background; // 0 or 1 for &
-} shell_cmd_desc_t;
+} shell_cmd_tokens_t;
 
 int parser_read_line(char *buf);
-shell_cmd_desc_t parser_get_cmd(char *buf);
+shell_cmd_tokens_t parser_get_cmd(char *buf);
