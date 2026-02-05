@@ -1,6 +1,7 @@
 #include "circ_queue.h"
 #include "process.h"
 #include <stddef.h>
+#include <stdint.h>
 
 /** Get the active process **/
 inline process_t *peek_head(circ_queue_t *q) {
@@ -53,3 +54,25 @@ process_t *pop(circ_queue_t *q) {
 }
 
 uint8_t is_empty(circ_queue_t *q) { return q->size == 0; }
+
+/** Remove an item by pid, it returns the item if found else a NULL pointer **/
+process_t *circ_remove_by_pid(circ_queue_t *q, int8_t pid) {
+  process_t *found = NULL;
+  if (q->size == 0)
+    return NULL;
+
+  for (int8_t i = 0; i < q->size; i++) {
+    if (get_pid(q->queue[i]) == pid) {
+      found = q->queue[i];
+      // Move all the element after this element
+      int8_t next = i + 1 % MAX_PROC;
+      while (next != q->tail) {
+        q->queue[i] = q->queue[next];
+        i = next;
+        next++;
+      }
+      break;
+    }
+  }
+  return found;
+}
