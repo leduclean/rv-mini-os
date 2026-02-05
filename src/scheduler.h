@@ -7,6 +7,7 @@ extern void scheduler_rotate();
 
 extern void scheduler_admit(process_t *proc);
 
+void scheduler_ready_process(process_t *proc);
 // Sleeping queue functions
 extern void scheduler_wake_sleeping();
 void scheduler_wake_blocked_queue(circ_queue_t *q);

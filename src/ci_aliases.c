@@ -10,7 +10,8 @@
 
 void init_uart() { return uart_init(); }
 int8_t cree_processus(void (*entry)(void), char *name, priority prior) {
-  return spawn_process(entry, name, prior);
+  spawn_process(entry, name, prior);
+  return get_active_pid();
 }
 
 void ordonnance(void) { scheduler_rotate(); }
