@@ -12,6 +12,66 @@
 #define SP_INDEX 1
 #define S0_INDEX 4
 
+// Helpers for the waiting queue
+process_t *wq_peek_head(wait_queue_t *wq) { return wq->head; }
+
+void wq_enqueue(process_t *proc, wait_queue_t *wq) {
+  process_t *head = wq->head;
+  if (!head) {
+    // No waiting head so we set it up
+    wq->head = wq->tail = proc;
+    set_next_wait(proc, NULL);
+  } else {
+    set_next_wait(wq->tail, proc);
+    wq->tail = proc;
+    set_next_wait(proc, NULL);
+  }
+}
+
+process_t *wq_dequeue(wait_queue_t *wq) {
+  process_t *proc = wq->head;
+  if (!proc)
+    return NULL;
+  wq->head = get_next_waiting(proc);
+  if (!wq->head)
+    wq->tail = NULL;
+
+  set_next_wait(proc, NULL);
+  return proc;
+}
+
+/** Remove an item by pid, it returns the item if found else a NULL pointer **/
+process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid) {
+  if (wq_is_empty(wq))
+    return NULL;
+
+  process_t *prev = wq_peek_head(wq);
+  process_t *current = get_next_waiting(prev);
+
+  if (get_pid(prev) == pid)
+    return wq_dequeue(wq);
+
+  while (current && get_pid(current) != pid) {
+    prev = current;
+    current = get_next_waiting(current);
+  }
+
+  if (!current)
+    return NULL; // PID not found
+
+  // detach current
+  set_next_wait(prev, get_next_waiting(current));
+  set_next_wait(current, NULL);
+
+  // Update tail if necessary
+  if (current == wq->tail)
+    wq->tail = prev;
+
+  return current;
+}
+
+uint8_t wq_is_empty(wait_queue_t *wq) { return wq_peek_head(wq) == NULL; }
+
 // Process definition
 struct process {
   uint8_t pid;
@@ -20,13 +80,13 @@ struct process {
   uint64_t ctx[MAX_REG_SAVED];
   uint64_t stack[STACK_SIZE];
   uint64_t wake_up_time;
-  // sleeping chained list pointer
-  process_t *next_sleeping;
+  // waiting queue chained list pointer
+  process_t *wait_next;
+  wait_queue_t child_wq;
 
   // Zombie state handling with parent
   process_t *parent;
-  circ_queue_t zombies;
-  circ_queue_t wait_child_queue;
+  wait_queue_t zombies;
 
   priority priority;
 };
@@ -40,10 +100,8 @@ void set_state(process_t *proc, state state) { proc->state = state; }
 uint8_t get_pid(process_t *proc) { return proc->pid; };
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
 priority get_priority(process_t *proc) { return proc->priority; }
-circ_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
-circ_queue_t *get_wait_child_queue(process_t *proc) {
-  return &proc->wait_child_queue;
-};
+wait_queue_t *get_wait_child_queue(process_t *proc) { return &proc->child_wq; };
+wait_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
 
 /** Boolean condition helper to dermine if a process has higher priority.
  * We consider that priority are sorted decremental.
@@ -61,13 +119,12 @@ void process_sleep(uint32_t delay) {
 /** Set a processus to blocked state (waiting for IO irq) **/
 void process_block() { active->state = BLOCKED; }
 
-/** Get next element in the sleeping queue **/
-process_t *get_next_sleeping(process_t *proc) { return proc->next_sleeping; }
+/** Get next element in the a waiting queue **/
+process_t *get_next_waiting(process_t *proc) { return proc->wait_next; }
 
-/** Set the next element in the sleeping **/
-void set_next_sleeping(process_t *proc, process_t *next) {
-  proc->next_sleeping = next;
-}
+/** Set the next element in a waint queue **/
+void set_next_wait(process_t *proc, process_t *next) { proc->wait_next = next; }
+
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
   if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
@@ -101,11 +158,11 @@ void process_terminate() {
   process_t *parent = active->parent;
   if (parent) {
     active->state = ZOMBIE;
-    enqueue(&parent->zombies, active);
+    wq_enqueue(active, &parent->zombies);
     if (parent->state == BLOCKED) {
       // Parent is waiting so we wake him up
       // to check if he can stop wait.
-      scheduler_wake_blocked_queue(get_wait_child_queue(parent));
+      scheduler_wake_waiting_queue(&parent->child_wq);
     }
   } else {
     active->state = TERMINATED;
@@ -178,6 +235,7 @@ uint8_t get_active_pid() { return active->pid; }
 /* Return the active name */
 char *get_active_name() { return active->name; }
 
+char *get_name(process_t *proc) { return proc->name; }
 /* Init the processus table */
 void init_proc_table() { memset(&proc_table, 0, sizeof(proc_table)); }
 

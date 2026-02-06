@@ -23,7 +23,7 @@ static circ_queue_t run_queues[PRIORITY_COUNT];
 /* Keep track the highest non empty ready priority */
 static priority highest_ready_tracking;
 
-void static init_run_queues() {
+static void init_run_queues() {
   memset(&run_queues, 0, sizeof(run_queues));
   // The initiate prioity should be IDLE
   highest_ready_tracking = IDLE;
@@ -126,20 +126,20 @@ static void init_sleep_queue() { sleeping_head = NULL; }
 static void insert_sleep(process_t *proc) {
   // If no sleeping head
   if (!sleeping_head || get_wake_up(proc) < get_wake_up(sleeping_head)) {
-    set_next_sleeping(proc, sleeping_head);
+    set_next_wait(proc, sleeping_head);
     sleeping_head = proc;
     return;
   }
   process_t *prev = sleeping_head;
-  process_t *current = get_next_sleeping(prev);
+  process_t *current = get_next_waiting(prev);
 
   while (current && get_wake_up(current) <= get_wake_up(proc)) {
     prev = current;
-    current = get_next_sleeping(current);
+    current = get_next_waiting(current);
   }
 
-  set_next_sleeping(proc, current);
-  set_next_sleeping(prev, proc);
+  set_next_wait(proc, current);
+  set_next_wait(prev, proc);
 }
 
 /** Set a program to sleeping state **/
@@ -152,11 +152,12 @@ void scheduler_sleep(uint32_t nbr_secs) {
 }
 
 /** Block on a specific waiting queue relative to a signal **/
-void scheduler_block_on(circ_queue_t *q) {
+void scheduler_block_on(wait_queue_t *wq) {
+
   process_t *proc = get_active();
   dequeue_process(proc);
   process_block();
-  enqueue(q, proc);
+  wq_enqueue(proc, wq);
   switch_out_active();
 }
 
@@ -175,26 +176,37 @@ void scheduler_ready_process(process_t *proc) {
   check_and_preempt(proc);
 }
 
-/** Wake up the process wakable in the sleeping queue **/
+/** Wake up the wakable processes in the sleeping queue **/
 void scheduler_wake_sleeping() {
   uint32_t now = seconds();
   while (sleeping_head && get_wake_up(sleeping_head) <= now) {
     process_t *proc = sleeping_head;
-    process_t *next = get_next_sleeping(proc);
+    process_t *next = get_next_waiting(proc);
 
     // detach first
-    set_next_sleeping(proc, NULL);
+    set_next_wait(proc, NULL);
     sleeping_head = next;
 
     scheduler_ready_process(proc);
   }
 }
 
-/** Wake all the process from a peripheric queue **/
-void scheduler_wake_blocked_queue(circ_queue_t *q) {
-  for (int i = 0; i < q->size; i++) {
-    process_t *p = pop(q);
-    scheduler_ready_process(p);
+/** Wake all the process from a waiting queue **/
+void scheduler_wake_waiting_queue(wait_queue_t *wq) {
+  process_t *head = wq->head;
+
+  if (!head)
+    return;
+
+  // Detach directly the queue
+  wq->head = NULL;
+  wq->tail = NULL;
+
+  while (head) {
+    process_t *next = get_next_waiting(head);
+    set_next_wait(head, NULL);
+    scheduler_ready_process(head);
+    head = next;
   }
 }
 
