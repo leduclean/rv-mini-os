@@ -3,15 +3,16 @@
 #include "scheduler.h"
 #include "stdio.h"
 #include "uart.h"
+#include <stddef.h>
 #include <string.h>
 
 /* Buffer flush */
-static void flush(char *buf) { memset(&buf, 0, sizeof(buf)); }
+static void flush(char *buf, size_t size) { memset(&buf, 0, sizeof(size)); }
 
 /** Processus that echo the uart character and write in the buffer
  * the current line **/
-int parser_read_line(char *buf) {
-  flush(buf);
+int parser_read_line(char *buf, size_t size) {
+  flush(buf, size);
   int len = 0;
   for (;;) {
     char c;

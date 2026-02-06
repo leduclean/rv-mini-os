@@ -69,7 +69,7 @@ void shell() {
   init_builtins();
   init_programs();
   for (;;) {
-    if (parser_read_line(line_buffer) != 0) {
+    if (parser_read_line(line_buffer, MAX_COLS) != 0) {
       shell_cmd_tokens_t cmd = parser_get_cmd(line_buffer);
       cmd_handler(&cmd);
     }
