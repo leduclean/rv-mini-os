@@ -123,23 +123,45 @@ static process_t *sleeping_head;
 
 static void init_sleep_queue() { sleeping_head = NULL; }
 
+uint8_t is_in_sleeping_queue(process_t *proc) {
+  return get_prev_sleep(proc) != NULL || get_next_sleep(proc) != NULL ||
+         proc == sleeping_head;
+}
 static void insert_sleep(process_t *proc) {
   // If no sleeping head
   if (!sleeping_head || get_wake_up(proc) < get_wake_up(sleeping_head)) {
-    set_next_wait(proc, sleeping_head);
+    set_next_sleep(proc, sleeping_head);
     sleeping_head = proc;
     return;
   }
   process_t *prev = sleeping_head;
-  process_t *current = get_next_waiting(prev);
+  process_t *current = get_next_sleep(prev);
 
   while (current && get_wake_up(current) <= get_wake_up(proc)) {
     prev = current;
-    current = get_next_waiting(current);
+    current = get_next_sleep(current);
   }
 
-  set_next_wait(proc, current);
-  set_next_wait(prev, proc);
+  set_next_sleep(proc, current);
+  set_next_sleep(prev, proc);
+}
+
+/** Remove an element from the sleeping queue **/
+void remove_from_sleeping(process_t *proc) {
+  process_t *prev = get_prev_sleep(proc);
+  process_t *next = get_next_sleep(proc);
+  if (prev) {
+    set_next_sleep(prev, next);
+  } else {
+    sleeping_head = next;
+  }
+
+  if (next)
+    set_prev_sleep(next, prev);
+
+  // Remove it from current sleep queue
+  set_next_sleep(proc, NULL);
+  set_prev_sleep(proc, NULL);
 }
 
 /** Set a program to sleeping state **/
@@ -158,9 +180,24 @@ void scheduler_block_on(wait_queue_t *wq) {
   dequeue_process(proc);
   process_block();
   wq_enqueue(proc, wq);
+  set_wq(proc, wq);
   switch_out_active();
 }
 
+/** Block on a specific waiting queue but with a timeout **/
+void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
+  process_t *proc = get_active();
+  dequeue_process(proc);
+  process_block();
+  wq_enqueue(proc, wq);
+  set_wq(proc, wq);
+
+  if (timeout_secs > 0) {
+    process_sleep(timeout_secs);
+    insert_sleep(proc);
+  }
+  switch_out_active();
+}
 /** Wake up a process and reschedule it in the running queue **/
 void scheduler_ready_process(process_t *proc) {
   // Wake the process
@@ -181,12 +218,13 @@ void scheduler_wake_sleeping() {
   uint32_t now = seconds();
   while (sleeping_head && get_wake_up(sleeping_head) <= now) {
     process_t *proc = sleeping_head;
-    process_t *next = get_next_waiting(proc);
+    remove_from_sleeping(proc);
 
-    // detach first
-    set_next_wait(proc, NULL);
-    sleeping_head = next;
-
+    wait_queue_t *current_wq = get_current_wq(proc);
+    if (current_wq) {
+      // Remove it from the blocked queue
+      wq_remove(proc, current_wq);
+    }
     scheduler_ready_process(proc);
   }
 }
@@ -203,7 +241,7 @@ void scheduler_wake_waiting_queue(wait_queue_t *wq) {
   wq->tail = NULL;
 
   while (head) {
-    process_t *next = get_next_waiting(head);
+    process_t *next = get_next_wait(head);
     set_next_wait(head, NULL);
     scheduler_ready_process(head);
     head = next;

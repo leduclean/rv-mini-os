@@ -68,7 +68,7 @@ void mutex_unlock(mutex_t *m) {
 
   if (!wq_is_empty(&m->wq)) {
     // Wake first waiting and give him the ownership.
-    process_t *proc = wq_dequeue(&m->wq);
+    process_t *proc = wq_pop_head(&m->wq);
     m->owner = proc;
     scheduler_ready_process(proc);
   } else {

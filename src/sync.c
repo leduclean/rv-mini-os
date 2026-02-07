@@ -13,7 +13,7 @@ uint8_t wait() {
     scheduler_block_on(get_wait_child_queue(parent));
   }
   // Remove the first element of the zombie queue
-  process_t *reaped = wq_dequeue(zombies);
+  process_t *reaped = wq_pop_head(zombies);
   set_state(reaped, TERMINATED);
   return get_pid(reaped);
 }
