@@ -55,7 +55,7 @@ void sem_release(semaphore_t *sem) {
   // Check in the waiting list if one
   // is waiting and wake him up if necessary.
   if (!wq_is_empty(&sem->waiting)) {
-    process_t *proc = wq_dequeue(&sem->waiting);
+    process_t *proc = wq_pop_head(&sem->waiting);
     scheduler_ready_process(proc);
   }
   enable_it();
