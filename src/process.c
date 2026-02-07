@@ -22,58 +22,62 @@ void wq_init(wait_queue_t *wq) {
 process_t *wq_peek_head(wait_queue_t *wq) { return wq->head; }
 
 void wq_enqueue(process_t *proc, wait_queue_t *wq) {
-  process_t *head = wq->head;
-  if (!head) {
-    // No waiting head so we set it up
+  if (!wq->head) {
     wq->head = wq->tail = proc;
     set_next_wait(proc, NULL);
+    set_prev_wait(proc, NULL);
   } else {
     set_next_wait(wq->tail, proc);
+    set_prev_wait(proc, wq->tail);
     wq->tail = proc;
     set_next_wait(proc, NULL);
   }
 }
 
-process_t *wq_dequeue(wait_queue_t *wq) {
-  process_t *proc = wq->head;
-  if (!proc)
-    return NULL;
-  wq->head = get_next_waiting(proc);
-  if (!wq->head)
-    wq->tail = NULL;
+/** Remove an element from a waint queue queue **/
+void wq_remove(process_t *proc, wait_queue_t *wq) {
+  process_t *prev = get_prev_wait(proc);
+  process_t *next = get_next_wait(proc);
+  if (prev) {
+    set_next_wait(prev, next);
+  } else {
+    wq->head = next;
+  }
 
+  if (next) {
+    set_prev_wait(next, prev);
+  } else {
+    wq->tail = prev;
+  }
+
+  if (is_in_sleeping_queue(proc))
+    remove_from_sleeping(proc);
+
+  // Remove it from current waiting queue
   set_next_wait(proc, NULL);
-  return proc;
+  set_prev_wait(proc, NULL);
+}
+
+/** Remove the last element of the waiting queue **/
+process_t *wq_pop_head(wait_queue_t *wq) {
+  process_t *head = wq->head;
+  if (!head)
+    return NULL;
+  wq_remove(head, wq);
+  return head;
 }
 
 /** Remove an item by pid, it returns the item if found else a NULL pointer **/
 process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid) {
-  if (wq_is_empty(wq))
+  process_t *cur = wq->head;
+  while (cur && get_pid(cur) != pid)
+    cur = get_next_wait(cur);
+
+  if (!cur)
     return NULL;
 
-  process_t *prev = wq_peek_head(wq);
-  process_t *current = get_next_waiting(prev);
-
-  if (get_pid(prev) == pid)
-    return wq_dequeue(wq);
-
-  while (current && get_pid(current) != pid) {
-    prev = current;
-    current = get_next_waiting(current);
-  }
-
-  if (!current)
-    return NULL; // PID not found
-
-  // detach current
-  set_next_wait(prev, get_next_waiting(current));
-  set_next_wait(current, NULL);
-
-  // Update tail if necessary
-  if (current == wq->tail)
-    wq->tail = prev;
-
-  return current;
+  wq_remove(cur, wq);
+  return cur;
 }
 
 uint8_t wq_is_empty(wait_queue_t *wq) { return wq_peek_head(wq) == NULL; }
@@ -85,37 +89,73 @@ struct process {
   state state;
   uint64_t ctx[MAX_REG_SAVED];
   uint64_t stack[STACK_SIZE];
+
+  // Time out and sleep time
   uint64_t wake_up_time;
-  // waiting queue chained list pointer
-  process_t *wait_next;
-  wait_queue_t child_wq;
+  // waiting queue double linked list pointer
+  // used to put the process in zombie/IO/mutex wait.
+  process_t *wait_prev, *wait_next;
+  wait_queue_t *current_wq; // Is set to NULL if not blocked
+
+  process_t *sleep_prev, *sleep_next;
 
   // Zombie state handling with parent
   process_t *parent;
+  wait_queue_t child_wq;
   wait_queue_t zombies;
 
   priority priority;
 };
 
-// Active process init
-static process_t *active = NULL;
-
 // Getters and setter on public fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
-void set_state(process_t *proc, state state) { proc->state = state; }
 uint8_t get_pid(process_t *proc) { return proc->pid; };
+char *get_name(process_t *proc) { return proc->name; }
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
 priority get_priority(process_t *proc) { return proc->priority; }
 wait_queue_t *get_wait_child_queue(process_t *proc) { return &proc->child_wq; };
 wait_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
+void set_state(process_t *proc, state state) { proc->state = state; }
 
-/** Boolean condition helper to dermine if a process has higher priority.
- * We consider that priority are sorted decremental.
- * **/
-uint8_t higher_priority(priority prior, priority other) {
-  return prior < other;
+/** Get next element in the a waiting queue **/
+process_t *get_next_wait(process_t *proc) { return proc->wait_next; }
+process_t *get_prev_wait(process_t *proc) { return proc->wait_prev; }
+wait_queue_t *get_current_wq(process_t *proc) { return proc->current_wq; }
+process_t *get_next_sleep(process_t *proc) { return proc->sleep_next; }
+process_t *get_prev_sleep(process_t *proc) { return proc->sleep_prev; }
+
+/** Set the next element in a wait queue **/
+void set_next_wait(process_t *proc, process_t *next) {
+  proc->wait_next = next;
+  if (next)
+    next->wait_prev = proc;
 }
 
+/** Set the prev element in a wait queue **/
+void set_prev_wait(process_t *proc, process_t *prev) { proc->wait_prev = prev; }
+
+void set_wq(process_t *proc, wait_queue_t *wq) { proc->current_wq = wq; }
+
+/** Set the next element in the sleeping queue **/
+void set_next_sleep(process_t *proc, process_t *next) {
+  proc->sleep_next = next;
+  if (next)
+    next->sleep_prev = proc;
+}
+/** Set the prev element in the sleeping queue **/
+void set_prev_sleep(process_t *proc, process_t *prev) {
+  proc->sleep_prev = prev;
+}
+
+// Active process init
+static process_t *active = NULL;
+
+/* Active getters*/
+uint8_t get_active_pid() { return active->pid; }
+
+char *get_active_name() { return active->name; }
+
+/** STATE hanlding **/
 /** Set a processus in sleeping state with a timer **/
 void process_sleep(uint32_t delay) {
   active->state = SLEEPING;
@@ -124,12 +164,6 @@ void process_sleep(uint32_t delay) {
 
 /** Set a processus to blocked state (waiting for IO irq) **/
 void process_block() { active->state = BLOCKED; }
-
-/** Get next element in the a waiting queue **/
-process_t *get_next_waiting(process_t *proc) { return proc->wait_next; }
-
-/** Set the next element in a waint queue **/
-void set_next_wait(process_t *proc, process_t *next) { proc->wait_next = next; }
 
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
@@ -176,6 +210,12 @@ void process_terminate() {
   proc_table.active_process--;
 }
 
+/** Boolean condition helper to dermine if a process has higher priority.
+ * We consider that priority are sorted decremental.
+ * **/
+uint8_t higher_priority(priority prior, priority other) {
+  return prior < other;
+}
 /* Processus Table setter */
 
 /** Config a process in it slot in the process table  **/
@@ -235,13 +275,6 @@ uint8_t spawn_foreground(void code(), char *name, priority prior) {
   return child->pid;
 };
 
-/* Return active pid */
-uint8_t get_active_pid() { return active->pid; }
-
-/* Return the active name */
-char *get_active_name() { return active->name; }
-
-char *get_name(process_t *proc) { return proc->name; }
 /* Init the processus table */
 void init_proc_table() { memset(&proc_table, 0, sizeof(proc_table)); }
 
