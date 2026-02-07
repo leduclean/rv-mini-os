@@ -13,6 +13,12 @@
 #define S0_INDEX 4
 
 // Helpers for the waiting queue
+
+void wq_init(wait_queue_t *wq) {
+  wq->head = NULL;
+  wq->tail = NULL;
+}
+
 process_t *wq_peek_head(wait_queue_t *wq) { return wq->head; }
 
 void wq_enqueue(process_t *proc, wait_queue_t *wq) {

@@ -26,8 +26,8 @@ typedef struct wait_queue {
 } wait_queue_t;
 
 // Helpers for the waiting queue
+void wq_init(wait_queue_t *wq);
 process_t *wq_peek_head(wait_queue_t *wq);
-
 void wq_enqueue(process_t *proc, wait_queue_t *wq);
 process_t *wq_dequeue(wait_queue_t *wq);
 uint8_t wq_is_empty(wait_queue_t *wq);
