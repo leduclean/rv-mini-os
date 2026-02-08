@@ -225,8 +225,6 @@ void init_proc() {
 /** IDLE Processus declaration  **/
 void idle() {
   for (;;) {
-    enable_it();
     hlt();
-    disable_it();
   }
 }
