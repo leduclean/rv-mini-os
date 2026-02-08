@@ -3,10 +3,10 @@
 #include "kernel/sched/circ_queue.h"
 #include "kernel/sync/sync.h"
 #include "kernel/time/time.h"
-#include <kernel/sched/scheduler.h>
 #include "lib/stddef.h"
 #include "lib/stdint.h"
 #include "lib/string.h"
+#include <kernel/sched/scheduler.h>
 
 #define RA_INDEX 0
 #define SP_INDEX 1
@@ -110,7 +110,7 @@ struct process {
 // Getters and setter on public fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 uint8_t get_pid(process_t *proc) { return proc->pid; };
-char *get_name(process_t *proc) { return proc->name; }
+const char *get_name(process_t *proc) { return proc->name; }
 uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
 priority get_priority(process_t *proc) { return proc->priority; }
 wait_queue_t *get_wait_child_queue(process_t *proc) { return &proc->child_wq; };
