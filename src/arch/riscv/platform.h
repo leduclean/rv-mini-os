@@ -162,11 +162,11 @@ enum {
 };
 
 #if __ASSEMBLER__ == 0
-extern void timer_set(uint32_t period, uint32_t start_value);
-extern void timer_wait();
-extern void timer_set_and_wait(uint32_t period, uint32_t time);
-extern void led_set(uint32_t value);
-extern uint32_t push_button_get();
+void timer_set(uint32_t period, uint32_t start_value);
+void timer_wait();
+void timer_set_and_wait(uint32_t period, uint32_t time);
+void led_set(uint32_t value);
+uint32_t push_button_get();
 #endif
 
 #endif // __PLATFORM_H__
