@@ -1,12 +1,19 @@
-# noyau
+ARCH_DIR = arch/riscv
 KERNEL = kernel.bin
+OBJ_DIR = build
 
-# on compile tous les fichiers assembleur et c du repertoire
-SRCS = $(wildcard *.S *.c) $(wildcard */*.c */*.S)
+# trouver toutes les sources sauf crt0
+SRCS = $(shell find . -type f \( -name '*.c' -o -name '*.S' \) ! -name 'crt0.S')
 
-# crt0.o doit etre linke en premier
-#OBJS = $(strip crt0.o test.o serial_io.o $(filter-out crt0.o test.o serial_io.o,$(notdir $(patsubst %.S,%.o,$(patsubst %.c,%.o,$(SRCS))))))
-OBJS = $(strip crt0.o $(filter-out crt0.o ,$(patsubst %.S,%.o,$(patsubst %.c,%.o,$(SRCS)))))
+# CRT0
+CRT0_SRC = $(ARCH_DIR)/crt0.S
+CRT0_OBJ = $(OBJ_DIR)/$(CRT0_SRC:.S=.o)
+
+# Tous les autres objets dans build/
+OBJS = $(CRT0_OBJ)
+OBJS += $(patsubst %.c,$(OBJ_DIR)/%.o,$(SRCS))
+OBJS := $(patsubst %.S,$(OBJ_DIR)/%.o,$(OBJS))
+
 CMDBASE = riscv64-unknown-elf
 AS = $(CMDBASE)-gcc
 ASFLAGS = -g -c -I.
@@ -29,17 +36,20 @@ QEMUOPTSG = -gdb tcp::1234 -S $(QEMUOPTSRUNG)
 .PHONY: all
 all: clean kernel.bin
 
-kernel.bin: kernel.lds $(OBJS)
-	$(LD) $(LDFLAGS) -e entry -Tkernel.lds $(OBJS) -o $@
+kernel.bin: $(ARCH_DIR)/ld/kernel.lds $(OBJS)
+	$(LD) $(LDFLAGS) -e entry -T $(ARCH_DIR)/ld/kernel.lds $(OBJS) -o $@
 
-%.o: %.oo
-	cp $< $@
 
-%.o: %.S
-	$(AS) $(ASFLAGS) -o $@ $<
+$(OBJ_DIR)/%.o: %.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/%.o: %.S
+	@mkdir -p $(dir $@)
+	$(CC) $(ASFLAGS) -c $< -o $@
 
 clean:
-	$(RM) $(OBJS) $(KERNEL) task_dump_screen.o test test.bin *.log .gdb_history
+	$(RM) -rf $(OBJ_DIR) $(KERNEL) task_dump_screen.o test test.bin *.log .gdb_history
 	$(RM) -rf badges
 
 debug: $(KERNEL)

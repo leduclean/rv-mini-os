@@ -1,10 +1,10 @@
-#include "parser.h"
-#include "console.h"
-#include "scheduler.h"
-#include "stdio.h"
-#include "uart.h"
-#include <stddef.h>
-#include <string.h>
+#include "shell/parser.h"
+#include "drivers/console.h"
+#include "kernel/sched/scheduler.h"
+#include "lib/stdio.h"
+#include "drivers/uart.h"
+#include "lib/stddef.h"
+#include "lib/string.h"
 
 /* Buffer flush */
 static void flush(char *buf, size_t size) { memset(&buf, 0, sizeof(size)); }

@@ -1,11 +1,11 @@
-#include "cmd_registry.h"
-#include "console.h"
-#include "parser.h"
-#include "process.h"
-#include "programs.h"
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
+#include "shell/cmd_registry.h"
+#include "drivers/console.h"
+#include "shell/parser.h"
+#include "kernel/process/process.h"
+#include "shell/programs.h"
+#include "lib/stddef.h"
+#include "lib/stdint.h"
+#include "lib/stdio.h"
 
 static void builtin_ps() {
   // TODO when dynamic allocation.
