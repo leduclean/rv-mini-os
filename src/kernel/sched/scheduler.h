@@ -1,6 +1,6 @@
 #pragma once
-#include "kernel/sched/circ_queue.h"
 #include "kernel/process/process.h"
+#include "kernel/sched/circ_queue.h"
 #include "lib/stdint.h"
 
 void scheduler_rotate();

@@ -1,10 +1,10 @@
 #include "kernel/sync/mutex.h"
-#include "kernel/sched/circ_queue.h"
 #include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
+#include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
-#include "lib/string.h"
 #include "lib/stdint.h"
+#include "lib/string.h"
 
 struct mutex {
   uint8_t locked;
@@ -15,11 +15,11 @@ struct mutex {
 /** Mutex Init primitive **/
 void mutex_init(mutex_t *m) {
   // Atomic
-  disable_it();
+  irq_flags_t flags = irq_save();
   m->locked = 0;
   m->owner = NULL;
   wq_init(&m->wq);
-  enable_it();
+  irq_restore(flags);
 }
 
 /** Give the lock state of the mutex **/
@@ -32,37 +32,38 @@ process_t *mutex_owner(mutex_t *m) { return m->owner; }
  * return 0 if taken else -1. Do not block if not taken **/
 int8_t mutex_trylock(mutex_t *m) {
   // Atomic
-  disable_it();
+  irq_flags_t flags = irq_save();
   if (m->locked) {
     // Already locked
-    enable_it();
+    irq_restore(flags);
     return -1;
   }
 
-  // If not locked take the ownership.
+  // If not locked take the onership.
   m->locked = 1;
   m->owner = get_active();
-  enable_it();
+  irq_restore(flags);
   return 0;
 }
 
 /** Lock primitive to take ownership of a mutex **/
 void mutex_lock(mutex_t *m) {
-  // Atomic
-  disable_it();
+  irq_flags_t flags = irq_save();
+
   if (mutex_trylock(m) == -1) {
     scheduler_block_on(&m->wq);
   }
-  enable_it();
+
+  irq_restore(flags);
 }
 
 /** Unlock primitive to release ownership of a mutex **/
 void mutex_unlock(mutex_t *m) {
   // Atomic
-  disable_it();
+  irq_flags_t flags = irq_save();
   process_t *current = get_active();
   if ((!m->locked) || (m->owner != current)) {
-    enable_it();
+    irq_restore(flags);
     return;
   }
 
@@ -76,5 +77,5 @@ void mutex_unlock(mutex_t *m) {
     m->locked = 0;
     m->owner = NULL;
   }
-  enable_it();
+  irq_restore(flags);
 }
