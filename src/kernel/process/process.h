@@ -1,6 +1,6 @@
 #pragma once
 #include "kernel/sched/circ_queue.h"
-#include "kernel/sync/sync.h"
+#include "kernel/sync/waitqueue.h"
 #include "lib/stdint.h"
 
 #define MAXNAME 16
@@ -19,20 +19,6 @@ typedef enum {
 } state;
 
 typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
-
-typedef struct wait_queue {
-  process_t *head;
-  process_t *tail;
-} wait_queue_t;
-
-// Helpers for the waiting queue
-void wq_init(wait_queue_t *wq);
-process_t *wq_peek_head(wait_queue_t *wq);
-void wq_enqueue(process_t *proc, wait_queue_t *wq);
-process_t *wq_pop_head(wait_queue_t *wq);
-void wq_remove(process_t *proc, wait_queue_t *wq);
-uint8_t wq_is_empty(wait_queue_t *wq);
-process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid);
 
 // Process definition
 typedef struct process process_t;
