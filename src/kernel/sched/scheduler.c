@@ -1,4 +1,5 @@
 #include "kernel/sched/scheduler.h"
+#include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
 #include "kernel/sched/circ_queue.h"
 #include "kernel/time/time.h"
@@ -85,31 +86,47 @@ static void update_highest(process_t *proc) {
 
 /** Admit a process with a level of priority in the corresponding queue **/
 void scheduler_admit(process_t *proc) {
+  irq_flags_t flags = irq_save();
+
   enqueue_process(proc);
   update_highest(proc);
   check_and_preempt(proc);
+
+  irq_restore(flags);
 }
 
 /* Schedule function trigered by an interupt */
 void scheduler_rotate() {
+  irq_flags_t flags = irq_save();
+
   circ_queue_t *current_runqueue = pick_highest();
   rotate_head_to_tail(current_runqueue);
   do_ctx_switch(peek_head(current_runqueue));
+
+  irq_restore(flags);
 }
 
 /* Schedule function trigered by an inactivity of the process
  * ie terminason, or sleep
  * */
 static void switch_out_active() {
+  irq_flags_t flags = irq_save();
+
   refresh_high_prio();
   do_ctx_switch(peek_head(pick_highest()));
+
+  irq_restore(flags);
 }
 
 /** Terminate a processus **/
 void scheduler_terminate() {
+  irq_flags_t flags = irq_save();
+
   dequeue_process(get_active());
   process_terminate();
   switch_out_active();
+
+  irq_restore(flags);
 }
 
 /* Launcher to handle launch and terminaison of a proc */
@@ -166,26 +183,33 @@ void remove_from_sleeping(process_t *proc) {
 
 /** Set a program to sleeping state **/
 void scheduler_sleep(uint32_t nbr_secs) {
+  irq_flags_t flags = irq_save();
+
   process_t *proc = get_active();
   dequeue_process(proc);
   process_sleep(nbr_secs);
   insert_sleep(proc);
   switch_out_active();
+
+  irq_restore(flags);
 }
 
 /** Block on a specific waiting queue relative to a signal **/
 void scheduler_block_on(wait_queue_t *wq) {
-
+  irq_flags_t flags = irq_save();
   process_t *proc = get_active();
   dequeue_process(proc);
   process_block();
   wq_enqueue(proc, wq);
   set_wq(proc, wq);
   switch_out_active();
+  irq_restore(flags);
 }
 
 /** Block on a specific waiting queue but with a timeout **/
 void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
+  irq_flags_t flags = irq_save();
+
   process_t *proc = get_active();
   dequeue_process(proc);
   process_block();
@@ -197,9 +221,14 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
     insert_sleep(proc);
   }
   switch_out_active();
+
+  irq_restore(flags);
 }
+
 /** Wake up a process and reschedule it in the running queue **/
 void scheduler_ready_process(process_t *proc) {
+  irq_flags_t flags = irq_save();
+
   // Wake the process
   process_wake(proc);
 
@@ -211,10 +240,13 @@ void scheduler_ready_process(process_t *proc) {
 
   // Preempt if needed
   check_and_preempt(proc);
+  irq_restore(flags);
 }
 
 /** Wake up the wakable processes in the sleeping queue **/
 void scheduler_wake_sleeping() {
+  irq_flags_t flags = irq_save();
+
   uint32_t now = seconds();
   while (sleeping_head && get_wake_up(sleeping_head) <= now) {
     process_t *proc = sleeping_head;
@@ -227,9 +259,13 @@ void scheduler_wake_sleeping() {
     }
     scheduler_ready_process(proc);
   }
+
+  irq_restore(flags);
 }
 
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {
+  irq_flags_t flags = irq_save();
+
   process_t *head = wq_pop_all(wq);
   /* We now own the returned chain;
    *caller must clear links as it processes nodes */
@@ -240,6 +276,8 @@ void scheduler_wake_waiting_queue(wait_queue_t *wq) {
     scheduler_ready_process(head);
     head = next;
   }
+
+  irq_restore(flags);
 }
 
 void init_scheduler_queues() {
