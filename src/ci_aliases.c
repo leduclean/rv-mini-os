@@ -1,9 +1,9 @@
-#include "irq.h"
-#include "process.h"
-#include "scheduler.h"
-#include "time.h"
-#include "uart.h"
-#include <stdint.h>
+#include "arch/riscv/irq.h"
+#include "kernel/process/process.h"
+#include "kernel/sched/scheduler.h"
+#include "kernel/time/time.h"
+#include "drivers/uart.h"
+#include "lib/stdint.h"
 
 /** We prefer an english semantic for uniformity
  * and code clarity but we need aliases for CI eval **/
