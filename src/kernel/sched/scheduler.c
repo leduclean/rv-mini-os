@@ -1,6 +1,6 @@
 #include "kernel/sched/scheduler.h"
-#include "kernel/sched/circ_queue.h"
 #include "kernel/process/process.h"
+#include "kernel/sched/circ_queue.h"
 #include "kernel/time/time.h"
 #include "lib/stddef.h"
 #include "lib/stdint.h"
@@ -229,20 +229,14 @@ void scheduler_wake_sleeping() {
   }
 }
 
-/** Wake all the process from a waiting queue **/
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {
-  process_t *head = wq->head;
-
-  if (!head)
-    return;
-
-  // Detach directly the queue
-  wq->head = NULL;
-  wq->tail = NULL;
-
+  process_t *head = wq_pop_all(wq);
+  /* We now own the returned chain;
+   *caller must clear links as it processes nodes */
   while (head) {
     process_t *next = get_next_wait(head);
     set_next_wait(head, NULL);
+    set_prev_wait(head, NULL);
     scheduler_ready_process(head);
     head = next;
   }
