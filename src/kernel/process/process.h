@@ -41,7 +41,7 @@ typedef struct process process_t;
 uint64_t *get_ctx(process_t *proc);
 uint32_t get_wake_up(process_t *proc);
 priority get_priority(process_t *proc);
-char *get_name(process_t *proc);
+const char *get_name(process_t *proc);
 uint8_t get_pid(process_t *proc);
 process_t *get_next_wait(process_t *proc);
 process_t *get_prev_wait(process_t *proc);
