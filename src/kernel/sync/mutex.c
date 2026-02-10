@@ -3,6 +3,8 @@
 #include "kernel/process/process.h"
 #include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
+#include "lib/clist.h"
+#include "lib/container.h"
 #include "lib/stdint.h"
 #include "lib/string.h"
 
@@ -69,7 +71,8 @@ void mutex_unlock(mutex_t *m) {
 
   if (!wq_is_empty(&m->wq)) {
     // Wake first waiting and give him the ownership.
-    process_t *proc = wq_pop_head(&m->wq);
+    clist_node_t *node = wq_pop_head(&m->wq);
+    process_t *proc = container_of(node, process_t, wait_node);
     m->owner = proc;
     scheduler_ready_process(proc);
   } else {

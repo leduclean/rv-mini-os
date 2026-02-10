@@ -1,5 +1,5 @@
 #pragma once
-#include "kernel/process/process.h"
+#include "kernel/sync/waitqueue.h"
 
 void uart_init();
 wait_queue_t *uart_get_wait_queue();

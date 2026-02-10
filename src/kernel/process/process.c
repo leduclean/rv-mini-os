@@ -1,43 +1,20 @@
 #include "kernel/process/process.h"
 #include "arch/riscv/cpu.h"
 #include "kernel/sched/circ_queue.h"
+#include "kernel/sched/scheduler.h"
 #include "kernel/sync/sync.h"
+#include "kernel/sync/waitqueue.h"
 #include "kernel/time/time.h"
+#include "lib/clist.h"
 #include "lib/stddef.h"
 #include "lib/stdint.h"
 #include "lib/string.h"
-#include <kernel/sched/scheduler.h>
 
 #define RA_INDEX 0
 #define SP_INDEX 1
 #define S0_INDEX 4
 
-// Process definition
-struct process {
-  uint8_t pid;
-  char name[MAXNAME];
-  state state;
-  uint64_t ctx[MAX_REG_SAVED];
-  uint64_t stack[STACK_SIZE];
-
-  // Time out and sleep time
-  uint64_t wake_up_time;
-  // waiting queue double linked list pointer
-  // used to put the process in zombie/IO/mutex wait.
-  process_t *wait_prev, *wait_next;
-  wait_queue_t *current_wq; // Is set to NULL if not blocked
-
-  process_t *sleep_prev, *sleep_next;
-
-  // Zombie state handling with parent
-  process_t *parent;
-  wait_queue_t child_wq;
-  wait_queue_t zombies;
-
-  priority priority;
-};
-
-// Getters and setter on public fields
+// Getters and setter on fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 uint8_t get_pid(process_t *proc) { return proc->pid; };
 const char *get_name(process_t *proc) { return proc->name; }
@@ -47,35 +24,12 @@ wait_queue_t *get_wait_child_queue(process_t *proc) { return &proc->child_wq; };
 wait_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
 void set_state(process_t *proc, state state) { proc->state = state; }
 
-/** Get next element in the a waiting queue **/
-process_t *get_next_wait(process_t *proc) { return proc->wait_next; }
-process_t *get_prev_wait(process_t *proc) { return proc->wait_prev; }
+/** Get node **/
+clist_node_t *get_wait_node(process_t *proc) { return &proc->wait_node; }
+clist_node_t *get_sleep_node(process_t *proc) { return &proc->sleep_node; }
 wait_queue_t *get_current_wq(process_t *proc) { return proc->current_wq; }
-process_t *get_next_sleep(process_t *proc) { return proc->sleep_next; }
-process_t *get_prev_sleep(process_t *proc) { return proc->sleep_prev; }
-
-/** Set the next element in a wait queue **/
-void set_next_wait(process_t *proc, process_t *next) {
-  proc->wait_next = next;
-  if (next)
-    next->wait_prev = proc;
-}
-
-/** Set the prev element in a wait queue **/
-void set_prev_wait(process_t *proc, process_t *prev) { proc->wait_prev = prev; }
 
 void set_wq(process_t *proc, wait_queue_t *wq) { proc->current_wq = wq; }
-
-/** Set the next element in the sleeping queue **/
-void set_next_sleep(process_t *proc, process_t *next) {
-  proc->sleep_next = next;
-  if (next)
-    next->sleep_prev = proc;
-}
-/** Set the prev element in the sleeping queue **/
-void set_prev_sleep(process_t *proc, process_t *prev) {
-  proc->sleep_prev = prev;
-}
 
 // Active process init
 static process_t *active = NULL;
@@ -84,6 +38,18 @@ static process_t *active = NULL;
 uint8_t get_active_pid() { return active->pid; }
 
 char *get_active_name() { return active->name; }
+
+static void _clear_from_blocking_queues(process_t *proc) {
+  // Remove it if it from sleeping queue (timeout).
+  if (is_in_sleeping_queue(proc)) {
+    remove_from_sleeping(proc);
+  };
+
+  clist_node_t *wait_node = get_wait_node(proc);
+  if (clist_is_in_list(wait_node)) {
+    clist_remove(wait_node);
+  }
+}
 
 /** STATE hanlding **/
 /** Set a processus in sleeping state with a timer **/
@@ -98,6 +64,8 @@ void process_block() { active->state = BLOCKED; }
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
   if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
+    // Remove it from sleeping and blocked queue if remaining
+    _clear_from_blocking_queues(proc);
     proc->state = RUNNING;
   }
 }
@@ -128,7 +96,7 @@ void process_terminate() {
   process_t *parent = active->parent;
   if (parent) {
     active->state = ZOMBIE;
-    wq_enqueue(active, &parent->zombies);
+    wq_enqueue(&parent->zombies, &active->wait_node);
     if (parent->state == BLOCKED) {
       // Parent is waiting so we wake him up
       // to check if he can stop wait.
@@ -148,9 +116,17 @@ uint8_t higher_priority(priority prior, priority other) {
 }
 /* Processus Table setter */
 
+/** Reset all the node and the wq relative to a process **/
+static inline void init_process_queues(process_t *proc) {
+  clist_init_node(&proc->wait_node);
+  clist_init_node(&proc->sleep_node);
+  wq_init(&proc->zombies);
+  wq_init(&proc->child_wq);
+}
 /** Config a process in it slot in the process table  **/
 static void config_process(void code(), char *nom, priority prior,
                            process_t *slot) {
+  init_process_queues(slot);
   slot->pid = proc_table.next_pid;
   strncpy(slot->name, nom, MAXNAME - 1);
   slot->priority = prior;

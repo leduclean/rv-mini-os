@@ -1,9 +1,9 @@
 #include "shell/parser.h"
 #include "drivers/console.h"
-#include "kernel/sched/scheduler.h"
-#include "lib/stdio.h"
 #include "drivers/uart.h"
+#include "kernel/sched/scheduler.h"
 #include "lib/stddef.h"
+#include "lib/stdio.h"
 #include "lib/string.h"
 
 /* Buffer flush */

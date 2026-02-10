@@ -1,10 +1,9 @@
 #include "drivers/uart.h"
 #include "arch/riscv/mmio.h"
 #include "arch/riscv/platform.h"
-#include "kernel/process/process.h"
 #include "kernel/sched/scheduler.h"
+#include "kernel/sync/waitqueue.h"
 #include "lib/stdint.h"
-#include "lib/string.h"
 
 #define UART_RX_BUFFER_SIZE 128
 
@@ -13,10 +12,7 @@
  **/
 static wait_queue_t uart_wait_queue;
 
-static inline void uart_init_queue() {
-  uart_wait_queue.head = NULL;
-  uart_wait_queue.tail = NULL;
-}
+static inline void uart_init_queue() { wq_init(&uart_wait_queue); }
 
 wait_queue_t *uart_get_wait_queue() { return &uart_wait_queue; }
 
