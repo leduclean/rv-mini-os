@@ -40,6 +40,22 @@ void clist_insert_before(clist_node_t *pos, clist_node_t *node) {
 }
 
 /**
+ * @brief Insert a node after another in the clist.
+ *
+ * @param pos Pointer of the pos to insert after in the clist.
+ * @param node Pointer to the item to insert in the clist.
+ */
+void clist_insert_after(clist_node_t *pos, clist_node_t *node) {
+  if (node->in_list)
+    return;
+  node->next = pos->next;
+  pos->next->prev = node;
+  node->prev = pos;
+  pos->next = node;
+  node->in_list = 1;
+}
+
+/**
  * @brief Add an item to the end of the clist.
  *
  * @param head Head sentinel pointer of the clist.
@@ -129,6 +145,25 @@ void clist_insert_sorted(clist_node_t *head, clist_node_t *node,
     current = current->next;
   }
   clist_insert_before(current, node);
+}
+
+/**
+ * @brief Find the first element in the clist matching the predicate.
+ *
+ * @param head Head sentinel pointer of the clist.
+ * @param pred Predicate to find.
+ * @return Null if not found else the pointer of the matching node.
+ */
+clist_node_t *clist_find(clist_node_t *head,
+                         int (*pred)(clist_node_t *node, void *), void *args) {
+  clist_node_t *current = head->next;
+  while (current != head) {
+    if (pred(current, args)) {
+      return current;
+    }
+    current = current->next;
+  }
+  return NULL;
 }
 
 /**
