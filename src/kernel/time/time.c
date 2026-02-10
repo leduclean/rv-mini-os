@@ -1,7 +1,7 @@
 #include "kernel/time/time.h"
-#include "drivers/console.h"
 #include "arch/riscv/mmio.h"
 #include "arch/riscv/platform.h"
+#include "drivers/console.h"
 #include "kernel/sched/scheduler.h"
 #include "lib/stdint.h"
 #include "lib/stdio.h"
