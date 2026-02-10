@@ -41,8 +41,12 @@ uint8_t clist_empty(clist_node_t *head);
 clist_node_t *clist_first(clist_node_t *head);
 clist_node_t *clist_last(clist_node_t *head);
 void clist_insert_before(clist_node_t *pos, clist_node_t *node);
+void clist_insert_after(clist_node_t *pos, clist_node_t *node);
 void clist_insert_sorted(clist_node_t *head, clist_node_t *node,
                          clist_cmp_func_t cmp);
+
+clist_node_t *clist_find(clist_node_t *head,
+                         int (*pred)(clist_node_t *node, void *), void *args);
 
 clist_node_t *clist_for_each(clist_node_t *head,
                              int (*func)(clist_node_t *node, void *),
