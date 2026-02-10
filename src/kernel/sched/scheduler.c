@@ -2,7 +2,10 @@
 #include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
 #include "kernel/sched/circ_queue.h"
+#include "kernel/sync/waitqueue.h"
 #include "kernel/time/time.h"
+#include "lib/clist.h"
+#include "lib/container.h"
 #include "lib/stddef.h"
 #include "lib/stdint.h"
 #include "lib/string.h"
@@ -113,7 +116,8 @@ static void switch_out_active() {
   irq_flags_t flags = irq_save();
 
   refresh_high_prio();
-  do_ctx_switch(peek_head(pick_highest()));
+  process_t *next = peek_head(pick_highest());
+  do_ctx_switch(next);
 
   irq_restore(flags);
 }
@@ -135,96 +139,6 @@ void proc_launcher(void proc()) {
   scheduler_terminate();
 }
 
-/** Sleeping queue handling **/
-static process_t *sleeping_head;
-
-static void init_sleep_queue() { sleeping_head = NULL; }
-
-uint8_t is_in_sleeping_queue(process_t *proc) {
-  return get_prev_sleep(proc) != NULL || get_next_sleep(proc) != NULL ||
-         proc == sleeping_head;
-}
-static void insert_sleep(process_t *proc) {
-  // If no sleeping head
-  if (!sleeping_head || get_wake_up(proc) < get_wake_up(sleeping_head)) {
-    set_next_sleep(proc, sleeping_head);
-    sleeping_head = proc;
-    return;
-  }
-  process_t *prev = sleeping_head;
-  process_t *current = get_next_sleep(prev);
-
-  while (current && get_wake_up(current) <= get_wake_up(proc)) {
-    prev = current;
-    current = get_next_sleep(current);
-  }
-
-  set_next_sleep(proc, current);
-  set_next_sleep(prev, proc);
-}
-
-/** Remove an element from the sleeping queue **/
-void remove_from_sleeping(process_t *proc) {
-  process_t *prev = get_prev_sleep(proc);
-  process_t *next = get_next_sleep(proc);
-  if (prev) {
-    set_next_sleep(prev, next);
-  } else {
-    sleeping_head = next;
-  }
-
-  if (next)
-    set_prev_sleep(next, prev);
-
-  // Remove it from current sleep queue
-  set_next_sleep(proc, NULL);
-  set_prev_sleep(proc, NULL);
-}
-
-/** Set a program to sleeping state **/
-void scheduler_sleep(uint32_t nbr_secs) {
-  irq_flags_t flags = irq_save();
-
-  process_t *proc = get_active();
-  dequeue_process(proc);
-  process_sleep(nbr_secs);
-  insert_sleep(proc);
-  switch_out_active();
-
-  irq_restore(flags);
-}
-
-/** Block on a specific waiting queue relative to a signal **/
-void scheduler_block_on(wait_queue_t *wq) {
-  irq_flags_t flags = irq_save();
-  process_t *proc = get_active();
-  dequeue_process(proc);
-  process_block();
-  wq_enqueue(proc, wq);
-  set_wq(proc, wq);
-  switch_out_active();
-  irq_restore(flags);
-}
-
-/** Block on a specific waiting queue but with a timeout **/
-void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
-  irq_flags_t flags = irq_save();
-
-  process_t *proc = get_active();
-  dequeue_process(proc);
-  process_block();
-  wq_enqueue(proc, wq);
-  set_wq(proc, wq);
-
-  if (timeout_secs > 0) {
-    process_sleep(timeout_secs);
-    insert_sleep(proc);
-  }
-  switch_out_active();
-
-  irq_restore(flags);
-}
-
 /** Wake up a process and reschedule it in the running queue **/
 void scheduler_ready_process(process_t *proc) {
   irq_flags_t flags = irq_save();
@@ -243,40 +157,130 @@ void scheduler_ready_process(process_t *proc) {
   irq_restore(flags);
 }
 
+/** Sleeping queue handling **/
+static clist_node_t sleeping_head;
+
+static void init_sleep_queue() { clist_init_node(&sleeping_head); }
+
+uint8_t is_in_sleeping_queue(process_t *proc) {
+  return clist_is_in_list(get_sleep_node(proc));
+}
+
+static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other) {
+  process_t *cur_proc = container_of(current, process_t, wait_node);
+  process_t *other_proc = container_of(other, process_t, wait_node);
+  return (get_wake_up(cur_proc) > get_wake_up(other_proc));
+}
+
+/** Insert a node in the clist respecting a wake up time
+ * sort politic **/
+static void insert_sleep(process_t *proc) {
+  clist_node_t *node = get_sleep_node(proc);
+  clist_insert_sorted(&sleeping_head, node, _wake_up_cmp);
+}
+
+/** Remove an element from the sleeping queue **/
+void remove_from_sleeping(process_t *proc) {
+  clist_remove(get_sleep_node(proc));
+}
+
+/** Set a program to sleeping state **/
+void scheduler_sleep(uint32_t nbr_secs) {
+  irq_flags_t flags = irq_save();
+
+  process_t *proc = get_active();
+  dequeue_process(proc);
+  process_sleep(nbr_secs);
+  insert_sleep(proc);
+  switch_out_active();
+  irq_restore(flags);
+}
+
+/**
+ * @brief Wake up policy applied on each item of a sleeping queue.
+ *
+ * @param node Node of the process.
+ * @param arg Now timer.
+ * @return -1 to break the for each iteration on sorted list. 0 else.
+ */
+static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg) {
+  uint32_t now = *(uint32_t *)arg;
+  process_t *proc = container_of(node, process_t, sleep_node);
+  if (get_wake_up(proc) > now)
+    return -1;
+
+  clist_remove(node);
+  scheduler_ready_process(proc);
+  return 0;
+}
+
 /** Wake up the wakable processes in the sleeping queue **/
 void scheduler_wake_sleeping() {
   irq_flags_t flags = irq_save();
 
   uint32_t now = seconds();
-  while (sleeping_head && get_wake_up(sleeping_head) <= now) {
-    process_t *proc = sleeping_head;
-    remove_from_sleeping(proc);
-
-    wait_queue_t *current_wq = get_current_wq(proc);
-    if (current_wq) {
-      // Remove it from the blocked queue
-      wq_remove(proc, current_wq);
-    }
-    scheduler_ready_process(proc);
-  }
+  clist_for_each(&sleeping_head, _wake_up_sleeping_cb, &now);
 
   irq_restore(flags);
 }
 
-void scheduler_wake_waiting_queue(wait_queue_t *wq) {
+/** Block on a specific waiting queue relative to a signal **/
+void scheduler_block_on(wait_queue_t *wq) {
   irq_flags_t flags = irq_save();
 
-  process_t *head = wq_pop_all(wq);
-  /* We now own the returned chain;
-   *caller must clear links as it processes nodes */
-  while (head) {
-    process_t *next = get_next_wait(head);
-    set_next_wait(head, NULL);
-    set_prev_wait(head, NULL);
-    scheduler_ready_process(head);
-    head = next;
-  }
+  process_t *proc = get_active();
+  dequeue_process(proc);
+  process_block();
+  wq_enqueue(wq, get_wait_node(proc));
+  set_wq(proc, wq);
+  switch_out_active();
 
+  irq_restore(flags);
+}
+
+/** Block on a specific waiting queue but with a timeout **/
+void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
+  irq_flags_t flags = irq_save();
+
+  process_t *proc = get_active();
+  dequeue_process(proc);
+  process_block();
+  wq_enqueue(wq, get_wait_node(proc));
+  set_wq(proc, wq);
+
+  if (timeout_secs > 0) {
+    process_sleep(timeout_secs);
+    insert_sleep(proc);
+  }
+  switch_out_active();
+
+  irq_restore(flags);
+}
+
+/**
+ * @brief Wake up policy applied to a wq.
+ *
+ * @param current Node to compute on.
+ * @param args Aditional args.
+ * @return 0 (invariant)
+ */
+static inline int _wake_up_waiting_cb(clist_node_t *current, void *args) {
+  // Wake up the process from the waiting queue
+  scheduler_ready_process(container_of(current, process_t, wait_node));
+  return 0;
+}
+
+/**
+ * @brief Wake an entire wait queue.
+ *
+ * This function is supposed to be called on an event to remove
+ * process block on this event.
+ *
+ * @param wq Waiting queue associated with the block condition.
+ */
+void scheduler_wake_waiting_queue(wait_queue_t *wq) {
+  irq_flags_t flags = irq_save();
+  wq_for_each_and_del(wq, _wake_up_waiting_cb, NULL);
   irq_restore(flags);
 }
 

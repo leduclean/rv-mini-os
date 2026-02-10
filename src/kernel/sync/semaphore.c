@@ -3,8 +3,10 @@
 #include "kernel/process/process.h"
 #include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
+#include "kernel/sync/waitqueue.h"
+#include "lib/clist.h"
+#include "lib/container.h"
 #include "lib/stdint.h"
-#include "lib/string.h"
 
 struct semaphore {
   int count;
@@ -14,9 +16,7 @@ struct semaphore {
 /** Init a semaphore structure **/
 void sem_init(semaphore_t *sem, int val) {
   irq_flags_t flags = irq_save();
-
-  sem->waiting.head = NULL;
-  sem->waiting.tail = NULL;
+  wq_init(&sem->waiting);
   sem->count = val;
 
   irq_restore(flags);
@@ -56,7 +56,8 @@ void sem_release(semaphore_t *sem) {
   // Check in the waiting list if one
   // is waiting and wake him up if necessary.
   if (!wq_is_empty(&sem->waiting)) {
-    process_t *proc = wq_pop_head(&sem->waiting);
+    clist_node_t *node = wq_pop_head(&sem->waiting);
+    process_t *proc = container_of(node, process_t, wait_node);
     scheduler_ready_process(proc);
   }
   irq_restore(flags);

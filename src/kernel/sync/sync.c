@@ -3,6 +3,8 @@
 #include "kernel/process/process.h"
 #include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
+#include "lib/clist.h"
+#include "lib/container.h"
 #include "lib/stddef.h"
 #include "lib/stdint.h"
 
@@ -16,7 +18,8 @@ uint8_t wait() {
     scheduler_block_on(get_wait_child_queue(parent));
   }
   // Remove the first element of the zombie queue
-  process_t *reaped = wq_pop_head(zombies);
+  clist_node_t *node = wq_pop_head(zombies);
+  process_t *reaped = container_of(node, process_t, wait_node);
   set_state(reaped, TERMINATED);
 
   irq_restore(flags);
