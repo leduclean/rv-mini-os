@@ -1,6 +1,5 @@
 #include "kernel/process/process.h"
 #include "arch/riscv/cpu.h"
-#include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
 #include "kernel/sync/sync.h"
 #include "kernel/sync/waitqueue.h"
@@ -14,6 +13,8 @@
 #define SP_INDEX 1
 #define S0_INDEX 4
 
+#define MAX_PROC 32
+
 // Getters and setter on fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
 uint8_t get_pid(process_t *proc) { return proc->pid; };
@@ -25,11 +26,10 @@ wait_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
 void set_state(process_t *proc, state state) { proc->state = state; }
 
 /** Get node **/
+clist_node_t *get_ready_node(process_t *proc) { return &proc->ready_node; }
 clist_node_t *get_wait_node(process_t *proc) { return &proc->wait_node; }
 clist_node_t *get_sleep_node(process_t *proc) { return &proc->sleep_node; }
 wait_queue_t *get_current_wq(process_t *proc) { return proc->current_wq; }
-
-void set_wq(process_t *proc, wait_queue_t *wq) { proc->current_wq = wq; }
 
 // Active process init
 static process_t *active = NULL;
@@ -53,13 +53,13 @@ static void _clear_from_blocking_queues(process_t *proc) {
 
 /** STATE hanlding **/
 /** Set a processus in sleeping state with a timer **/
-void process_sleep(uint32_t delay) {
-  active->state = SLEEPING;
-  active->wake_up_time = delay + seconds();
+void process_sleep(process_t *proc, uint32_t delay) {
+  proc->state = SLEEPING;
+  proc->wake_up_time = delay + seconds();
 }
 
 /** Set a processus to blocked state (waiting for IO irq) **/
-void process_block() { active->state = BLOCKED; }
+void process_block(process_t *proc) { proc->state = BLOCKED; }
 
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
@@ -92,18 +92,18 @@ void switch_active(process_t *next) {
 }
 
 /** Switch to terminated state **/
-void process_terminate() {
-  process_t *parent = active->parent;
+void process_terminate(process_t *proc) {
+  process_t *parent = proc->parent;
   if (parent) {
-    active->state = ZOMBIE;
-    wq_enqueue(&parent->zombies, &active->wait_node);
+    proc->state = ZOMBIE;
+    wq_enqueue(&parent->zombies, &proc->wait_node);
     if (parent->state == BLOCKED) {
       // Parent is waiting so we wake him up
       // to check if he can stop wait.
       scheduler_wake_waiting_queue(&parent->child_wq);
     }
   } else {
-    active->state = TERMINATED;
+    proc->state = TERMINATED;
   }
   proc_table.active_process--;
 }

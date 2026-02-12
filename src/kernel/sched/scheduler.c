@@ -1,7 +1,6 @@
 #include "kernel/sched/scheduler.h"
 #include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
-#include "kernel/sched/circ_queue.h"
 #include "kernel/sync/waitqueue.h"
 #include "kernel/time/time.h"
 #include "lib/clist.h"
@@ -21,55 +20,73 @@ static void do_ctx_switch(process_t *next) {
 
 /** Priority handling **/
 
-/* Priority mapped running queue table */
-static circ_queue_t run_queues[PRIORITY_COUNT];
-
-/* Keep track the highest non empty ready priority */
+/**
+ * @brief Priority mapped ready queues.
+ */
+static clist_node_t ready_queues[PRIORITY_COUNT];
+/**
+ * @brief Priority flag to keep track of the highest priority.
+ */
 static priority highest_ready_tracking;
 
-static void init_run_queues() {
-  memset(&run_queues, 0, sizeof(run_queues));
+/**
+ * @brief Init all the ready queues and the priority.
+ */
+static void init_ready_queues() {
+  // Reset all the node of the ready queue
+  for (int i = 0; i < PRIORITY_COUNT; i++) {
+    clist_node_t *current_head = &ready_queues[i];
+    clist_init_node(current_head);
+  }
   // The initiate prioity should be IDLE
   highest_ready_tracking = IDLE;
 }
 
-/** Pick the highest priority non-empty queue **/
-static inline circ_queue_t *pick_highest(void) {
-  return &run_queues[highest_ready_tracking];
+/**
+ * @brief Add a process to the end of its corresponding priority ready queue.
+ *
+ * @param proc Pointer to the processus we want to add.
+ */
+static void ready_queue_enqueue(process_t *proc) {
+  priority prior_class = get_priority(proc);
+  clist_node_t *rq = &ready_queues[prior_class];
+  clist_push_back(rq, &proc->ready_node);
 }
 
-/** Refresh the highest_ready_tracking state if the queue is empty **/
-void refresh_high_prio() {
-  // Test the supposate highest prio
-  if (!is_empty(&run_queues[highest_ready_tracking])) {
+/**
+ * @brief Remove the process from the ready queue he is in.
+ *
+ * @param proc The processus to remove.
+ */
+static inline void ready_queue_remove(process_t *proc) {
+  if (!clist_is_in_list(&proc->ready_node))
     return;
-  }
-
-  // scan the other queues (lower priority state are higher in priority index )
-  for (int p = highest_ready_tracking + 1; p < PRIORITY_COUNT; p++) {
-    if (!is_empty(&run_queues[p])) {
-      // Update the new highest prio
-      highest_ready_tracking = p;
-      break;
-    }
-  }
+  clist_remove(&proc->ready_node);
 }
 
-/** Enqueue the process in the correct priority queuee **/
-static void enqueue_process(process_t *proc) {
-  priority prior_class = get_priority(proc);
-  circ_queue_t *rq = &run_queues[prior_class];
-  enqueue(rq, proc);
+/**
+ * @brief Round Robin circular rotation of the ready queue and giv
+ *
+ * @note This function also gives the next processus to switch on.
+ *
+ * @param rq Pointer to the ready queue to rotate on.
+ * @return Pointer to the next process.
+ */
+static process_t *rotate_ready_queue(clist_node_t *rq) {
+  // Nothing to do if the queue is empty or there is only one element
+  if (clist_empty(rq) || rq->next->next == rq)
+    return container_of(clist_first(rq), process_t, ready_node);
+  clist_node_t *first = clist_pop_front(rq);
+  clist_push_back(rq, first);
+
+  return container_of(clist_first(rq), process_t, ready_node);
 }
 
-/** Dequeue the process in the correct priority queuee **/
-static void dequeue_process(process_t *proc) {
-  priority prior_class = get_priority(proc);
-  circ_queue_t *rq = &run_queues[prior_class];
-  dequeue(rq);
-}
-
-/** Check if premption is needed and do it if needed **/
+/*
+ * @brief Check if a priority preemption is needed and does it if needed.
+ *
+ * @param proc Pointer to the processus we want to add.
+ */
 static void check_and_preempt(process_t *proc) {
   priority prior = get_priority(proc);
   priority current_prior = get_priority(get_active());
@@ -79,7 +96,42 @@ static void check_and_preempt(process_t *proc) {
   }
 }
 
-/** Check if a process should update highest ready priority queue and do it **/
+/**
+ * @brief Pick the highest priority ready queue in the ready queues
+ *
+ * @return Pointer to the highest priority queue (clist).
+ */
+static inline clist_node_t *pick_highest(void) {
+  return &ready_queues[highest_ready_tracking];
+}
+
+/**
+ * @brief Refresh highest priority flag scnaning all the queues.
+ *
+ * @note The scan is down increamenting the index since the highest priority is
+ * 0.
+ */
+void refresh_highest_prio() {
+  // Test the supposate highest prio
+  if (!clist_empty(&ready_queues[highest_ready_tracking])) {
+    return;
+  }
+
+  // scan the other queues (lower priority state are higher in priority index )
+  for (int p = highest_ready_tracking + 1; p < PRIORITY_COUNT; p++) {
+    if (!clist_empty(&ready_queues[p])) {
+      // Update the new highest prio
+      highest_ready_tracking = p;
+      break;
+    }
+  }
+}
+
+/**
+ * @brief Check if a process should change the highest priority flag.
+ *
+ * @param proc Pointer to the processus we want to check on.
+ */
 static void update_highest(process_t *proc) {
   priority prior_class = get_priority(proc);
   if (higher_priority(prior_class, highest_ready_tracking)) {
@@ -87,11 +139,15 @@ static void update_highest(process_t *proc) {
   }
 }
 
-/** Admit a process with a level of priority in the corresponding queue **/
+/**
+ * @brief Admit a processus in the coresponding ready queue.
+ *
+ * @param proc Pointer to the processus to admit.
+ */
 void scheduler_admit(process_t *proc) {
   irq_flags_t flags = irq_save();
 
-  enqueue_process(proc);
+  ready_queue_enqueue(proc);
   update_highest(proc);
   check_and_preempt(proc);
 
@@ -102,9 +158,9 @@ void scheduler_admit(process_t *proc) {
 void scheduler_rotate() {
   irq_flags_t flags = irq_save();
 
-  circ_queue_t *current_runqueue = pick_highest();
-  rotate_head_to_tail(current_runqueue);
-  do_ctx_switch(peek_head(current_runqueue));
+  process_t *next = rotate_ready_queue(pick_highest());
+  if (next != get_active())
+    do_ctx_switch(next);
 
   irq_restore(flags);
 }
@@ -115,9 +171,9 @@ void scheduler_rotate() {
 static void switch_out_active() {
   irq_flags_t flags = irq_save();
 
-  refresh_high_prio();
-  process_t *next = peek_head(pick_highest());
-  do_ctx_switch(next);
+  refresh_highest_prio();
+  clist_node_t *next_node = clist_first(pick_highest());
+  do_ctx_switch(container_of(next_node, process_t, ready_node));
 
   irq_restore(flags);
 }
@@ -125,9 +181,10 @@ static void switch_out_active() {
 /** Terminate a processus **/
 void scheduler_terminate() {
   irq_flags_t flags = irq_save();
+  process_t *current = get_active();
 
-  dequeue_process(get_active());
-  process_terminate();
+  ready_queue_remove(current);
+  process_terminate(current);
   switch_out_active();
 
   irq_restore(flags);
@@ -150,7 +207,7 @@ void scheduler_ready_process(process_t *proc) {
   update_highest(proc);
 
   // Insert in the correct run queue
-  enqueue_process(proc);
+  ready_queue_enqueue(proc);
 
   // Preempt if needed
   check_and_preempt(proc);
@@ -189,8 +246,8 @@ void scheduler_sleep(uint32_t nbr_secs) {
   irq_flags_t flags = irq_save();
 
   process_t *proc = get_active();
-  dequeue_process(proc);
-  process_sleep(nbr_secs);
+  ready_queue_remove(proc);
+  process_sleep(proc, nbr_secs);
   insert_sleep(proc);
   switch_out_active();
   irq_restore(flags);
@@ -224,15 +281,18 @@ void scheduler_wake_sleeping() {
   irq_restore(flags);
 }
 
+void static inline move_to_wq(process_t *proc, wait_queue_t *wq) {
+  ready_queue_remove(proc);
+  process_block(proc);
+  wq_enqueue(wq, &proc->wait_node);
+}
+
 /** Block on a specific waiting queue relative to a signal **/
 void scheduler_block_on(wait_queue_t *wq) {
   irq_flags_t flags = irq_save();
 
   process_t *proc = get_active();
-  dequeue_process(proc);
-  process_block();
-  wq_enqueue(wq, get_wait_node(proc));
-  set_wq(proc, wq);
+  move_to_wq(proc, wq);
   switch_out_active();
 
   irq_restore(flags);
@@ -243,13 +303,9 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
   irq_flags_t flags = irq_save();
 
   process_t *proc = get_active();
-  dequeue_process(proc);
-  process_block();
-  wq_enqueue(wq, get_wait_node(proc));
-  set_wq(proc, wq);
-
+  move_to_wq(proc, wq);
   if (timeout_secs > 0) {
-    process_sleep(timeout_secs);
+    process_sleep(proc, timeout_secs);
     insert_sleep(proc);
   }
   switch_out_active();
@@ -285,6 +341,6 @@ void scheduler_wake_waiting_queue(wait_queue_t *wq) {
 }
 
 void init_scheduler_queues() {
-  init_run_queues();
+  init_ready_queues();
   init_sleep_queue();
 }

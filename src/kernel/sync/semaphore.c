@@ -1,7 +1,6 @@
 #include "kernel/sync/semaphore.h"
 #include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
-#include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
 #include "kernel/sync/waitqueue.h"
 #include "lib/clist.h"
