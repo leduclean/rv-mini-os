@@ -1,5 +1,5 @@
 #pragma once
-#include "kernel/sched/circ_queue.h"
+#include "kernel/process/process.h"
 #include "lib/stdint.h"
 
 typedef struct mutex mutex_t;
