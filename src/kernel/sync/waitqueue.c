@@ -1,6 +1,5 @@
 #include "kernel/sync/waitqueue.h"
 #include "kernel/process/process.h"
-#include "kernel/sched/circ_queue.h"
 #include "lib/clist.h"
 #include "lib/container.h"
 #include "lib/stddef.h"

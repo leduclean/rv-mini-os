@@ -1,7 +1,6 @@
 #include "kernel/sync/sync.h"
 #include "arch/riscv/cpu.h"
 #include "kernel/process/process.h"
-#include "kernel/sched/circ_queue.h"
 #include "kernel/sched/scheduler.h"
 #include "lib/clist.h"
 #include "lib/container.h"
