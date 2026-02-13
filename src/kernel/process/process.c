@@ -73,9 +73,8 @@ static void _clear_from_blocking_queues(process_t *proc) {
     remove_from_sleeping(proc);
   };
 
-  clist_node_t *wait_node = get_wait_node(proc);
-  if (clist_is_in_list(wait_node)) {
-    clist_remove(wait_node);
+  if (clist_is_in_list(&proc->wait_node)) {
+    clist_remove(&proc->wait_node);
   }
 }
 
@@ -223,18 +222,25 @@ process_t *spawn_process(void code(), char *nom, priority prior) {
     return NULL; // Error already max processus launched
   }
   process_t *proc = malloc(sizeof(process_t));
+  if (!proc) {
+    return NULL;
+  }
   config_process(code, nom, prior, proc);
   clist_push_back(&proc_table.head, &proc->proc_node);
   return add_process_to_scheduler(proc);
 }
 
 /** Spawn a child process in foreground and wait for it **/
-uint8_t spawn_foreground(void code(), char *name, priority prior) {
+int8_t spawn_foreground(void code(), char *name, priority prior) {
   process_t *parent = get_active();
   process_t *child = spawn_process(code, name, prior);
+  if (!child) {
+    return -1;
+  }
   child->parent = parent;
+  uint8_t pid = child->pid;
   wait_pid(child->pid);
-  return child->pid;
+  return pid;
 };
 
 /**
