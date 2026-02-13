@@ -1,5 +1,5 @@
 #include "kernel/process/process.h"
-#include "arch/riscv/cpu.h"
+#include "kernel/init/kernel_config.h"
 #include "kernel/sched/scheduler.h"
 #include "kernel/sync/sync.h"
 #include "kernel/sync/waitqueue.h"
@@ -9,6 +9,12 @@
 #include "lib/stdint.h"
 #include "lib/string.h"
 #include "lib/tinyalloc.h"
+
+#if TEST_CONFIG
+#include "../tests/mocks/kernel_mocks.h"
+#else
+#include "arch/riscv/cpu.h"
+#endif
 
 #define RA_INDEX 0
 #define SP_INDEX 1
@@ -246,7 +252,7 @@ int8_t spawn_foreground(void code(), char *name, priority prior) {
 /**
  * @brief Create the idle process and init active as idle.
  */
-void init_idle() {
+static void init_idle() {
   process_t *init_proc = spawn_process(idle, "idle", IDLE);
   active = init_proc;
   active->state = RUNNING;
