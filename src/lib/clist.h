@@ -19,7 +19,7 @@
 
 #pragma once
 
-#ifdef UNIT_TEST
+#if TEST_CONFIG
 #include <stddef.h>
 #include <stdint.h>
 #else

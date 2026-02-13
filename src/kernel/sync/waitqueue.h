@@ -1,6 +1,12 @@
 #pragma once
+#include "kernel/init/kernel_config.h"
 #include "lib/clist.h"
+
+#if TEST_CONFIG
+#include <stdint.h>
+#else
 #include "lib/stdint.h"
+#endif
 
 typedef struct process process_t;
 
