@@ -1,7 +1,13 @@
 #pragma once
+#include "kernel/init/kernel_config.h"
 #include "kernel/sync/waitqueue.h"
 #include "lib/clist.h"
+
+#if TEST_CONFIG
+#include <stdint.h>
+#else
 #include "lib/stdint.h"
+#endif
 
 #define MAXNAME 16
 #define MAX_REG_SAVED 18
