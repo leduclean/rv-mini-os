@@ -84,4 +84,4 @@ void process_reap(process_t *proc);
 void idle();
 void init_proc();
 process_t *spawn_process(void code(), char *name, priority prior);
-uint8_t spawn_foreground(void code(), char *name, priority prior);
+int8_t spawn_foreground(void code(), char *name, priority prior);
