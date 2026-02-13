@@ -28,6 +28,9 @@ typedef struct process {
   uint64_t ctx[MAX_REG_SAVED];
   uint64_t stack[STACK_SIZE];
 
+  // Process table node
+  clist_node_t proc_node;
+
   // Scheduler ready queue node
   clist_node_t ready_node;
 
@@ -75,6 +78,7 @@ void process_sleep(process_t *proc, uint32_t delay); // delay is in secondes
 void process_block(process_t *proc);
 void process_wake(process_t *proc);
 void process_terminate(process_t *proc);
+void process_reap(process_t *proc);
 
 // Idle Process declaration
 void idle();
