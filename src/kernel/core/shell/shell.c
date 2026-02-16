@@ -7,10 +7,6 @@
 #include "process.h"
 #include "programs.h"
 
-static void builtin_ps() {
-  // TODO when dynamic allocation.
-}
-
 /* Builtin shell Command to list all the prog launchable */
 static void builtin_help() {
   printf("Available commands: \n");
@@ -28,10 +24,7 @@ static void builtin_help() {
   }
 }
 
-void init_builtins() {
-  register_builtin("help", builtin_help);
-  register_builtin("ps", builtin_ps);
-}
+static inline void init_builtins() { register_builtin("help", builtin_help); }
 
 /** Handle the user shell command **/
 static void cmd_handler(shell_cmd_tokens_t *cmd) {

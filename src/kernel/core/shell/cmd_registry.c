@@ -1,8 +1,7 @@
 #include "cmd_registry.h"
-#include "process.h"
 #include "minilib/stddef.h"
-#include "minilib/stdint.h"
 #include "minilib/string.h"
+#include "process.h"
 
 #define MAX_CMDS 64
 typedef struct {

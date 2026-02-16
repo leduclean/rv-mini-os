@@ -1,10 +1,10 @@
 #include "process.h"
 #include "clist.h"
 #include "kernel_config.h"
-#include "scheduler.h"
 #include "minilib/stddef.h"
 #include "minilib/stdint.h"
 #include "minilib/string.h"
+#include "scheduler.h"
 #include "sync.h"
 #include "time.h"
 #include "tinyalloc.h"
@@ -31,11 +31,12 @@ typedef struct {
 
 // Process table init
 static ptable_t proc_table;
+const clist_node_t *get_proc_table_clist() { return &proc_table.head; }
 
 /**
  * @brief Init the process table.
  */
-void init_proc_table() {
+static void init_proc_table() {
   clist_init_node(&proc_table.head);
   proc_table.next_pid = 0;
   proc_table.active_process = 0;

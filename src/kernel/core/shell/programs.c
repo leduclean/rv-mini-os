@@ -1,5 +1,7 @@
 #include "programs.h"
+#include "clist.h"
 #include "cmd_registry.h"
+#include "container.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
 #include "process.h"
@@ -35,9 +37,30 @@ static void proc2() {
   }
 }
 
+static int _pretty_print_process(clist_node_t *node, void *args) {
+  (void)args;
+
+  process_t *proc = container_of(node, process_t, proc_node);
+  process_t *parent = proc->parent;
+  uint8_t pid = 0;
+  if (parent) {
+    pid = parent->pid;
+  }
+  printf("%-5d %-10d %-5s \n", proc->pid, pid, proc->name);
+  return 0;
+}
+/**
+ * @brief Temporary proc to list all of the current processus.
+ */
+static void ps() {
+  printf("%-5s %-10s %-5s\n", "PID", "PPID", "CMD");
+  clist_for_each(get_proc_table_clist(), _pretty_print_process, NULL);
+}
+
 /** Register the programs **/
 void init_programs() {
   register_prog("proc1", proc1, HIGH);
   register_prog("proc2", proc2, NORMAL);
   register_prog("proc3", proc3, LOW);
+  register_prog("ps", ps, NORMAL);
 }
