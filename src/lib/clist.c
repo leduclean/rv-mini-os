@@ -1,6 +1,5 @@
 #include "clist.h"
-#include "stdint.h"
-#include <lib/stdio.h>
+#include "minilib/stdint.h"
 
 /**
  * @brief Init a node list.

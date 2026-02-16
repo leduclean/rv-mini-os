@@ -1,10 +1,10 @@
-#include "arch/riscv/cpu.h"
-#include "arch/riscv/irq.h"
-#include "drivers/console.h"
-#include "drivers/uart.h"
-#include "kernel/process/process.h"
-#include "lib/stddef.h"
-#include "shell/shell.h"
+#include "console.h"
+#include "cpu.h"
+#include "irq.h"
+#include "process.h"
+#include "shell.h"
+#include "minilib/stddef.h"
+#include "uart.h"
 
 extern void mon_traitant(void);
 

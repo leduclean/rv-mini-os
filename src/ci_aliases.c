@@ -3,7 +3,7 @@
 #include "kernel/sched/scheduler.h"
 #include "kernel/time/time.h"
 #include "drivers/uart.h"
-#include "lib/stdint.h"
+#include "lib/minilib/stdint.h"
 
 /** We prefer an english semantic for uniformity
  * and code clarity but we need aliases for CI eval **/
