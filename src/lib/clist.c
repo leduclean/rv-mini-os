@@ -116,7 +116,7 @@ uint8_t clist_is_in_list(clist_node_t *node) { return node->in_list; }
  * @return NULL on empty list or full traversal
  * @return node that cause @p func(node) to exit non-zero.
  */
-clist_node_t *clist_for_each(clist_node_t *head,
+clist_node_t *clist_for_each(const clist_node_t *head,
                              int (*callback)(clist_node_t *node, void *),
                              void *args) {
   clist_node_t *current = head->next;

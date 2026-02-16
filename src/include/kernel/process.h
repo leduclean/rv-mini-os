@@ -73,6 +73,8 @@ wait_queue_t *get_wait_child_queue(process_t *proc);
 void set_state(process_t *proc, state state);
 void switch_active(process_t *next);
 
+// Proc table helper
+const clist_node_t *get_proc_table_clist();
 // Active getter
 process_t *get_active();
 uint8_t get_active_pid();
@@ -85,7 +87,6 @@ void process_block(process_t *proc);
 void process_wake(process_t *proc);
 void process_terminate(process_t *proc);
 void process_reap(process_t *proc);
-
 // Idle Process declaration
 void idle();
 void init_proc();
