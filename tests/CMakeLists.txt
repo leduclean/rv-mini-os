@@ -4,7 +4,7 @@ project(UnitTests C)
 set(OS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 set(SRC_CLIST ${OS_ROOT}/lib/clist.c)
-set(SRC_PROCESS ${OS_ROOT}/kernel/process/process.c)
+set(SRC_PROCESS ${OS_ROOT}/kernel/core/process/process.c)
 
 set(UNITY_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/unity/unity_fixture.c
@@ -28,9 +28,9 @@ add_executable(tests
 )
 
 target_include_directories(tests PRIVATE
-    ${OS_ROOT}
+    ${OS_ROOT}/include/lib
+    ${OS_ROOT}/include/kernel
     ${CMAKE_CURRENT_SOURCE_DIR}
-
 )
 
 target_compile_definitions(tests PRIVATE UNIT_TEST UNITY_FIXTURE_NO_EXTRAS)

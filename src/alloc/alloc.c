@@ -1,9 +1,9 @@
 #include "alloc.h"
 #include "lib/clist.h"
 #include "lib/container.h"
-#include "lib/stddef.h"
-#include "lib/stdint.h"
-#include "lib/string.h"
+#include "lib/minilib/stddef.h"
+#include "lib/minilib/stdint.h"
+#include "minilib/string.h"
 
 #define HEAPSIZE 64 * 1024
 #define MIN_BLOCK_SIZE 32

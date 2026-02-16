@@ -1,9 +1,9 @@
 #pragma once
 #ifdef UNIT_TEST
 
-#include "kernel/process/process.h"
-#include "kernel/sync/waitqueue.h"
-#include "lib/clist.h"
+#include "clist.h"
+#include "process.h"
+#include "waitqueue.h"
 
 // Mocked functions
 void scheduler_admit(process_t *p);

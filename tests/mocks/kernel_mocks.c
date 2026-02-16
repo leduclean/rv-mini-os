@@ -1,4 +1,4 @@
-#include "kernel/process/process.h"
+#include "process.h"
 
 void scheduler_admit(process_t *p) {}
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {}
