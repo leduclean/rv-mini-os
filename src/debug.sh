@@ -1,18 +1,17 @@
 #!/bin/bash
 
-BINARY="kernel.bin"
+BUILD_DIR="build"
+BINARY="$BUILD_DIR/kernel.bin"
 
 if [ ! -f "$BINARY" ]; then
   echo "Warning: missing binary file: '$BINARY' "
   echo "Generating it via make."
 fi
 
-# Generate binary file via make
-make $BINARY >/dev/null
+cmake --build "$BUILD_DIR" --target kernel.bin
 echo "'kernel.bin' generated"
 
-# Launch QEMU in background
-nohup make debugg &
+nohup cmake --build "$BUILD_DIR" --target debugg &
 QEMU_PID=$!
 
 # Launch gdb on the same file

@@ -3,8 +3,8 @@
  * @brief Unit testing for the clist using Unity Fixture.
  */
 
-#include "kernel/init/kernel_config.h"
-#include "lib/clist.h"
+#include "clist.h"
+#include "kernel_config.h"
 #include "unity/unity_fixture.h"
 #include <stdint.h>
 #include <stdlib.h>

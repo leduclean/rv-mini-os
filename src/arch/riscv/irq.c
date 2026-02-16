@@ -1,9 +1,8 @@
-#include "arch/riscv/mmio.h"
-#include "arch/riscv/platform.h"
-#include "kernel/time/time.h"
-#include "drivers/uart.h"
-#include "lib/stdint.h"
-#include "lib/stdio.h"
+#include "minilib/stdint.h"
+#include "mmio.h"
+#include "platform.h"
+#include "time.h"
+#include "uart.h"
 
 /** Enable timer irq and trigger the timer **/
 void enable_timer() {

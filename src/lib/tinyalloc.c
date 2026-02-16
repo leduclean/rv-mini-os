@@ -1,6 +1,6 @@
 #include "tinyalloc.h"
 /* CR begin */
-#include "stdint.h"
+#include "minilib/stdint.h"
 /* CR end */
 
 #ifdef TA_DEBUG
