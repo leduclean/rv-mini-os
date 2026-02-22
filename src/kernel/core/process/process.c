@@ -205,6 +205,7 @@ static void config_process(void code(), char *nom, priority prior,
   strncpy(proc->name, nom, MAXNAME - 1);
   proc->priority = prior;
   proc->state = READY;
+  proc->parent = NULL;
 
   if (proc->pid == 0) {
     proc->ctx[RA_INDEX] = (uintptr_t)idle;
@@ -225,6 +226,8 @@ static process_t *add_process_to_scheduler(process_t *slot) {
 
 /** Spawn a process **/
 process_t *spawn_process(void code(), char *nom, priority prior) {
+  irq_flags_t state = irq_save();
+
   if (proc_table.active_process >= MAX_PROC) {
     return NULL; // Error already max processus launched
   }
@@ -234,7 +237,10 @@ process_t *spawn_process(void code(), char *nom, priority prior) {
   }
   config_process(code, nom, prior, proc);
   clist_push_back(&proc_table.head, &proc->proc_node);
-  return add_process_to_scheduler(proc);
+  process_t *spawned = add_process_to_scheduler(proc);
+
+  irq_restore(state);
+  return spawned;
 }
 
 /** Spawn a child process in foreground and wait for it **/
