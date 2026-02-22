@@ -74,7 +74,16 @@ void switch_active(process_t *next) {
   active = next;
 }
 
+/**
+ * @brief Remove the processus from all the blocking queues it could be
+ * waiting on.
+ *
+ * @note This function is **not atomic**. The calle MUST ensure atomicity.
+ *
+ * @param proc Pointer to the processus to clear.
+ */
 static void _clear_from_blocking_queues(process_t *proc) {
+  irq_flags_t state = irq_save();
   // Remove it if it from sleeping queue (timeout).
   if (is_in_sleeping_queue(proc)) {
     remove_from_sleeping(proc);
@@ -83,6 +92,7 @@ static void _clear_from_blocking_queues(process_t *proc) {
   if (clist_is_in_list(&proc->wait_node)) {
     clist_remove(&proc->wait_node);
   }
+  irq_restore(state);
 }
 
 /** STATE hanlding **/
@@ -97,15 +107,19 @@ void process_block(process_t *proc) { proc->state = BLOCKED; }
 
 /** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
+  irq_flags_t state = irq_save();
   if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
     // Remove it from sleeping and blocked queue if remaining
     _clear_from_blocking_queues(proc);
     proc->state = RUNNING;
   }
+  irq_restore(state);
 }
 
 /**
  * @brief Remove the process from all the queues he could be.
+ *
+ * @note This function is **not atomic**. The caller must ensure atomicity
  *
  * @param proc Pointer to the processus to remove from queues.
  */
@@ -125,10 +139,14 @@ static inline void remove_from_all_queues(process_t *proc) {
  * @param proc Pointer to the pocess to clean up.
  */
 static inline void process_clean_up(process_t *proc) {
+  irq_flags_t state = irq_save();
+
   proc->state = TERMINATED;
   remove_from_all_queues(proc);
   free(proc);
   proc_table.active_process--;
+
+  irq_restore(state);
 }
 
 /**
@@ -137,6 +155,8 @@ static inline void process_clean_up(process_t *proc) {
  * @param proc Pointer to the processus to zombify.
  */
 static inline void process_zombify(process_t *proc) {
+  irq_flags_t state = irq_save();
+
   process_t *parent = proc->parent;
   if (!parent)
     return;
@@ -149,6 +169,8 @@ static inline void process_zombify(process_t *proc) {
     // to check if he can stop wait.
     scheduler_wake_waiting_queue(&parent->child_wq);
   }
+
+  irq_restore(state);
 }
 
 /**
