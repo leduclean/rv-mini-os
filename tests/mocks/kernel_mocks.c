@@ -1,5 +1,7 @@
-#include "process.h"
+#include "kernel_mocks.h"
 
+irq_flags_t irq_save() {}
+void irq_restore(irq_flags_t state) {}
 void scheduler_admit(process_t *p) {}
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {}
 void init_scheduler_queues() {}

@@ -11,7 +11,7 @@
 #include "waitqueue.h"
 
 #if TEST_CONFIG
-#include "../tests/mocks/kernel_mocks.h"
+#include "mocks/kernel_mocks.h"
 #else
 #include "cpu.h"
 #endif

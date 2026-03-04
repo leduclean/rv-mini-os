@@ -4,7 +4,7 @@
 #include "waitqueue.h"
 
 #if TEST_CONFIG
-#include <minilib/stdint.h>
+#include <stdint.h>
 #else
 #include "minilib/stdint.h"
 #endif
