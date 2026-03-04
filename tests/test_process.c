@@ -1,5 +1,4 @@
 #include "clist.h"
-#include "kernel_config.h"
 #include "process.h"
 #include "unity/unity.h"
 #include "unity/unity_fixture.h"
