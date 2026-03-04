@@ -20,8 +20,8 @@
 #pragma once
 
 #if TEST_CONFIG
-#include <minilib/stddef.h>
-#include <minilib/stdint.h>
+#include <stddef.h>
+#include <stdint.h>
 #else
 #include "minilib/stddef.h"
 #include "minilib/stdint.h"
