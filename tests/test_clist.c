@@ -4,7 +4,6 @@
  */
 
 #include "clist.h"
-#include "kernel_config.h"
 #include "unity/unity_fixture.h"
 #include <stdint.h>
 #include <stdlib.h>

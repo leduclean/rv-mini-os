@@ -1,19 +1,21 @@
 #include "process.h"
 #include "clist.h"
 #include "kernel_config.h"
-#include "minilib/stddef.h"
-#include "minilib/stdint.h"
-#include "minilib/string.h"
 #include "scheduler.h"
 #include "sync.h"
 #include "time.h"
-#include "tinyalloc.h"
 #include "waitqueue.h"
 
 #if TEST_CONFIG
 #include "mocks/kernel_mocks.h"
+#include <mm_malloc.h>
+#include <stddef.h>
+#include <string.h>
 #else
 #include "cpu.h"
+#include "minilib/stddef.h"
+#include "minilib/string.h"
+#include "tinyalloc.h"
 #endif
 
 #define RA_INDEX 0
