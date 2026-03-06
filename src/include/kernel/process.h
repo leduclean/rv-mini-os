@@ -1,13 +1,6 @@
 #pragma once
 #include "clist.h"
-#include "kernel_config.h"
 #include "waitqueue.h"
-
-#if TEST_CONFIG
-#include <stdint.h>
-#else
-#include "minilib/stdint.h"
-#endif
 
 #define MAXNAME 16
 #define MAX_REG_SAVED 18
