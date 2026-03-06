@@ -2,10 +2,9 @@
 #include "clist.h"
 #include "container.h"
 #include "cpu.h"
-#include "process.h"
 #include "minilib/stddef.h"
-#include "minilib/stdint.h"
 #include "minilib/string.h"
+#include "process.h"
 #include "time.h"
 #include "waitqueue.h"
 
@@ -281,7 +280,7 @@ void scheduler_wake_sleeping() {
   irq_restore(flags);
 }
 
-void static inline move_to_wq(process_t *proc, wait_queue_t *wq) {
+static inline void move_to_wq(process_t *proc, wait_queue_t *wq) {
   ready_queue_remove(proc);
   process_block(proc);
   wq_enqueue(wq, &proc->wait_node);
@@ -321,6 +320,8 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
  * @return 0 (invariant)
  */
 static inline int _wake_up_waiting_cb(clist_node_t *current, void *args) {
+  // args is unused but needed for the for a for each callback
+  (void)args;
   // Wake up the process from the waiting queue
   scheduler_ready_process(container_of(current, process_t, wait_node));
   return 0;

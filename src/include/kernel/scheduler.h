@@ -1,6 +1,5 @@
 #pragma once
 #include "process.h"
-#include "minilib/stdint.h"
 
 void scheduler_rotate();
 
