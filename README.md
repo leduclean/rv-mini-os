@@ -6,9 +6,16 @@ A bare-metal operating system kernel targeting **RISC-V 64-bit** (QEMU `virt` ma
 
 ---
 
+## Demo
+
+![Demo](demo.gif)
+
+---
+
 ## Features
 
 ### Hardware & Boot
+
 - Bare-metal RISC-V 64-bit target (no host OS, no standard library)
 - UART console driver
 - Graphical framebuffer via bochs-display
@@ -16,6 +23,7 @@ A bare-metal operating system kernel targeting **RISC-V 64-bit** (QEMU `virt` ma
 - Timer interrupt support
 
 ### Process Management
+
 - Process lifecycle: `READY → RUNNING → SLEEPING / BLOCKED → TERMINATED → ZOMBIE`
 - Priority levels: `HIGH`, `NORMAL`, `LOW`, `IDLE`
 - Priority-based round-robin scheduler with per-priority ready queues
@@ -24,21 +32,25 @@ A bare-metal operating system kernel targeting **RISC-V 64-bit** (QEMU `virt` ma
 - Zombie reaping and parent/child process relationships
 
 ### Synchronization
+
 - Mutexes
 - Semaphores
 - Wait queues with optional timeout
 - IRQ-protected critical sections
 
 ### Memory
+
 - Custom dynamic allocator: first-fit free list with eager splitting and immediate coalescing (`tinyalloc`)
 - Statically allocated kernel heap
 
 ### Shell
+
 - Interactive shell process with command registry
 - Command parser
 - Built-in programs (`ps`, ...)
 
 ### Libraries
+
 - Minimal libc subset (no host dependency): `printf`, `sprintf`, `string`, `ctype`, `strtoul`
 - Circular doubly-linked list (`clist`) with `container_of` intrusive node design
 - Font rendering
@@ -62,7 +74,7 @@ tests/                 # Unit tests (Unity framework)
 
 ## Requirements
 
-- `riscv64-unknown-elf-gcc` toolchain
+- `riscv64-elf-gcc` toolchain
 - `qemu-system-riscv64`
 - `cmake >= 3.15`
 
