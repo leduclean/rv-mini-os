@@ -7,12 +7,6 @@
 #include "minilib/stdint.h"
 #include "minilib/string.h"
 
-struct mutex {
-  uint8_t locked;
-  process_t *owner;
-  wait_queue_t wq;
-};
-
 /** Mutex Init primitive **/
 void mutex_init(mutex_t *m) {
   // Atomic
