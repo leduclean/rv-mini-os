@@ -2,7 +2,11 @@
 #include "process.h"
 #include "minilib/stdint.h"
 
-typedef struct mutex mutex_t;
+typedef struct mutex {
+  uint8_t locked;
+  process_t *owner;
+  wait_queue_t wq;
+} mutex_t;
 
 void mutex_init(mutex_t *m);
 uint8_t mutex_is_lock(mutex_t *m);
