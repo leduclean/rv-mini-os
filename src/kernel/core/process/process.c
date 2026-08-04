@@ -24,20 +24,17 @@
 
 #define MAX_PROC 32
 
-// Process table
+/** @brief Process table. */
 typedef struct {
-  uint8_t next_pid;
-  uint8_t active_process; // Not TERMINATED
-  clist_node_t head;
+  uint8_t next_pid;       ///< Pid given to the next spawned process.
+  uint8_t active_process; ///< Number of living processes, not TERMINATED.
+  clist_node_t head;      ///< Head sentinel of the living processes clist.
 } ptable_t;
 
-// Process table init
 static ptable_t proc_table;
 const clist_node_t *get_proc_table_clist() { return &proc_table.head; }
 
-/**
- * @brief Init the process table.
- */
+/** @brief Init the process table. */
 static void init_proc_table() {
   clist_init_node(&proc_table.head);
   proc_table.next_pid = 0;
@@ -46,24 +43,24 @@ static void init_proc_table() {
 
 // Getters and setter on fields
 uint64_t *get_ctx(process_t *proc) { return proc->ctx; }
-uint8_t get_pid(process_t *proc) { return proc->pid; };
-const char *get_name(process_t *proc) { return proc->name; }
-uint32_t get_wake_up(process_t *proc) { return proc->wake_up_time; }
-priority get_priority(process_t *proc) { return proc->priority; }
+uint8_t get_pid(const process_t *proc) { return proc->pid; };
+const char *get_name(const process_t *proc) { return proc->name; }
+uint32_t get_wake_up(const process_t *proc) { return proc->wake_up_time; }
+priority get_priority(const process_t *proc) { return proc->priority; }
 wait_queue_t *get_wait_child_queue(process_t *proc) { return &proc->child_wq; };
 wait_queue_t *get_zombies(process_t *proc) { return &proc->zombies; };
 void set_state(process_t *proc, state state) { proc->state = state; }
 
-/** Get node **/
+// Node getters
 clist_node_t *get_ready_node(process_t *proc) { return &proc->ready_node; }
 clist_node_t *get_wait_node(process_t *proc) { return &proc->wait_node; }
 clist_node_t *get_sleep_node(process_t *proc) { return &proc->sleep_node; }
 wait_queue_t *get_current_wq(process_t *proc) { return proc->current_wq; }
 
-// Active process init
+/** @brief Currently running process. */
 static process_t *active = NULL;
 
-/* Active getters*/
+// Active getters
 process_t *get_active() { return active; }
 uint8_t get_active_pid() { return active->pid; }
 char *get_active_name() { return active->name; }
@@ -77,12 +74,11 @@ void switch_active(process_t *next) {
 }
 
 /**
- * @brief Remove the processus from all the blocking queues it could be
- * waiting on.
+ * @brief Remove a process from all the blocking queues it could wait on.
  *
- * @note This function is **not atomic**. The calle MUST ensure atomicity.
+ * @note This function is **not atomic**. The caller MUST ensure atomicity.
  *
- * @param proc Pointer to the processus to clear.
+ * @param proc Process to clear.
  */
 static void _clear_from_blocking_queues(process_t *proc) {
   irq_flags_t state = irq_save();
@@ -97,17 +93,14 @@ static void _clear_from_blocking_queues(process_t *proc) {
   irq_restore(state);
 }
 
-/** STATE hanlding **/
-/** Set a processus in sleeping state with a timer **/
+// State handling
 void process_sleep(process_t *proc, uint32_t delay) {
   proc->state = SLEEPING;
   proc->wake_up_time = delay + seconds();
 }
 
-/** Set a processus to blocked state (waiting for IO irq) **/
 void process_block(process_t *proc) { proc->state = BLOCKED; }
 
-/** Switch the state of a sleeping process to running **/
 void process_wake(process_t *proc) {
   irq_flags_t state = irq_save();
   if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
@@ -119,11 +112,11 @@ void process_wake(process_t *proc) {
 }
 
 /**
- * @brief Remove the process from all the queues he could be.
+ * @brief Remove a process from all the queues it could be in.
  *
- * @note This function is **not atomic**. The caller must ensure atomicity
+ * @note This function is **not atomic**. The caller MUST ensure atomicity.
  *
- * @param proc Pointer to the processus to remove from queues.
+ * @param proc Process to remove from the queues.
  */
 static inline void remove_from_all_queues(process_t *proc) {
   if (clist_is_in_list(&proc->proc_node))
@@ -136,9 +129,9 @@ static inline void remove_from_all_queues(process_t *proc) {
     clist_remove(&proc->wait_node);
 }
 /**
- * @brief Clean Up a process removing it from all queues and from memory.
+ * @brief Clean a process up, removing it from all queues and from memory.
  *
- * @param proc Pointer to the pocess to clean up.
+ * @param proc Process to clean up.
  */
 static inline void process_clean_up(process_t *proc) {
   irq_flags_t state = irq_save();
@@ -152,9 +145,11 @@ static inline void process_clean_up(process_t *proc) {
 }
 
 /**
- * @brief Zombify a process putting it in the zombies queue of the parent.
+ * @brief Zombify a process, putting it in the zombies queue of its parent.
  *
- * @param proc Pointer to the processus to zombify.
+ * @note The parent is woken up if it was waiting for a child.
+ *
+ * @param proc Process to zombify.
  */
 static inline void process_zombify(process_t *proc) {
   irq_flags_t state = irq_save();
@@ -175,13 +170,6 @@ static inline void process_zombify(process_t *proc) {
   irq_restore(state);
 }
 
-/**
- * @brief Terminate a process.
- *
- * @note Handle parent and orphan.
- *
- * @param proc Pointer to the processus to terminate.
- */
 void process_terminate(process_t *proc) {
   process_t *parent = proc->parent;
   if (parent) {
@@ -191,11 +179,6 @@ void process_terminate(process_t *proc) {
   }
 }
 
-/**
- * @brief Reap a zombie (Parent call this).
- *
- * @param proc Pointer to the processus to reap.
- */
 void process_reap(process_t *proc) {
   if (proc->state != ZOMBIE) {
     return;
@@ -203,15 +186,14 @@ void process_reap(process_t *proc) {
   process_clean_up(proc);
 }
 
-/** Boolean condition helper to dermine if a process has higher priority.
- * We consider that priority are sorted decremental.
- * **/
 uint8_t higher_priority(priority prior, priority other) {
   return prior < other;
 }
-/* Processus Table setter */
-
-/** Reset all the node and the wq relative to a process **/
+/**
+ * @brief Reset all the nodes and the wait queues of a process.
+ *
+ * @param proc Process to reset.
+ */
 static inline void init_process_queues(process_t *proc) {
   clist_init_node(&proc->proc_node);
   clist_init_node(&proc->ready_node);
@@ -221,8 +203,15 @@ static inline void init_process_queues(process_t *proc) {
   wq_init(&proc->child_wq);
 }
 
-/** Config a process in it slot in the process table  **/
-static void config_process(void code(), char *nom, priority prior,
+/**
+ * @brief Config a process in its slot of the process table.
+ *
+ * @param code Entry point of the process.
+ * @param nom Name of the process, truncated to MAXNAME - 1 chars.
+ * @param prior Priority of the process.
+ * @param proc Process slot to configure.
+ */
+static void config_process(void code(), const char *nom, priority prior,
                            process_t *proc) {
   init_process_queues(proc);
   proc->pid = proc_table.next_pid;
@@ -240,7 +229,12 @@ static void config_process(void code(), char *nom, priority prior,
   }
 }
 
-/** Add a process to the running queue **/
+/**
+ * @brief Add a process to the running queue.
+ *
+ * @param slot Process to admit.
+ * @return Pointer to the admitted process.
+ */
 static process_t *add_process_to_scheduler(process_t *slot) {
   proc_table.active_process++;
   proc_table.next_pid++;
@@ -248,8 +242,7 @@ static process_t *add_process_to_scheduler(process_t *slot) {
   return slot;
 }
 
-/** Spawn a process **/
-process_t *spawn_process(void code(), char *nom, priority prior) {
+process_t *spawn_process(void code(), const char *nom, priority prior) {
   irq_flags_t state = irq_save();
 
   if (proc_table.active_process >= MAX_PROC) {
@@ -267,8 +260,7 @@ process_t *spawn_process(void code(), char *nom, priority prior) {
   return spawned;
 }
 
-/** Spawn a child process in foreground and wait for it **/
-int8_t spawn_foreground(void code(), char *name, priority prior) {
+int8_t spawn_foreground(void code(), const char *name, priority prior) {
   process_t *parent = get_active();
   process_t *child = spawn_process(code, name, prior);
   if (!child) {
@@ -280,23 +272,19 @@ int8_t spawn_foreground(void code(), char *name, priority prior) {
   return pid;
 };
 
-/**
- * @brief Create the idle process and init active as idle.
- */
+/** @brief Create the idle process and make it active. */
 static void init_idle() {
   process_t *init_proc = spawn_process(idle, "idle", IDLE);
   active = init_proc;
   active->state = RUNNING;
 }
 
-/* Init processus handling */
 void init_proc() {
   init_proc_table();
   init_scheduler_queues();
   init_idle();
 }
 
-/** IDLE Processus declaration  **/
 void idle() {
   for (;;) {
     hlt();

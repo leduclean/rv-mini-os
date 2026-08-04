@@ -7,7 +7,6 @@
 #include "minilib/stddef.h"
 #include "minilib/stdint.h"
 
-/** Wait sync primitive to wait for a child terminaison **/
 uint8_t wait() {
   irq_flags_t flags = irq_save();
 
@@ -26,7 +25,6 @@ uint8_t wait() {
   return pid;
 }
 
-/** Wait Pid sync primitive to wait for a specific child terminaison **/
 uint8_t wait_pid(int8_t pid) {
   irq_flags_t flags = irq_save();
 

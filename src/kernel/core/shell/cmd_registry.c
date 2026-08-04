@@ -4,18 +4,17 @@
 #include "process.h"
 
 #define MAX_CMDS 64
+/** @brief Fixed size table of the registered commands. */
 typedef struct {
-  cmd_desc_t tab[MAX_CMDS];
-  uint8_t size;
+  cmd_desc_t tab[MAX_CMDS]; ///< Registered commands, in insertion order.
+  uint8_t size;             ///< Number of registered commands.
 } exec_table;
 
 exec_table registry;
 
-/** Clear the registry **/
 void clear_cmd_registry() { memset(&registry, 0, sizeof(registry)); }
 
-/** Register a builtin cmd in the registry **/
-int8_t register_builtin(char *name, void (*fn)()) {
+int8_t register_builtin(const char *name, void (*fn)()) {
   if (!name || !fn || registry.size >= MAX_CMDS)
     return -1;
   cmd_desc_t *tab = registry.tab;
@@ -27,8 +26,7 @@ int8_t register_builtin(char *name, void (*fn)()) {
   return 0;
 }
 
-/** Register a program in the registry **/
-int8_t register_prog(char *name, void (*fn)(), priority prior) {
+int8_t register_prog(const char *name, void (*fn)(), priority prior) {
   if (!name || !fn || registry.size >= MAX_CMDS)
     return -1;
   cmd_desc_t *tab = registry.tab;
@@ -41,7 +39,6 @@ int8_t register_prog(char *name, void (*fn)(), priority prior) {
   return 0;
 }
 
-/** Lookup for a command in the registry **/
 const cmd_desc_t *command_lookup(const char *name) {
   if (!name)
     return NULL;
