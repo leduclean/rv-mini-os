@@ -11,10 +11,11 @@
 
 #define MAX_CMDS 64
 
-/* --- Shared mutex for mutex demo --- */
+/** @brief Shared mutex for the mutex demo. */
 static mutex_t shared_mutex;
 static uint8_t mutex_initialized = 0;
 
+/** @brief Init the shared mutex on the first demo use. */
 static void ensure_mutex_init() {
   if (!mutex_initialized) {
     mutex_init(&shared_mutex);
@@ -55,7 +56,7 @@ static void proc2() {
   printf("[proc2] done, exiting\n");
 }
 
-/* mutex_holder: acquires the shared mutex, holds it for 5s, then releases */
+/** @brief Acquire the shared mutex, hold it for 15s, then release it. */
 static void mutex_holder() {
   ensure_mutex_init();
   printf("[holder] acquiring mutex...\n");
@@ -68,6 +69,7 @@ static void mutex_holder() {
   printf("[holder] done\n");
 }
 
+/** @brief Acquire the shared mutex, blocking while the holder owns it. */
 static void mutex_waiter() {
   ensure_mutex_init();
   printf("[waiter] trying to acquire mutex (will BLOCK if holder has it)...\n");
@@ -79,6 +81,12 @@ static void mutex_waiter() {
 
 /* --- ps command --- */
 
+/**
+ * @brief Printable name of a process state.
+ *
+ * @param s State to convert.
+ * @return Pointer to its static name.
+ */
 static const char *state_str(state s) {
   switch (s) {
   case FREE:
@@ -100,6 +108,13 @@ static const char *state_str(state s) {
   }
 }
 
+/**
+ * @brief Print one process table row.
+ *
+ * @param node Process table node of the process.
+ * @param args Additional args, unused.
+ * @return 0 (invariant).
+ */
 static int _pretty_print_process(clist_node_t *node, void *args) {
   (void)args;
   process_t *proc = container_of(node, process_t, proc_node);
@@ -110,6 +125,7 @@ static int _pretty_print_process(clist_node_t *node, void *args) {
   return 0;
 }
 
+/** @brief Print the process table. */
 static void ps() {
   printf("%-5s %-5s %-10s %-7s\n", "PID", "PPID", "CMD", "STATE");
   clist_for_each(get_proc_table_clist(), _pretty_print_process, NULL);

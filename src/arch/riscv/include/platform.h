@@ -10,7 +10,7 @@
 #define BOCHS_CONFIG_BASE_ADDRESS 0x40000000
 #define BOCHS_CONFIG_DISPI_ADDRESS 0x500
 
-/* Adresse des différents registres de config */
+// Config registers addresses
 #define VBE_DISPI_INDEX_ID 0x00
 #define VBE_DISPI_INDEX_XRES 0x01
 #define VBE_DISPI_INDEX_YRES 0x02

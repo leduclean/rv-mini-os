@@ -1,12 +1,17 @@
+/**
+ * @file
+ * @brief Process control block and process table handling.
+ */
+
 #pragma once
 #include "clist.h"
 #include "waitqueue.h"
 
-#define MAXNAME 16
-#define MAX_REG_SAVED 18
-#define STACK_SIZE 4096
+#define MAXNAME 16      ///< Size of the process name buffer, in bytes.
+#define MAX_REG_SAVED 18 ///< Number of registers saved on a context switch.
+#define STACK_SIZE 4096  ///< Size of a process stack, in 64 bits words.
 
-// Process State table
+/** @brief Lifecycle states of a process. */
 typedef enum {
   FREE = 0,
   RUNNING,
@@ -17,71 +22,235 @@ typedef enum {
   ZOMBIE
 } state;
 
+/** @brief Scheduling priorities, sorted decremental (HIGH is the highest). */
 typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 
-// Process definition
+/** @brief Process control block. */
 typedef struct process {
-  uint8_t pid;
-  char name[MAXNAME];
-  state state;
-  uint64_t ctx[MAX_REG_SAVED];
-  uint64_t stack[STACK_SIZE];
+  uint8_t pid;                 ///< Process identifier.
+  char name[MAXNAME];          ///< Process name, null terminated.
+  state state;                 ///< Current lifecycle state.
+  uint64_t ctx[MAX_REG_SAVED]; ///< Registers saved on a context switch.
+  uint64_t stack[STACK_SIZE];  ///< Process stack.
 
-  // Process table node
-  clist_node_t proc_node;
+  clist_node_t proc_node; ///< Process table node.
 
-  // Scheduler ready queue node
-  clist_node_t ready_node;
+  clist_node_t ready_node; ///< Scheduler ready queue node.
 
-  // waiting queue double linked list pointer
-  // used to put the process in zombie/IO/mutex wait.
+  /**
+   * @brief Wait queue node, used to put the process in a zombie, IO or
+   * mutex wait.
+   */
   clist_node_t wait_node;
-  wait_queue_t *current_wq; // Is set to NULL if not blocked
+  wait_queue_t *current_wq; ///< Wait queue blocked on, NULL if not blocked.
 
-  clist_node_t sleep_node;
-  // Time outand sleep time
-  uint64_t wake_up_time;
+  clist_node_t sleep_node; ///< Sleeping queue node.
+  uint64_t wake_up_time;   ///< Wake up date, in secondes since boot.
 
-  // Zombie state handling with parent
-  process_t *parent;
-  wait_queue_t child_wq;
-  wait_queue_t zombies;
+  process_t *parent;      ///< Parent process, NULL if orphan.
+  wait_queue_t child_wq;  ///< Queue blocked on while waiting for a child.
+  wait_queue_t zombies;   ///< Terminated children waiting to be reaped.
 
-  priority priority;
+  priority priority; ///< Scheduling priority class.
 } process_t;
 
-// Process getter
+/**
+ * @brief Get the saved register context of a process.
+ *
+ * @param proc Process to read.
+ * @return Pointer to the saved register array.
+ */
 uint64_t *get_ctx(process_t *proc);
-uint32_t get_wake_up(process_t *proc);
-priority get_priority(process_t *proc);
-const char *get_name(process_t *proc);
-uint8_t get_pid(process_t *proc);
+
+/**
+ * @brief Get the wake up time of a process.
+ *
+ * @param proc Process to read.
+ * @return Wake up time, in secondes since boot.
+ */
+uint32_t get_wake_up(const process_t *proc);
+
+/**
+ * @brief Get the priority of a process.
+ *
+ * @param proc Process to read.
+ * @return Priority class of @p proc.
+ */
+priority get_priority(const process_t *proc);
+
+/**
+ * @brief Get the name of a process.
+ *
+ * @param proc Process to read.
+ * @return Pointer to the name of @p proc.
+ */
+const char *get_name(const process_t *proc);
+
+/**
+ * @brief Get the pid of a process.
+ *
+ * @param proc Process to read.
+ * @return Pid of @p proc.
+ */
+uint8_t get_pid(const process_t *proc);
+
+/**
+ * @brief Get the ready queue node of a process.
+ *
+ * @param proc Process to read.
+ * @return Pointer to its ready queue node.
+ */
 clist_node_t *get_ready_node(process_t *proc);
+
+/**
+ * @brief Get the wait queue node of a process.
+ *
+ * @param proc Process to read.
+ * @return Pointer to its wait queue node.
+ */
 clist_node_t *get_wait_node(process_t *proc);
+
+/**
+ * @brief Get the sleeping queue node of a process.
+ *
+ * @param proc Process to read.
+ * @return Pointer to its sleeping queue node.
+ */
 clist_node_t *get_sleep_node(process_t *proc);
+
+/**
+ * @brief Get the queue holding the zombie children of a process.
+ *
+ * @param proc Parent process.
+ * @return Pointer to its zombies queue.
+ */
 wait_queue_t *get_zombies(process_t *proc);
+
+/**
+ * @brief Get the queue a process blocks on while waiting for a child.
+ *
+ * @param proc Parent process.
+ * @return Pointer to its child wait queue.
+ */
 wait_queue_t *get_wait_child_queue(process_t *proc);
 
-// Process setter
+/**
+ * @brief Set the state of a process.
+ *
+ * @param proc Process to update.
+ * @param state New state.
+ */
 void set_state(process_t *proc, state state);
+
+/**
+ * @brief Make a process the active one, demoting the previous one to READY.
+ *
+ * @param next Process to make active.
+ */
 void switch_active(process_t *next);
 
-// Proc table helper
+/**
+ * @brief Get the clist holding every living process.
+ *
+ * @return Head sentinel of the process table clist.
+ */
 const clist_node_t *get_proc_table_clist();
-// Active getter
+
+/**
+ * @brief Get the running process.
+ *
+ * @return Pointer to the active process.
+ */
 process_t *get_active();
+
+/**
+ * @brief Get the pid of the running process.
+ *
+ * @return Pid of the active process.
+ */
 uint8_t get_active_pid();
+
+/**
+ * @brief Get the name of the running process.
+ *
+ * @return Pointer to the name of the active process.
+ */
 char *get_active_name();
 
+/**
+ * @brief Boolean helper to determine if a priority is higher than another.
+ *
+ * We consider that priorities are sorted decremental.
+ *
+ * @param prior Priority to test.
+ * @param other Priority to compare against.
+ * @return 1 if @p prior is higher than @p other, 0 otherwise.
+ */
 uint8_t higher_priority(priority prior, priority other);
 
-void process_sleep(process_t *proc, uint32_t delay); // delay is in secondes
+/**
+ * @brief Set a process in sleeping state with a timer.
+ *
+ * @param proc Process to put to sleep.
+ * @param delay Sleeping duration, in secondes.
+ */
+void process_sleep(process_t *proc, uint32_t delay);
+
+/**
+ * @brief Set a process to blocked state, waiting for an IO irq.
+ *
+ * @param proc Process to block.
+ */
 void process_block(process_t *proc);
+
+/**
+ * @brief Switch a sleeping or blocked process back to running.
+ *
+ * @note It is also removed from every blocking queue it was in.
+ *
+ * @param proc Process to wake up.
+ */
 void process_wake(process_t *proc);
+
+/**
+ * @brief Terminate a process.
+ *
+ * @note It is zombified if it has a parent, cleaned up otherwise.
+ *
+ * @param proc Process to terminate.
+ */
 void process_terminate(process_t *proc);
+
+/**
+ * @brief Reap a zombie process, called by its parent.
+ *
+ * @param proc Zombie process to reap.
+ */
 void process_reap(process_t *proc);
-// Idle Process declaration
+
+/** @brief Idle process, runs whenever no other process is ready. */
 void idle();
+
+/** @brief Init the process table, the scheduler queues and the idle process. */
 void init_proc();
-process_t *spawn_process(void code(), char *name, priority prior);
-int8_t spawn_foreground(void code(), char *name, priority prior);
+
+/**
+ * @brief Spawn a process and admit it in the scheduler.
+ *
+ * @param code Entry point of the process.
+ * @param name Name of the process, truncated to MAXNAME - 1 chars.
+ * @param prior Priority of the process.
+ * @return Pointer to the spawned process, NULL if the table is full or the
+ * allocation failed.
+ */
+process_t *spawn_process(void code(), const char *name, priority prior);
+
+/**
+ * @brief Spawn a child process and block until it terminates.
+ *
+ * @param code Entry point of the child.
+ * @param name Name of the child, truncated to MAXNAME - 1 chars.
+ * @param prior Priority of the child.
+ * @return Pid of the child, -1 if the spawn failed.
+ */
+int8_t spawn_foreground(void code(), const char *name, priority prior);

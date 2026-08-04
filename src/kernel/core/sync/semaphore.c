@@ -7,12 +7,12 @@
 #include "minilib/stdint.h"
 #include "waitqueue.h"
 
+/** @brief Counting semaphore and the processes waiting on it. */
 struct semaphore {
-  int count;
-  wait_queue_t waiting;
+  int count;            ///< Number of available ressources.
+  wait_queue_t waiting; ///< Processes blocked waiting for a ressource.
 };
 
-/** Init a semaphore structure **/
 void sem_init(semaphore_t *sem, int val) {
   irq_flags_t flags = irq_save();
   wq_init(&sem->waiting);
@@ -21,7 +21,6 @@ void sem_init(semaphore_t *sem, int val) {
   irq_restore(flags);
 }
 
-/** Take a semaphore **/
 int8_t sem_try_take(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
   irq_flags_t flags = irq_save();
@@ -34,7 +33,6 @@ int8_t sem_try_take(semaphore_t *sem) {
   return 0;
 }
 
-/** Take a semaphore **/
 void sem_take(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
   irq_flags_t flags = irq_save();
@@ -44,7 +42,6 @@ void sem_take(semaphore_t *sem) {
   irq_restore(flags);
 }
 
-/** Release a semaphore **/
 void sem_release(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
   irq_flags_t flags = irq_save();

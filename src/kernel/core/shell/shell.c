@@ -7,7 +7,7 @@
 #include "process.h"
 #include "programs.h"
 
-/* Builtin shell Command to list all the prog launchable */
+/** @brief Builtin shell command listing all the launchable programs. */
 static void builtin_help() {
   printf("Available commands: \n");
   const cmd_desc_t *cmd = NULL;
@@ -24,9 +24,17 @@ static void builtin_help() {
   }
 }
 
+/** @brief Register the shell builtins. */
 static inline void init_builtins() { register_builtin("help", builtin_help); }
 
-/** Handle the user shell command **/
+/**
+ * @brief Handle a user shell command.
+ *
+ * @note A builtin is executed directly, a program is spawned in background
+ * or in foreground depending on the command background flag.
+ *
+ * @param cmd Tokenized command to run.
+ */
 static void cmd_handler(shell_cmd_tokens_t *cmd) {
   if (cmd->argc == 0)
     return;
@@ -57,7 +65,6 @@ static void cmd_handler(shell_cmd_tokens_t *cmd) {
 
 static char line_buffer[MAX_COLS];
 
-/** Shell main process **/
 void shell() {
   init_builtins();
   init_programs();
