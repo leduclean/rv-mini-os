@@ -8,7 +8,7 @@
 #include "programs.h"
 
 /** @brief Builtin shell command listing all the launchable programs. */
-static void builtin_help() {
+static void _builtin_help() {
   printf("Available commands: \n");
   const cmd_desc_t *cmd = NULL;
   for (uint8_t i = 0; i < registry_get_size(); i++) {
@@ -25,7 +25,7 @@ static void builtin_help() {
 }
 
 /** @brief Register the shell builtins. */
-static inline void init_builtins() { register_builtin("help", builtin_help); }
+static inline void _init_builtins() { register_builtin("help", _builtin_help); }
 
 /**
  * @brief Handle a user shell command.
@@ -35,7 +35,7 @@ static inline void init_builtins() { register_builtin("help", builtin_help); }
  *
  * @param cmd Tokenized command to run.
  */
-static void cmd_handler(shell_cmd_tokens_t *cmd) {
+static void _cmd_handler(shell_cmd_tokens_t *cmd) {
   if (cmd->argc == 0)
     return;
 
@@ -66,12 +66,12 @@ static void cmd_handler(shell_cmd_tokens_t *cmd) {
 static char line_buffer[MAX_COLS];
 
 void shell() {
-  init_builtins();
+  _init_builtins();
   init_programs();
   for (;;) {
     if (parser_read_line(line_buffer, MAX_COLS) != 0) {
       shell_cmd_tokens_t cmd = parser_get_cmd(line_buffer);
-      cmd_handler(&cmd);
+      _cmd_handler(&cmd);
     }
   }
 }

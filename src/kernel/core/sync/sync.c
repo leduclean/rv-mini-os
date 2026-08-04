@@ -8,7 +8,7 @@
 #include "minilib/stdint.h"
 
 uint8_t wait() {
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
 
   process_t *parent = get_active();
   wait_queue_t *zombies = get_zombies(parent);
@@ -21,12 +21,12 @@ uint8_t wait() {
   uint8_t pid = get_pid(to_reap);
   process_reap(to_reap);
 
-  irq_restore(flags);
+  _irq_restore(flags);
   return pid;
 }
 
 uint8_t wait_pid(int8_t pid) {
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
 
   process_t *parent = get_active();
   wait_queue_t *zombies = get_zombies(parent);
@@ -37,6 +37,6 @@ uint8_t wait_pid(int8_t pid) {
   }
   process_reap(to_reap);
 
-  irq_restore(flags);
+  _irq_restore(flags);
   return pid;
 }

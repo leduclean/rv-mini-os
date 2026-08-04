@@ -16,14 +16,14 @@ static uint32_t prev;
 inline uint32_t seconds() { return ticks / ITFREQ; }
 
 /** @brief Arm the timer comparator for the next tick. */
-static inline void update_timer() {
+static inline void _update_timer() {
   MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
 }
 
 void init_timer() {
   ticks = 0;
   prev = -1;
-  update_timer();
+  _update_timer();
 }
 
 void timer_irq_handler(void) {
@@ -44,5 +44,5 @@ void timer_irq_handler(void) {
 
   scheduler_wake_sleeping();
   scheduler_rotate();
-  update_timer();
+  _update_timer();
 }

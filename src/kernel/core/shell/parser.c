@@ -12,10 +12,10 @@
  * @param buf Buffer to flush.
  * @param size Size of @p buf.
  */
-static void flush(char *buf, size_t size) { memset(&buf, 0, sizeof(size)); }
+static void _flush(char *buf, size_t size) { memset(&buf, 0, sizeof(size)); }
 
 int parser_read_line(char *buf, size_t size) {
-  flush(buf, size);
+  _flush(buf, size);
   int len = 0;
   for (;;) {
     char c;
@@ -50,7 +50,7 @@ int parser_read_line(char *buf, size_t size) {
  *
  * @param cmd Command to check on.
  */
-static void check_background(shell_cmd_tokens_t *cmd) {
+static void _check_background(shell_cmd_tokens_t *cmd) {
   if ((cmd->argc > 0) && strcmp(cmd->argv[cmd->argc - 1], "&") == 0) {
     cmd->background = 1;
     cmd->argc--;
@@ -66,6 +66,6 @@ shell_cmd_tokens_t parser_get_cmd(char *buf) {
     token = strtok(NULL, " ");
   }
 
-  check_background(&cmd);
+  _check_background(&cmd);
   return cmd;
 }
