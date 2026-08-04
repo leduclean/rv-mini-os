@@ -6,23 +6,32 @@
 #include "uart.h"
 
 #define DISPI16(base_addr, reg_idx) MMIO16(base_addr + (reg_idx << 1))
-/* Device Command bits
- * bit 0 = memory io
- * bit 1 = memory access
- * bit 2 = screen reach enable
- * */
+/** @brief Device command bits: memory io, memory access, screen reach. */
 #define COMMAND_CONFIG 0b111
 
 #define BG_COLOR 0x000000
 #define TEXT_COLOR 0xFFFFFF
 
-// Make PCI ECAM address
+/**
+ * @brief Make a PCI ECAM address.
+ *
+ * @param bus Bus number.
+ * @param dev Device number.
+ * @param func Function number.
+ * @param offset Offset of the register in the config space.
+ * @return The assembled ECAM address.
+ */
 static inline uintptr_t make_device_addr(uint32_t bus, uint32_t dev,
                                          uint32_t func, uint32_t offset) {
   return PCI_ECAM_BASE_ADDRESS | (bus << PCI_BUS_SHIFT) |
          (dev << PCI_DEVICE_SHIFT) | (func << PCI_FUNC_SHIFT) | offset;
 }
 
+/**
+ * @brief Find the display device on the PCIe bus and map its base addresses.
+ *
+ * @return 0 on success, -1 if no display device was found.
+ */
 int config_pcie() {
   int found = -1;
   uintptr_t device_addr;
@@ -47,6 +56,11 @@ int config_pcie() {
   return 0;
 };
 
+/**
+ * @brief Config the Bochs display resolution, depth and offsets.
+ *
+ * @return 0 on success, -1 if the device has a wrong type id.
+ */
 int config_screen() {
   uintptr_t dispi_base = BOCHS_CONFIG_BASE_ADDRESS + BOCHS_CONFIG_DISPI_ADDRESS;
   // type id verification (12 MSB comparison)
@@ -71,9 +85,6 @@ int config_screen() {
   return 0;
 };
 
-/*
- * System graphic card configuration
- * */
 int init_screen() {
   if (config_pcie() != 0)
     return -1;
@@ -82,7 +93,14 @@ int init_screen() {
   return 0;
 };
 
-/* Pixel writing */
+/**
+ * @brief Pixel writing.
+ *
+ * @param x Column of the pixel, in pixels.
+ * @param y Row of the pixel, in pixels.
+ * @param color Color to write.
+ * @return 0 on success, -1 if the pixel is out of range.
+ */
 int pixel(uint32_t x, uint32_t y, uint32_t color) {
   if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
     return -1; // error out of range
@@ -96,7 +114,16 @@ int pixel(uint32_t x, uint32_t y, uint32_t color) {
   return 0; // success
 };
 
-/* Char writing */
+/**
+ * @brief Char writing.
+ *
+ * @param row Row of the char, in chars.
+ * @param col Column of the char, in chars.
+ * @param c Character to draw.
+ * @param color Color of the glyph.
+ * @param bg_color Color of the background.
+ * @return 0 on success, -1 if the char is out of range.
+ */
 int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
                uint32_t bg_color) {
   // Pixel conversion
@@ -125,7 +152,13 @@ int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 uint8_t cursor_row = 1;
 uint8_t cursor_col = 0;
 
-/* Cursor position handling */
+/**
+ * @brief Cursor position handling, drawing an 8 pixel horizontal line.
+ *
+ * @param row Row of the line, in pixels.
+ * @param col Column the line starts at, in pixels.
+ * @param color Color of the line.
+ */
 void draw_line(uint32_t row, uint32_t col, uint32_t color) {
   for (int offset = 0; offset < 8; offset++) {
     pixel(col + offset, row, color);
@@ -140,8 +173,8 @@ static inline void undraw_cursor() {
   draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
 
-/* Move screen display to an upper line */
-void defilement() {
+/** @brief Move the screen display to an upper line. */
+void scroll() {
   // each caractere line has a width of 8 pixel
   static uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
       (uint32_t (*)[DISPLAY_WIDTH * 8]) BOCHS_DISPLAY_BASE_ADDRESS;
@@ -155,10 +188,17 @@ void defilement() {
          1 * DISPLAY_WIDTH * sizeof(uint32_t));
 }
 
+/**
+ * @brief Move the cursor, scrolling the screen if it goes past the last row.
+ *
+ * @param row New row of the cursor, in chars.
+ * @param col New column of the cursor, in chars.
+ * @return 0 on success, -1 if @p row is negative.
+ */
 int set_cursor(int row, int col) {
   undraw_cursor();
   while (row >= MAX_ROWS) {
-    defilement();
+    scroll();
     row--;
   }
 
@@ -174,6 +214,7 @@ int set_cursor(int row, int col) {
   return 0;
 }
 
+/** @brief Move the cursor one char forward, wrapping to the next line. */
 void advance_cursor() {
   if (cursor_col + 1 < MAX_COLS) {
     set_cursor(cursor_row, cursor_col + 1);
@@ -182,13 +223,18 @@ void advance_cursor() {
   }
 }
 
+/**
+ * @brief Draw a char at the cursor position and advance the cursor.
+ *
+ * @param c Character to draw.
+ */
 void put_char(char c) {
   // write char
   write_char(cursor_row, cursor_col, c, TEXT_COLOR, BG_COLOR);
   advance_cursor();
 }
 
-/* Remove all the char on the screen */
+/** @brief Remove all the chars on the screen and reset the cursor. */
 void clear_screen() {
   for (int y = 0; y < DISPLAY_HEIGHT; y++) {
     for (int x = 0; x < DISPLAY_WIDTH; x++) {
@@ -198,9 +244,7 @@ void clear_screen() {
   set_cursor(1, 0);
 }
 
-/*/
- * Control char handling helpers
- */
+// Control char handling helpers
 
 static inline void tab() {
   int distance = (-cursor_col) & 7;
@@ -220,7 +264,11 @@ static inline void backspace() {
 static inline void newline() { set_cursor(cursor_row + 1, 0); }
 static inline void carriage_return() { set_cursor(cursor_row, 0); }
 
-/* Handle char type -> print if char or do action if control */
+/**
+ * @brief Handle a char type: print it if printable, act on it if control.
+ *
+ * @param c Character to handle.
+ */
 void handle_char(char c) {
   // We only treat those char
   if (c >= 32 && c < 127) {
@@ -247,7 +295,6 @@ void handle_char(char c) {
   }
 };
 
-/* Main fonction used to pipe char to UART and to screen dipslay */
 void console_putbytes(const char *s, int len) {
   for (int i = 0; i < len; i++) {
     uart_putchar(s[i]);

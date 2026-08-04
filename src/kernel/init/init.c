@@ -8,6 +8,7 @@
 
 extern void trap_vector(void);
 
+/** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start() {
   // Plic config
   plic_uart_config();

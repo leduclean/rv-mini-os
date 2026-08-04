@@ -7,20 +7,22 @@
 
 #define UART_RX_BUFFER_SIZE 128
 
-/** Sleeping queue relative to uart IO.
- * All of it process should be waken on irq.
- **/
+/**
+ * @brief Sleeping queue relative to the uart IO.
+ *
+ * @note All of its processes should be woken on irq.
+ */
 static wait_queue_t uart_wait_queue;
 
 static inline void uart_init_queue() { wq_init(&uart_wait_queue); }
 
 wait_queue_t *uart_get_wait_queue() { return &uart_wait_queue; }
 
-/** We define a ring buffer to read the inner char **/
+/** @brief Ring buffer used to hold the received chars. */
 typedef struct {
-  char buf[UART_RX_BUFFER_SIZE];
-  volatile uint32_t head;
-  volatile uint32_t tail;
+  char buf[UART_RX_BUFFER_SIZE]; ///< Storage of the received chars.
+  volatile uint32_t head;        ///< Index the irq handler writes at.
+  volatile uint32_t tail;        ///< Index uart_read() reads from.
 } uart_ring_buffer_t;
 
 static uart_ring_buffer_t rx_buffer;
@@ -74,12 +76,11 @@ static void uart_set_baud() {
   MMIO8(lcr_addr) &= ~UART_LCR_DLAB;
 }
 
-/** Enable the RX interupt **/
+/** @brief Enable the RX interupt. */
 static inline void uart_enable_rxirq() {
   MMIO8(UART_BASE + UART_IER) |= UART_RXEN;
 }
 
-/** Init the uart to receive char and get char **/
 void uart_init() {
   uart_init_queue();
   uart_set_baud();
@@ -88,25 +89,31 @@ void uart_init() {
   uart_enable_rxirq();
 };
 
-/* Write a character in the THR FIFO buffer (a transmitted char) */
 void uart_putchar(char c) { MMIO8(UART_BASE + UART_THR) = c; };
 
-/* Get a character in the RBR FIFO buffer (a received char)*/
+/**
+ * @brief Get a character from the RBR fifo buffer, a received char.
+ *
+ * @return The received character.
+ */
 static char uart_getchar() { return MMIO8(UART_BASE + UART_RBR); };
 
-/* Signals that data is available in rx */
+/**
+ * @brief Signals that data is available in rx.
+ *
+ * @return 1 if a character can be read, 0 otherwise.
+ */
 static inline uint8_t uart_rx_data_ready() {
   return MMIO8(UART_BASE + UART_LSR) & 1;
 }
 
-/* Fill the rx buffer while rx contain data */
+/** @brief Fill the rx ring buffer while rx contains data. */
 static void uart_fill_rx_buff() {
   while (uart_rx_data_ready()) {
     buffer_put(&rx_buffer, uart_getchar());
   }
 }
 
-/* Read the data in the RX buffer if available*/
 int uart_read(char *c) {
   if (!buffer_empty(&rx_buffer)) {
     *c = buffer_get(&rx_buffer);
@@ -115,7 +122,6 @@ int uart_read(char *c) {
   return -1;
 }
 
-/* Handler for the external interupt trigerred by the uart */
 void uart_irq_handler() {
   uart_fill_rx_buff();
   scheduler_wake_waiting_queue(&uart_wait_queue);

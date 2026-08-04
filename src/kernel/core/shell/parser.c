@@ -6,11 +6,14 @@
 #include "scheduler.h"
 #include "uart.h"
 
-/* Buffer flush */
+/**
+ * @brief Buffer flush.
+ *
+ * @param buf Buffer to flush.
+ * @param size Size of @p buf.
+ */
 static void flush(char *buf, size_t size) { memset(&buf, 0, sizeof(size)); }
 
-/** Processus that echo the uart character and write in the buffer
- * the current line **/
 int parser_read_line(char *buf, size_t size) {
   flush(buf, size);
   int len = 0;
@@ -42,8 +45,11 @@ int parser_read_line(char *buf, size_t size) {
   }
 }
 
-/** If last cmd argument is & then set backround to true and remove the last arg
- * **/
+/**
+ * @brief If the last cmd argument is &, set background and drop that arg.
+ *
+ * @param cmd Command to check on.
+ */
 static void check_background(shell_cmd_tokens_t *cmd) {
   if ((cmd->argc > 0) && strcmp(cmd->argv[cmd->argc - 1], "&") == 0) {
     cmd->background = 1;
@@ -51,7 +57,6 @@ static void check_background(shell_cmd_tokens_t *cmd) {
   }
 }
 
-/** Tokenize the line and convert it into shell command **/
 shell_cmd_tokens_t parser_get_cmd(char *buf) {
   shell_cmd_tokens_t cmd = {0};
   char *token = NULL;

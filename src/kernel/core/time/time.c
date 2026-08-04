@@ -5,16 +5,17 @@
 #include "platform.h"
 #include "scheduler.h"
 
-// IT FREQ for a 1/20 s period
+/** @brief Irq frequency, for a 1/20 s period. */
 #define ITFREQ 20
 #define DELAY (TIMER_FREQ / ITFREQ)
 
-// Gloabl irq tick counter
+/** @brief Global irq tick counter. */
 static uint32_t ticks;
 static uint32_t prev;
 
 inline uint32_t seconds() { return ticks / ITFREQ; }
 
+/** @brief Arm the timer comparator for the next tick. */
 static inline void update_timer() {
   MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
 }

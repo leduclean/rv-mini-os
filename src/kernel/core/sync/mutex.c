@@ -7,7 +7,6 @@
 #include "minilib/stdint.h"
 #include "minilib/string.h"
 
-/** Mutex Init primitive **/
 void mutex_init(mutex_t *m) {
   // Atomic
   irq_flags_t flags = irq_save();
@@ -17,14 +16,10 @@ void mutex_init(mutex_t *m) {
   irq_restore(flags);
 }
 
-/** Give the lock state of the mutex **/
-uint8_t mutex_is_lock(mutex_t *m) { return m->locked; }
+uint8_t mutex_is_lock(const mutex_t *m) { return m->locked; }
 
-/** Give the owner of the mutex **/
-process_t *mutex_owner(mutex_t *m) { return m->owner; }
+process_t *mutex_owner(const mutex_t *m) { return m->owner; }
 
-/** TryLock primitive to try to take the ownership of a mutex
- * return 0 if taken else -1. Do not block if not taken **/
 int8_t mutex_trylock(mutex_t *m) {
   // Atomic
   irq_flags_t flags = irq_save();
@@ -41,7 +36,6 @@ int8_t mutex_trylock(mutex_t *m) {
   return 0;
 }
 
-/** Lock primitive to take ownership of a mutex **/
 void mutex_lock(mutex_t *m) {
   irq_flags_t flags = irq_save();
 
@@ -52,7 +46,6 @@ void mutex_lock(mutex_t *m) {
   irq_restore(flags);
 }
 
-/** Unlock primitive to release ownership of a mutex **/
 void mutex_unlock(mutex_t *m) {
   // Atomic
   irq_flags_t flags = irq_save();

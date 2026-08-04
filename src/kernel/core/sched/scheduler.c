@@ -10,27 +10,26 @@
 
 extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
 
-/** Main rescheduling function called to change context between proc**/
+/**
+ * @brief Main rescheduling function, changing the context between processes.
+ *
+ * @param next Process to switch on.
+ */
 static void do_ctx_switch(process_t *next) {
   uint64_t *old_ctx = get_ctx(get_active());
   switch_active(next);
   ctx_sw((uintptr_t)old_ctx, (uintptr_t)get_ctx(next));
 }
 
-/** Priority handling **/
+// Priority handling
 
-/**
- * @brief Priority mapped ready queues.
- */
+/** @brief Priority mapped ready queues. */
 static clist_node_t ready_queues[PRIORITY_COUNT];
-/**
- * @brief Priority flag to keep track of the highest priority.
- */
+
+/** @brief Highest ready priority. */
 static priority highest_ready_tracking;
 
-/**
- * @brief Init all the ready queues and the priority.
- */
+/** @brief Init all the ready queues and the priority flag. */
 static void init_ready_queues() {
   // Reset all the node of the ready queue
   for (int i = 0; i < PRIORITY_COUNT; i++) {
@@ -42,9 +41,9 @@ static void init_ready_queues() {
 }
 
 /**
- * @brief Add a process to the end of its corresponding priority ready queue.
+ * @brief Add a process at the end of its corresponding priority ready queue.
  *
- * @param proc Pointer to the processus we want to add.
+ * @param proc Process to enqueue.
  */
 static void ready_queue_enqueue(process_t *proc) {
   priority prior_class = get_priority(proc);
@@ -53,9 +52,9 @@ static void ready_queue_enqueue(process_t *proc) {
 }
 
 /**
- * @brief Remove the process from the ready queue he is in.
+ * @brief Remove a process from the ready queue it is in.
  *
- * @param proc The processus to remove.
+ * @param proc Process to remove.
  */
 static inline void ready_queue_remove(process_t *proc) {
   if (!clist_is_in_list(&proc->ready_node))
@@ -64,11 +63,11 @@ static inline void ready_queue_remove(process_t *proc) {
 }
 
 /**
- * @brief Round Robin circular rotation of the ready queue and giv
+ * @brief Round robin circular rotation of a ready queue.
  *
- * @note This function also gives the next processus to switch on.
+ * @note This function also gives the next process to switch on.
  *
- * @param rq Pointer to the ready queue to rotate on.
+ * @param rq Ready queue to rotate on.
  * @return Pointer to the next process.
  */
 static process_t *rotate_ready_queue(clist_node_t *rq) {
@@ -81,10 +80,10 @@ static process_t *rotate_ready_queue(clist_node_t *rq) {
   return container_of(clist_first(rq), process_t, ready_node);
 }
 
-/*
+/**
  * @brief Check if a priority preemption is needed and does it if needed.
  *
- * @param proc Pointer to the processus we want to add.
+ * @param proc Process that may preempt the active one.
  */
 static void check_and_preempt(process_t *proc) {
   priority prior = get_priority(proc);
@@ -96,7 +95,7 @@ static void check_and_preempt(process_t *proc) {
 }
 
 /**
- * @brief Pick the highest priority ready queue in the ready queues
+ * @brief Pick the highest priority ready queue in the ready queues.
  *
  * @return Pointer to the highest priority queue (clist).
  */
@@ -105,10 +104,10 @@ static inline clist_node_t *pick_highest(void) {
 }
 
 /**
- * @brief Refresh highest priority flag scnaning all the queues.
+ * @brief Refresh the highest priority flag, scanning all the queues.
  *
- * @note The scan is down increamenting the index since the highest priority is
- * 0.
+ * @note The scan is done incrementing the index, since the highest priority
+ * is 0.
  */
 void refresh_highest_prio() {
   // Test the supposate highest prio
@@ -129,7 +128,7 @@ void refresh_highest_prio() {
 /**
  * @brief Check if a process should change the highest priority flag.
  *
- * @param proc Pointer to the processus we want to check on.
+ * @param proc Process to check on.
  */
 static void update_highest(process_t *proc) {
   priority prior_class = get_priority(proc);
@@ -138,11 +137,6 @@ static void update_highest(process_t *proc) {
   }
 }
 
-/**
- * @brief Admit a processus in the coresponding ready queue.
- *
- * @param proc Pointer to the processus to admit.
- */
 void scheduler_admit(process_t *proc) {
   irq_flags_t flags = irq_save();
 
@@ -153,7 +147,6 @@ void scheduler_admit(process_t *proc) {
   irq_restore(flags);
 }
 
-/* Schedule function trigered by an interupt */
 void scheduler_rotate() {
   irq_flags_t flags = irq_save();
 
@@ -164,9 +157,12 @@ void scheduler_rotate() {
   irq_restore(flags);
 }
 
-/* Schedule function trigered by an inactivity of the process
- * ie terminason, or sleep
- * */
+/**
+ * @brief Switch out the active process on its inactivity.
+ *
+ * @note Called on a terminaison or on a sleep, it switches on the head of
+ * the highest priority ready queue.
+ */
 static void switch_out_active() {
   irq_flags_t flags = irq_save();
 
@@ -177,7 +173,6 @@ static void switch_out_active() {
   irq_restore(flags);
 }
 
-/** Terminate a processus **/
 void scheduler_terminate() {
   irq_flags_t flags = irq_save();
   process_t *current = get_active();
@@ -189,13 +184,11 @@ void scheduler_terminate() {
   irq_restore(flags);
 }
 
-/* Launcher to handle launch and terminaison of a proc */
 void proc_launcher(void proc()) {
   proc();
   scheduler_terminate();
 }
 
-/** Wake up a process and reschedule it in the running queue **/
 void scheduler_ready_process(process_t *proc) {
   irq_flags_t flags = irq_save();
 
@@ -213,34 +206,43 @@ void scheduler_ready_process(process_t *proc) {
   irq_restore(flags);
 }
 
-/** Sleeping queue handling **/
+// Sleeping queue handling
 static clist_node_t sleeping_head;
 
+/** @brief Init the sleeping queue. */
 static void init_sleep_queue() { clist_init_node(&sleeping_head); }
 
 uint8_t is_in_sleeping_queue(process_t *proc) {
   return clist_is_in_list(get_sleep_node(proc));
 }
 
+/**
+ * @brief Sort policy of the sleeping queue.
+ *
+ * @param current Node already in the queue.
+ * @param other Node being inserted.
+ * @return 1 if @p current wakes up after @p other, 0 otherwise.
+ */
 static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other) {
   process_t *cur_proc = container_of(current, process_t, wait_node);
   process_t *other_proc = container_of(other, process_t, wait_node);
   return (get_wake_up(cur_proc) > get_wake_up(other_proc));
 }
 
-/** Insert a node in the clist respecting a wake up time
- * sort politic **/
+/**
+ * @brief Insert a process in the sleeping queue, sorted by wake up time.
+ *
+ * @param proc Process to insert.
+ */
 static void insert_sleep(process_t *proc) {
   clist_node_t *node = get_sleep_node(proc);
   clist_insert_sorted(&sleeping_head, node, _wake_up_cmp);
 }
 
-/** Remove an element from the sleeping queue **/
 void remove_from_sleeping(process_t *proc) {
   clist_remove(get_sleep_node(proc));
 }
 
-/** Set a program to sleeping state **/
 void scheduler_sleep(uint32_t nbr_secs) {
   irq_flags_t flags = irq_save();
 
@@ -253,11 +255,11 @@ void scheduler_sleep(uint32_t nbr_secs) {
 }
 
 /**
- * @brief Wake up policy applied on each item of a sleeping queue.
+ * @brief Wake up policy applied on each item of the sleeping queue.
  *
- * @param node Node of the process.
- * @param arg Now timer.
- * @return -1 to break the for each iteration on sorted list. 0 else.
+ * @param node Sleeping node of the process.
+ * @param arg Current time, in secondes.
+ * @return -1 to break the for each iteration on the sorted list, 0 else.
  */
 static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg) {
   uint32_t now = *(uint32_t *)arg;
@@ -270,7 +272,6 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg) {
   return 0;
 }
 
-/** Wake up the wakable processes in the sleeping queue **/
 void scheduler_wake_sleeping() {
   irq_flags_t flags = irq_save();
 
@@ -280,13 +281,18 @@ void scheduler_wake_sleeping() {
   irq_restore(flags);
 }
 
+/**
+ * @brief Move a process from its ready queue to a wait queue.
+ *
+ * @param proc Process to block.
+ * @param wq Wait queue to block it on.
+ */
 static inline void move_to_wq(process_t *proc, wait_queue_t *wq) {
   ready_queue_remove(proc);
   process_block(proc);
   wq_enqueue(wq, &proc->wait_node);
 }
 
-/** Block on a specific waiting queue relative to a signal **/
 void scheduler_block_on(wait_queue_t *wq) {
   irq_flags_t flags = irq_save();
 
@@ -297,7 +303,6 @@ void scheduler_block_on(wait_queue_t *wq) {
   irq_restore(flags);
 }
 
-/** Block on a specific waiting queue but with a timeout **/
 void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
   irq_flags_t flags = irq_save();
 
@@ -313,11 +318,11 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs) {
 }
 
 /**
- * @brief Wake up policy applied to a wq.
+ * @brief Wake up policy applied to a wait queue.
  *
  * @param current Node to compute on.
- * @param args Aditional args.
- * @return 0 (invariant)
+ * @param args Additional args, unused.
+ * @return 0 (invariant).
  */
 static inline int _wake_up_waiting_cb(clist_node_t *current, void *args) {
   // args is unused but needed for the for a for each callback
@@ -327,14 +332,6 @@ static inline int _wake_up_waiting_cb(clist_node_t *current, void *args) {
   return 0;
 }
 
-/**
- * @brief Wake an entire wait queue.
- *
- * This function is supposed to be called on an event to remove
- * process block on this event.
- *
- * @param wq Waiting queue associated with the block condition.
- */
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {
   irq_flags_t flags = irq_save();
   wq_for_each_and_del(wq, _wake_up_waiting_cb, NULL);
