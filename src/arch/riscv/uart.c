@@ -14,7 +14,7 @@
  */
 static wait_queue_t uart_wait_queue;
 
-static inline void uart_init_queue() { wq_init(&uart_wait_queue); }
+static inline void _uart_init_queue() { wq_init(&uart_wait_queue); }
 
 wait_queue_t *uart_get_wait_queue() { return &uart_wait_queue; }
 
@@ -27,23 +27,23 @@ typedef struct {
 
 static uart_ring_buffer_t rx_buffer;
 
-static inline int buffer_empty(uart_ring_buffer_t *b) {
+static inline int _buffer_empty(uart_ring_buffer_t *b) {
   return b->head == b->tail;
 }
 
-static inline int buffer_full(uart_ring_buffer_t *b) {
+static inline int _buffer_full(uart_ring_buffer_t *b) {
   return ((b->head + 1) % UART_RX_BUFFER_SIZE) == b->tail;
 }
 
-static inline void buffer_put(uart_ring_buffer_t *b, char c) {
-  if (!buffer_full(b)) {
+static inline void _buffer_put(uart_ring_buffer_t *b, char c) {
+  if (!_buffer_full(b)) {
     b->buf[b->head] = c;
     b->head = (b->head + 1) % UART_RX_BUFFER_SIZE;
   }
 }
 
-static inline char buffer_get(uart_ring_buffer_t *b) {
-  if (!buffer_empty(b)) {
+static inline char _buffer_get(uart_ring_buffer_t *b) {
+  if (!_buffer_empty(b)) {
     char c = b->buf[b->tail];
     b->tail = (b->tail + 1) % UART_RX_BUFFER_SIZE;
     return c;
@@ -51,17 +51,17 @@ static inline char buffer_get(uart_ring_buffer_t *b) {
   return 0;
 }
 
-static inline void uart_enable_fifo() {
+static inline void _uart_enable_fifo() {
   // Enable fifo waiting list
   MMIO8(UART_BASE + UART_FCR) = UART_FCR_EWL;
 }
 
-static inline void uart_config_lcr() {
+static inline void _uart_config_lcr() {
   // 8 bits transmition/reception config
   MMIO8(UART_BASE + UART_LCR) |= UART_LCR_8BIT | UART_LCR_PODD; // bits 0, 1, 3
 }
 
-static void uart_set_baud() {
+static void _uart_set_baud() {
   uint16_t rate = (UART_CLOCK_FREQ / (16 * UART_BAUD_RATE));
   uintptr_t lcr_addr = UART_BASE + UART_LCR;
 
@@ -77,16 +77,16 @@ static void uart_set_baud() {
 }
 
 /** @brief Enable the RX interupt. */
-static inline void uart_enable_rxirq() {
+static inline void _uart_enable_rxirq() {
   MMIO8(UART_BASE + UART_IER) |= UART_RXEN;
 }
 
 void uart_init() {
-  uart_init_queue();
-  uart_set_baud();
-  uart_enable_fifo();
-  uart_config_lcr();
-  uart_enable_rxirq();
+  _uart_init_queue();
+  _uart_set_baud();
+  _uart_enable_fifo();
+  _uart_config_lcr();
+  _uart_enable_rxirq();
 };
 
 void uart_putchar(char c) { MMIO8(UART_BASE + UART_THR) = c; };
@@ -96,33 +96,33 @@ void uart_putchar(char c) { MMIO8(UART_BASE + UART_THR) = c; };
  *
  * @return The received character.
  */
-static char uart_getchar() { return MMIO8(UART_BASE + UART_RBR); };
+static char _uart_getchar() { return MMIO8(UART_BASE + UART_RBR); };
 
 /**
  * @brief Signals that data is available in rx.
  *
  * @return 1 if a character can be read, 0 otherwise.
  */
-static inline uint8_t uart_rx_data_ready() {
+static inline uint8_t _uart_rx_data_ready() {
   return MMIO8(UART_BASE + UART_LSR) & 1;
 }
 
 /** @brief Fill the rx ring buffer while rx contains data. */
-static void uart_fill_rx_buff() {
-  while (uart_rx_data_ready()) {
-    buffer_put(&rx_buffer, uart_getchar());
+static void _uart_fill_rx_buff() {
+  while (_uart_rx_data_ready()) {
+    _buffer_put(&rx_buffer, _uart_getchar());
   }
 }
 
 int uart_read(char *c) {
-  if (!buffer_empty(&rx_buffer)) {
-    *c = buffer_get(&rx_buffer);
+  if (!_buffer_empty(&rx_buffer)) {
+    *c = _buffer_get(&rx_buffer);
     return 0;
   }
   return -1;
 }
 
 void uart_irq_handler() {
-  uart_fill_rx_buff();
+  _uart_fill_rx_buff();
   scheduler_wake_waiting_queue(&uart_wait_queue);
 }
