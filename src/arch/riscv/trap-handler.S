@@ -1,7 +1,7 @@
 .section .text
-.globl mon_traitant
+.globl trap_vector
 
-mon_traitant: 
+trap_vector: 
   # stack allocation
   # register save 
   addi  sp, sp, -16 * 8
@@ -51,5 +51,3 @@ mon_traitant:
   # stack reallocation 
   addi sp, sp, 16 * 8
   mret
-
-  

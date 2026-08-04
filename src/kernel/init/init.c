@@ -1,12 +1,12 @@
 #include "console.h"
 #include "cpu.h"
 #include "irq.h"
+#include "minilib/stddef.h"
 #include "process.h"
 #include "shell.h"
-#include "minilib/stddef.h"
 #include "uart.h"
 
-extern void mon_traitant(void);
+extern void trap_vector(void);
 
 void kernel_start() {
   // Plic config
@@ -17,7 +17,7 @@ void kernel_start() {
 
   // Interupt handling
   enable_it();
-  init_trap_entry(mon_traitant);
+  init_trap_entry(trap_vector);
   enable_external();
   enable_timer();
 
