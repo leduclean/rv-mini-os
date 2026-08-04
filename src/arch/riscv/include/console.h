@@ -11,7 +11,7 @@
  */
 void console_putbytes(const char *s, int len);
 
-int init_ecran();
+int init_screen();
 
 void display_top_right(const char *s, int len);
 

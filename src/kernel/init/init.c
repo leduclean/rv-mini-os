@@ -12,7 +12,7 @@ void kernel_start() {
   // Plic config
   plic_uart_config();
   init_proc();
-  init_ecran();
+  init_screen();
   uart_init();
 
   // Interupt handling
@@ -22,7 +22,5 @@ void kernel_start() {
   enable_timer();
 
   spawn_process(shell, "shell", NORMAL);
-  // spawn_process(proc1, "bob1", HIGH);
-  // spawn_process(proc2, "bob2", NORMAL);
   idle();
 }
