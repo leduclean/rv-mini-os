@@ -17,7 +17,7 @@ void kernel_start() {
   uart_init();
 
   // Interupt handling
-  enable_it();
+  _enable_it();
   init_trap_entry(trap_vector);
   enable_external();
   enable_timer();

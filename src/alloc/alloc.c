@@ -40,7 +40,7 @@ void init_heap() {
  *
  * @param block Block to init.
  */
-static inline void init_nodes(block_t *block) {
+static inline void _init_nodes(block_t *block) {
   clist_init_node(&block->free_node);
   clist_init_node(&block->memory_node);
 }
@@ -63,12 +63,12 @@ static inline int _sufficient_size(clist_node_t *node, void *arg) {
  * @param requested_size Size to allocate, in bytes.
  * @return New allocated block header, NULL if the heap is full.
  */
-static block_t *new_bloc_with_size(unsigned requested_size) {
+static block_t *_new_bloc_with_size(unsigned requested_size) {
   unsigned heap_offset = requested_size + sizeof(block_t);
   if (heap_end + heap_offset >= heap + HEAPSIZE)
     return NULL;
   block_t *block = (block_t *)heap_end;
-  init_nodes(block);
+  _init_nodes(block);
   block->size = requested_size;
   block->free = 0;
   clist_push_back(&block->memory_node, &memory_list);
@@ -89,7 +89,7 @@ static void _check_split(block_t *block, unsigned requested_size) {
   if (unused >= MIN_BLOCK_SIZE) {
     // Split
     block_t *split = (block_t *)((char *)(block + 1) + requested_size);
-    init_nodes(split);
+    _init_nodes(split);
     split->size = unused;
     split->free = 1;
     clist_push_back(&split->free_node, &free_list);
@@ -104,7 +104,7 @@ void *kalloc(unsigned size) {
   size = ALIGN(size);
   clist_node_t *found_node = clist_find(&free_list, _sufficient_size, &size);
   if (!found_node) { // allocate a new block
-    block_t *new_block = new_bloc_with_size(size);
+    block_t *new_block = _new_bloc_with_size(size);
     if (!new_block)
       return NULL;
     return (void *)(new_block + 1);
@@ -127,7 +127,7 @@ void *kalloc(unsigned size) {
  * @return The merged block if the merge was possible. Otherwise, return
  * unchanged @p block.
  */
-static block_t *merge(block_t *block, block_t *next) {
+static block_t *_merge(block_t *block, block_t *next) {
   if (!block->free || !next->free)
     return block;
   // Remove the merged block (next) from the memory and free list.
@@ -146,20 +146,20 @@ static block_t *merge(block_t *block, block_t *next) {
  * @return The merged block if any merge was possible. Otherwise, return
  * unchanged @p block.
  */
-static block_t *check_merge(block_t *block) {
+static block_t *_check_merge(block_t *block) {
   clist_node_t *current_node = &block->memory_node;
   block_t *merged = NULL;
   if (current_node->next->in_list) {
     block_t *next = container_of(current_node->next, block_t, memory_node);
     if (next->free) {
-      merged = merge(block, next);
+      merged = _merge(block, next);
     }
   }
 
   if (current_node->prev->in_list) {
     block_t *prev = container_of(current_node->prev, block_t, memory_node);
     if (prev->free) {
-      merged = (merged) ? merge(prev, merged) : merge(prev, block);
+      merged = (merged) ? _merge(prev, merged) : _merge(prev, block);
     }
   }
 
@@ -174,7 +174,7 @@ void kfree(void *memory_addr) {
     return; // Already freed
 
   block->free = 1;
-  block_t *merged = check_merge(block);
+  block_t *merged = _check_merge(block);
   if (!merged->free_node.in_list)
     clist_push_back(&free_list, &merged->free_node);
 }

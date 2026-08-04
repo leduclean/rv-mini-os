@@ -14,37 +14,37 @@ struct semaphore {
 };
 
 void sem_init(semaphore_t *sem, int val) {
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   wq_init(&sem->waiting);
   sem->count = val;
 
-  irq_restore(flags);
+  _irq_restore(flags);
 }
 
 int8_t sem_try_take(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   if (sem->count <= 0) {
-    irq_restore(flags);
+    _irq_restore(flags);
     return -1;
   }
   sem->count--;
-  irq_restore(flags);
+  _irq_restore(flags);
   return 0;
 }
 
 void sem_take(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   if (sem_try_take(sem) == -1) {
     scheduler_block_on(&sem->waiting);
   }
-  irq_restore(flags);
+  _irq_restore(flags);
 }
 
 void sem_release(semaphore_t *sem) {
   // Semaphore op are atomics so we disable interupts
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
 
   // Release a ressource
   sem->count++;
@@ -56,5 +56,5 @@ void sem_release(semaphore_t *sem) {
     process_t *proc = container_of(node, process_t, wait_node);
     scheduler_ready_process(proc);
   }
-  irq_restore(flags);
+  _irq_restore(flags);
 }

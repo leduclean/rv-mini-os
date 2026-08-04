@@ -21,7 +21,7 @@
  * @param offset Offset of the register in the config space.
  * @return The assembled ECAM address.
  */
-static inline uintptr_t make_device_addr(uint32_t bus, uint32_t dev,
+static inline uintptr_t _make_device_addr(uint32_t bus, uint32_t dev,
                                          uint32_t func, uint32_t offset) {
   return PCI_ECAM_BASE_ADDRESS | (bus << PCI_BUS_SHIFT) |
          (dev << PCI_DEVICE_SHIFT) | (func << PCI_FUNC_SHIFT) | offset;
@@ -36,7 +36,7 @@ int config_pcie() {
   int found = -1;
   uintptr_t device_addr;
   for (uint32_t dev = 0; dev <= 31; dev++) {
-    device_addr = make_device_addr(0, dev, 0, 0);
+    device_addr = _make_device_addr(0, dev, 0, 0);
     if (MMIO32(device_addr) == DISPLAY_PCI_ID) {
       found = 0;
       break;
@@ -165,11 +165,11 @@ void draw_line(uint32_t row, uint32_t col, uint32_t color) {
   }
 };
 
-static inline void draw_cursor() {
+static inline void _draw_cursor() {
   draw_line(cursor_row * 8 + 7, cursor_col * 8, TEXT_COLOR);
 }
 
-static inline void undraw_cursor() {
+static inline void _undraw_cursor() {
   draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
 
@@ -196,7 +196,7 @@ void scroll() {
  * @return 0 on success, -1 if @p row is negative.
  */
 int set_cursor(int row, int col) {
-  undraw_cursor();
+  _undraw_cursor();
   while (row >= MAX_ROWS) {
     scroll();
     row--;
@@ -210,7 +210,7 @@ int set_cursor(int row, int col) {
   cursor_col = col;
 
   // Redraw the cursor
-  draw_cursor();
+  _draw_cursor();
   return 0;
 }
 
@@ -246,7 +246,7 @@ void clear_screen() {
 
 // Control char handling helpers
 
-static inline void tab() {
+static inline void _tab() {
   int distance = (-cursor_col) & 7;
   if (distance + cursor_col >= MAX_COLS) {
     set_cursor(cursor_row + 1, 0);
@@ -255,14 +255,14 @@ static inline void tab() {
   }
 }
 
-static inline void backspace() {
+static inline void _backspace() {
   if (cursor_col > 0) {
     set_cursor(cursor_row, cursor_col - 1);
   }
 }
 
-static inline void newline() { set_cursor(cursor_row + 1, 0); }
-static inline void carriage_return() { set_cursor(cursor_row, 0); }
+static inline void _newline() { set_cursor(cursor_row + 1, 0); }
+static inline void _carriage_return() { set_cursor(cursor_row, 0); }
 
 /**
  * @brief Handle a char type: print it if printable, act on it if control.
@@ -277,19 +277,19 @@ void handle_char(char c) {
     // Control char handling
     switch (c) {
     case '\b':
-      backspace();
+      _backspace();
       break;
     case '\t':
-      tab();
+      _tab();
       break;
     case '\n':
-      newline();
+      _newline();
       break;
     case '\f':
       clear_screen();
       break;
     case '\r':
-      carriage_return();
+      _carriage_return();
       break;
     }
   }

@@ -9,11 +9,11 @@
 
 void mutex_init(mutex_t *m) {
   // Atomic
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   m->locked = 0;
   m->owner = NULL;
   wq_init(&m->wq);
-  irq_restore(flags);
+  _irq_restore(flags);
 }
 
 uint8_t mutex_is_lock(const mutex_t *m) { return m->locked; }
@@ -22,36 +22,36 @@ process_t *mutex_owner(const mutex_t *m) { return m->owner; }
 
 int8_t mutex_trylock(mutex_t *m) {
   // Atomic
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   if (m->locked) {
     // Already locked
-    irq_restore(flags);
+    _irq_restore(flags);
     return -1;
   }
 
   // If not locked take the onership.
   m->locked = 1;
   m->owner = get_active();
-  irq_restore(flags);
+  _irq_restore(flags);
   return 0;
 }
 
 void mutex_lock(mutex_t *m) {
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
 
   if (mutex_trylock(m) == -1) {
     scheduler_block_on(&m->wq);
   }
 
-  irq_restore(flags);
+  _irq_restore(flags);
 }
 
 void mutex_unlock(mutex_t *m) {
   // Atomic
-  irq_flags_t flags = irq_save();
+  irq_flags_t flags = _irq_save();
   process_t *current = get_active();
   if ((!m->locked) || (m->owner != current)) {
-    irq_restore(flags);
+    _irq_restore(flags);
     return;
   }
 
@@ -66,5 +66,5 @@ void mutex_unlock(mutex_t *m) {
     m->locked = 0;
     m->owner = NULL;
   }
-  irq_restore(flags);
+  _irq_restore(flags);
 }

@@ -1,7 +1,7 @@
 #include "kernel_mocks.h"
 
-irq_flags_t irq_save() {}
-void irq_restore(irq_flags_t state) {}
+irq_flags_t _irq_save() {}
+void _irq_restore(irq_flags_t state) {}
 void scheduler_admit(process_t *p) {}
 void scheduler_wake_waiting_queue(wait_queue_t *wq) {}
 void init_scheduler_queues() {}
@@ -16,6 +16,6 @@ void remove_from_sleeping(process_t *p) {}
 
 uint8_t wait_pid(int8_t pid) {}
 
-void hlt() {}
+void _hlt() {}
 
 void proc_launcher(void proc()) {}
