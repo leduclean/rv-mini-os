@@ -7,19 +7,19 @@
 #include "clist.h"
 #include "waitqueue.h"
 
-#define MAXNAME 16      ///< Size of the process name buffer, in bytes.
+#define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define MAX_REG_SAVED 18 ///< Number of registers saved on a context switch.
-#define STACK_SIZE 4096  ///< Size of a process stack, in 64 bits words.
+#define STACK_SIZE 4096 ///< Size of a process stack, in 64 bits words.
 
 /** @brief Lifecycle states of a process. */
 typedef enum {
-  FREE = 0,
-  RUNNING,
-  READY,
-  SLEEPING,
-  BLOCKED,
-  TERMINATED,
-  ZOMBIE
+	FREE = 0,
+	RUNNING,
+	READY,
+	SLEEPING,
+	BLOCKED,
+	TERMINATED,
+	ZOMBIE
 } state;
 
 /** @brief Scheduling priorities, sorted decremental (HIGH is the highest). */
@@ -27,31 +27,31 @@ typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 
 /** @brief Process control block. */
 typedef struct process {
-  uint8_t pid;                 ///< Process identifier.
-  char name[MAXNAME];          ///< Process name, null terminated.
-  state state;                 ///< Current lifecycle state.
-  uint64_t ctx[MAX_REG_SAVED]; ///< Registers saved on a context switch.
-  uint64_t stack[STACK_SIZE];  ///< Process stack.
+	uint8_t pid; ///< Process identifier.
+	char name[MAXNAME]; ///< Process name, null terminated.
+	state state; ///< Current lifecycle state.
+	uint64_t ctx[MAX_REG_SAVED]; ///< Registers saved on a context switch.
+	uint64_t stack[STACK_SIZE]; ///< Process stack.
 
-  clist_node_t proc_node; ///< Process table node.
+	clist_node_t proc_node; ///< Process table node.
 
-  clist_node_t ready_node; ///< Scheduler ready queue node.
+	clist_node_t ready_node; ///< Scheduler ready queue node.
 
-  /**
+	/**
    * @brief Wait queue node, used to put the process in a zombie, IO or
    * mutex wait.
    */
-  clist_node_t wait_node;
-  wait_queue_t *current_wq; ///< Wait queue blocked on, NULL if not blocked.
+	clist_node_t wait_node;
+	wait_queue_t *current_wq; ///< Wait queue blocked on, NULL if not blocked.
 
-  clist_node_t sleep_node; ///< Sleeping queue node.
-  uint64_t wake_up_time;   ///< Wake up date, in secondes since boot.
+	clist_node_t sleep_node; ///< Sleeping queue node.
+	uint64_t wake_up_time; ///< Wake up date, in secondes since boot.
 
-  process_t *parent;      ///< Parent process, NULL if orphan.
-  wait_queue_t child_wq;  ///< Queue blocked on while waiting for a child.
-  wait_queue_t zombies;   ///< Terminated children waiting to be reaped.
+	process_t *parent; ///< Parent process, NULL if orphan.
+	wait_queue_t child_wq; ///< Queue blocked on while waiting for a child.
+	wait_queue_t zombies; ///< Terminated children waiting to be reaped.
 
-  priority priority; ///< Scheduling priority class.
+	priority priority; ///< Scheduling priority class.
 } process_t;
 
 /**

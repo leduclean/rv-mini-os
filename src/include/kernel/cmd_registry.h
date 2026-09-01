@@ -11,19 +11,19 @@ typedef enum { CMD_BUILTIN, CMD_PROG } exec_type;
 
 /** @brief A program, spawned in its own process when invoked. */
 typedef struct {
-  void (*fn)();   ///< Entry point of the program.
-  priority prior; ///< Priority the program is spawned with.
+	void (*fn)(); ///< Entry point of the program.
+	priority prior; ///< Priority the program is spawned with.
 } prog_t;
 
 /** @brief A registered command: either a builtin or a spawnable program. */
 typedef struct {
-  const char *name; ///< Name the command is invoked with.
-  exec_type type;   ///< Kind of the command, selecting the union member.
-  /** @brief Command payload, selected by @p type. */
-  union {
-    void (*builtin)(); ///< Function called for a CMD_BUILTIN.
-    prog_t prog;       ///< Program spawned for a CMD_PROG.
-  } cmd;
+	const char *name; ///< Name the command is invoked with.
+	exec_type type; ///< Kind of the command, selecting the union member.
+	/** @brief Command payload, selected by @p type. */
+	union {
+		void (*builtin)(); ///< Function called for a CMD_BUILTIN.
+		prog_t prog; ///< Program spawned for a CMD_PROG.
+	} cmd;
 } cmd_desc_t;
 
 /** @brief Clear the registry. */

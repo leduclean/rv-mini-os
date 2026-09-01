@@ -14,7 +14,10 @@
  */
 
 /** @brief Alias of uart_init(). */
-void init_uart() { return uart_init(); }
+void init_uart()
+{
+	return uart_init();
+}
 
 /**
  * @brief Alias of spawn_process().
@@ -24,48 +27,70 @@ void init_uart() { return uart_init(); }
  * @param prior Priority of the process.
  * @return Pid of the active process.
  */
-int8_t cree_processus(void (*entry)(void), char *name, priority prior) {
-  spawn_process(entry, name, prior);
-  return get_active_pid();
+int8_t cree_processus(void (*entry)(void), char *name, priority prior)
+{
+	spawn_process(entry, name, prior);
+	return get_active_pid();
 }
 
 /** @brief Alias of scheduler_rotate(). */
-void ordonnance(void) { scheduler_rotate(); }
+void ordonnance(void)
+{
+	scheduler_rotate();
+}
 
 /**
  * @brief Alias of scheduler_sleep().
  *
  * @param sec Sleeping duration, in secondes.
  */
-void dors(uint32_t sec) { scheduler_sleep(sec); }
+void dors(uint32_t sec)
+{
+	scheduler_sleep(sec);
+}
 
 /** @brief Alias of scheduler_terminate(). */
-void fin_processus(void) { scheduler_terminate(); }
+void fin_processus(void)
+{
+	scheduler_terminate();
+}
 
 /**
  * @brief Alias of get_active_pid().
  *
  * @return Pid of the active process.
  */
-uint8_t mon_pid(void) { return get_active_pid(); }
+uint8_t mon_pid(void)
+{
+	return get_active_pid();
+}
 
 /**
  * @brief Alias of get_active_name().
  *
  * @return Name of the active process.
  */
-char *mon_nom(void) { return get_active_name(); }
+char *mon_nom(void)
+{
+	return get_active_name();
+}
 
 /**
  * @brief Alias of seconds().
  *
  * @return Number of secondes since boot.
  */
-uint32_t nbr_secondes(void) { return seconds(); }
+uint32_t nbr_secondes(void)
+{
+	return seconds();
+}
 
 /**
  * @brief Alias of init_trap_entry().
  *
  * @param traitant Trap vector to install.
  */
-void init_traitant(void (*traitant)(void)) { return init_trap_entry(traitant); }
+void init_traitant(void (*traitant)(void))
+{
+	return init_trap_entry(traitant);
+}

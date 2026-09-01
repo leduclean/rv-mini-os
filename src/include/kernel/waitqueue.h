@@ -18,7 +18,7 @@ typedef struct process process_t;
 
 /** @brief Wait queue, a clist of process wait nodes. */
 typedef struct wait_queue {
-  clist_node_t head; ///< Head sentinel of the waiting nodes clist.
+	clist_node_t head; ///< Head sentinel of the waiting nodes clist.
 } wait_queue_t;
 
 /**
@@ -86,7 +86,7 @@ process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid);
  * traversal.
  */
 clist_node_t *wq_for_each(wait_queue_t *wq,
-                          int (*func)(clist_node_t *node, void *), void *args);
+			  int (*func)(clist_node_t *node, void *), void *args);
 
 /**
  * @brief Apply a function to each waiting node and detach them all.
@@ -97,5 +97,5 @@ clist_node_t *wq_for_each(wait_queue_t *wq,
  * @return Node on which @p fun failed, NULL if all succeeded.
  */
 clist_node_t *wq_for_each_and_del(wait_queue_t *wq,
-                                  int (*fun)(clist_node_t *node, void *),
-                                  void *args);
+				  int (*fun)(clist_node_t *node, void *),
+				  void *args);
