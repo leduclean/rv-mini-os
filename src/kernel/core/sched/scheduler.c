@@ -8,7 +8,7 @@
 #include "time.h"
 #include "waitqueue.h"
 
-extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
+extern void ctx_sw(ctx_t *old_ctx, ctx_t *new_ctx);
 
 /**
  * @brief Main rescheduling function, changing the context between processes.
@@ -17,9 +17,9 @@ extern void ctx_sw(uintptr_t old_ctx, uintptr_t new_ctx);
  */
 static void _do_ctx_switch(process_t *next)
 {
-	uint64_t *old_ctx = get_ctx(get_active());
+	ctx_t *old_ctx = get_ctx(get_active());
 	switch_active(next);
-	ctx_sw((uintptr_t)old_ctx, (uintptr_t)get_ctx(next));
+	ctx_sw(old_ctx, get_ctx(next));
 }
 
 // Priority handling
@@ -197,9 +197,9 @@ void scheduler_terminate()
 	_irq_restore(flags);
 }
 
-void proc_launcher(void proc())
+void proc_launcher()
 {
-	proc();
+	get_active()->code();
 	scheduler_terminate();
 }
 

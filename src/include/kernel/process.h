@@ -8,7 +8,6 @@
 #include "waitqueue.h"
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
-#define MAX_REG_SAVED 18 ///< Number of registers saved on a context switch.
 #define STACK_SIZE 4096 ///< Size of a process stack, in 64 bits words.
 
 /** @brief Lifecycle states of a process. */
@@ -22,15 +21,31 @@ typedef enum {
 	ZOMBIE
 } state;
 
+typedef struct ctx {
+	uint64_t ra; ///> Return adress pointer pointing to proc_launcher()
+	uint64_t sp; ///> Stack pointer of the process.
+	uint64_t s[12]; ///> Callee saved registry.
+	uint64_t mepc; ///> Machine exception program counter.
+	uint64_t mstatus; ///> Machine status befor the trap.
+} ctx_t;
+
+/* ctxt.S hardcodes these offsets, keep both in sync. */
+_Static_assert(__builtin_offsetof(ctx_t, s) == 2 * 8, "ctxt.S offsets stale");
+_Static_assert(__builtin_offsetof(ctx_t, mepc) == 14 * 8,
+	       "ctxt.S offsets stale");
+_Static_assert(__builtin_offsetof(ctx_t, mstatus) == 15 * 8,
+	       "ctxt.S offsets stale");
+
 /** @brief Scheduling priorities, sorted decremental (HIGH is the highest). */
 typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 
 /** @brief Process control block. */
 typedef struct process {
 	uint8_t pid; ///< Process identifier.
+	void (*code)(); ///< Process code to launch.
 	char name[MAXNAME]; ///< Process name, null terminated.
 	state state; ///< Current lifecycle state.
-	uint64_t ctx[MAX_REG_SAVED]; ///< Registers saved on a context switch.
+	ctx_t ctx; ///< Registers saved on a context switch.
 	uint64_t stack[STACK_SIZE]; ///< Process stack.
 
 	clist_node_t proc_node; ///< Process table node.
@@ -58,9 +73,9 @@ typedef struct process {
  * @brief Get the saved register context of a process.
  *
  * @param proc Process to read.
- * @return Pointer to the saved register array.
+ * @return Pointer to its saved context.
  */
-uint64_t *get_ctx(process_t *proc);
+ctx_t *get_ctx(process_t *proc);
 
 /**
  * @brief Get the wake up time of a process.

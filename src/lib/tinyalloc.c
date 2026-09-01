@@ -308,4 +308,12 @@ void *malloc(size_t size)
 	return ta_alloc(size);
 }
 
+void *calloc(size_t num, size_t size)
+{
+	if (!heap) {
+		ta_init(&_heap_start, &_heap_end, 256, 16, 8);
+	}
+	return ta_calloc(num, size);
+}
+
 /* CR end */
