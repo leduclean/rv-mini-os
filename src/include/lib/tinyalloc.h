@@ -13,6 +13,7 @@ extern "C" {
 /* CR begin */
 void free(void *ptr);
 void *malloc(size_t size);
+void *calloc(size_t num, size_t size);
 /* CR end */
 
 bool ta_init(const void *base, const void *limit, const size_t heap_blocks,
