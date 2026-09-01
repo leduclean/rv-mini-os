@@ -13,5 +13,5 @@
  * @param TYPE Type of the owning structure.
  * @param MEMBER Name of the member inside @p TYPE.
  */
-#define container_of(PTR, TYPE, MEMBER)                                        \
-  ((TYPE *)((char *)(PTR) - offset_of(TYPE, MEMBER)))
+#define container_of(PTR, TYPE, MEMBER) \
+	((TYPE *)((char *)(PTR) - offset_of(TYPE, MEMBER)))

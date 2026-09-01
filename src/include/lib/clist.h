@@ -22,9 +22,9 @@
 
 /** @brief Node of a clist, embedded in the owning structure. */
 typedef struct clist_node {
-  struct clist_node *next; ///< Next node, the sentinel itself if last.
-  struct clist_node *prev; ///< Previous node, the sentinel itself if first.
-  uint8_t in_list;         ///< 1 if the node is in a clist, 0 otherwise.
+	struct clist_node *next; ///< Next node, the sentinel itself if last.
+	struct clist_node *prev; ///< Previous node, the sentinel itself if first.
+	uint8_t in_list; ///< 1 if the node is in a clist, 0 otherwise.
 } clist_node_t;
 
 /**
@@ -94,7 +94,7 @@ void clist_insert_after(clist_node_t *pos, clist_node_t *node);
  * @param cmp Comparison policy function.
  */
 void clist_insert_sorted(clist_node_t *head, clist_node_t *node,
-                         clist_cmp_func_t cmp);
+			 clist_cmp_func_t cmp);
 
 /**
  * @brief Find the first element of the clist matching a predicate.
@@ -105,7 +105,7 @@ void clist_insert_sorted(clist_node_t *head, clist_node_t *node,
  * @return Pointer to the matching node, NULL if none matched.
  */
 clist_node_t *clist_find(clist_node_t *head,
-                         int (*pred)(clist_node_t *node, void *), void *args);
+			 int (*pred)(clist_node_t *node, void *), void *args);
 
 /**
  * @brief Traverse the clist, calling a function on each member.
@@ -117,8 +117,8 @@ clist_node_t *clist_find(clist_node_t *head,
  * @return NULL on an empty clist or a full traversal.
  */
 clist_node_t *clist_for_each(const clist_node_t *head,
-                             int (*func)(clist_node_t *node, void *),
-                             void *args);
+			     int (*func)(clist_node_t *node, void *),
+			     void *args);
 
 /**
  * @brief Apply a function to each element of the clist and detach them.
@@ -132,8 +132,8 @@ clist_node_t *clist_for_each(const clist_node_t *head,
  * @return Node on which @p fun failed, NULL if all succeeded.
  */
 clist_node_t *clist_for_each_and_del(clist_node_t *head,
-                                     int (*fun)(clist_node_t *node, void *),
-                                     void *args);
+				     int (*fun)(clist_node_t *node, void *),
+				     void *args);
 
 /**
  * @brief Add an element at the end of the clist.

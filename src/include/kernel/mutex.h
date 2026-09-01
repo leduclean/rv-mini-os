@@ -9,9 +9,9 @@
 
 /** @brief Mutex, with its owner and the processes waiting for it. */
 typedef struct mutex {
-  uint8_t locked;   ///< 1 if the mutex is held, 0 otherwise.
-  process_t *owner; ///< Process holding the mutex, NULL if free.
-  wait_queue_t wq;  ///< Processes blocked waiting for the mutex.
+	uint8_t locked; ///< 1 if the mutex is held, 0 otherwise.
+	process_t *owner; ///< Process holding the mutex, NULL if free.
+	wait_queue_t wq; ///< Processes blocked waiting for the mutex.
 } mutex_t;
 
 /**

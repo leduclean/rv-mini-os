@@ -4,13 +4,13 @@
 #include "stdarg.h"
 int printf(const char *__format, ...) __attribute__((format(printf, 1, 2)));
 int vprintf(const char *__format, va_list __vl)
-    __attribute__((format(printf, 1, 0)));
+	__attribute__((format(printf, 1, 0)));
 int sprintf(char *__dest, const char *__format, ...)
-    __attribute__((format(printf, 2, 3)));
+	__attribute__((format(printf, 2, 3)));
 int snprintf(char *__dest, long unsigned int __size, const char *__format, ...)
-    __attribute__((format(printf, 3, 4)));
+	__attribute__((format(printf, 3, 4)));
 int vsprintf(char *__dest, const char *__format, va_list __vl)
-    __attribute__((format(printf, 2, 0)));
+	__attribute__((format(printf, 2, 0)));
 int vsnprintf(char *__dest, long unsigned int __size, const char *__format,
-              va_list __vl) __attribute__((format(printf, 3, 0)));
+	      va_list __vl) __attribute__((format(printf, 3, 0)));
 #endif /* __STDIO_H__ */
