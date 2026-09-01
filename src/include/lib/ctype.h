@@ -3,9 +3,8 @@
 
 static inline int isspace(int c)
 {
-    return ((c) == ' ') || ((c) == '\f')
-        || ((c) == '\n') || ((c) == '\r')
-        || ((c) == '\t') || ((c) == '\v');
+	return ((c) == ' ') || ((c) == '\f') || ((c) == '\n') ||
+	       ((c) == '\r') || ((c) == '\t') || ((c) == '\v');
 }
 
 #endif /*CTYPE_H_*/

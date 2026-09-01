@@ -13,36 +13,42 @@
 static uint32_t ticks;
 static uint32_t prev;
 
-inline uint32_t seconds() { return ticks / ITFREQ; }
+inline uint32_t seconds()
+{
+	return ticks / ITFREQ;
+}
 
 /** @brief Arm the timer comparator for the next tick. */
-static inline void _update_timer() {
-  MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
+static inline void _update_timer()
+{
+	MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
 }
 
-void init_timer() {
-  ticks = 0;
-  prev = -1;
-  _update_timer();
+void init_timer()
+{
+	ticks = 0;
+	prev = -1;
+	_update_timer();
 }
 
-void timer_irq_handler(void) {
-  // Treat the timer interupt
-  ticks++;
-  uint32_t s = seconds();
+void timer_irq_handler(void)
+{
+	// Treat the timer interupt
+	ticks++;
+	uint32_t s = seconds();
 
-  // We only display when seconds changes
-  if (s != prev) {
-    uint32_t m = (s / 60) % 60;
-    uint32_t h = s / 3600;
+	// We only display when seconds changes
+	if (s != prev) {
+		uint32_t m = (s / 60) % 60;
+		uint32_t h = s / 3600;
 
-    char buf[16];
-    sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
-    display_top_right(buf, 10);
-    prev = s;
-  };
+		char buf[16];
+		sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
+		display_top_right(buf, 10);
+		prev = s;
+	};
 
-  scheduler_wake_sleeping();
-  scheduler_rotate();
-  _update_timer();
+	scheduler_wake_sleeping();
+	scheduler_rotate();
+	_update_timer();
 }

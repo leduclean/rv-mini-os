@@ -99,66 +99,66 @@
 #define UART_CLOCK_FREQ 1843200
 #define UART_BAUD_RATE 115200
 
-#define UART_IER_MSI 0x08  /* Enable Modem status interrupt */
+#define UART_IER_MSI 0x08 /* Enable Modem status interrupt */
 #define UART_IER_RLSI 0x04 /* Enable receiver line status interrupt */
 #define UART_IER_THRI 0x02 /* Enable Transmitter holding register int. */
-#define UART_IER_RDI 0x01  /* Enable receiver data interrupt */
+#define UART_IER_RDI 0x01 /* Enable receiver data interrupt */
 
 #define UART_IIR_NO_INT 0x01 /* No interrupts pending */
-#define UART_IIR_ID 0x06     /* Mask for the interrupt ID */
+#define UART_IIR_ID 0x06 /* Mask for the interrupt ID */
 
 enum {
-  UART_RBR = 0x00, /* Receive Buffer Register */
-  UART_THR = 0x00, /* Transmit Hold Register */
-  UART_IER = 0x01, /* Interrupt Enable Register */
-  UART_DLL = 0x00, /* Divisor LSB (LCR_DLAB) */
-  UART_DLH = 0x01, /* Divisor MSB (LCR_DLAB) */
-  UART_FCR = 0x02, /* FIFO Control Register */
-  UART_LCR = 0x03, /* Line Control Register */
-  UART_MCR = 0x04, /* Modem Control Register */
-  UART_LSR = 0x05, /* Line Status Register */
-  UART_MSR = 0x06, /* Modem Status Register */
-  UART_SCR = 0x07, /* Scratch Register */
+	UART_RBR = 0x00, /* Receive Buffer Register */
+	UART_THR = 0x00, /* Transmit Hold Register */
+	UART_IER = 0x01, /* Interrupt Enable Register */
+	UART_DLL = 0x00, /* Divisor LSB (LCR_DLAB) */
+	UART_DLH = 0x01, /* Divisor MSB (LCR_DLAB) */
+	UART_FCR = 0x02, /* FIFO Control Register */
+	UART_LCR = 0x03, /* Line Control Register */
+	UART_MCR = 0x04, /* Modem Control Register */
+	UART_LSR = 0x05, /* Line Status Register */
+	UART_MSR = 0x06, /* Modem Status Register */
+	UART_SCR = 0x07, /* Scratch Register */
 
-  UART_FCR_EWL = 0x01,  /* Waiting list enable Bit */
-  UART_LCR_DLAB = 0x80, /* Divisor Latch Bit */
-  UART_LCR_8BIT = 0x03, /* 8-bit */
-  UART_LCR_PODD = 0x08, /* Parity Odd */
+	UART_FCR_EWL = 0x01, /* Waiting list enable Bit */
+	UART_LCR_DLAB = 0x80, /* Divisor Latch Bit */
+	UART_LCR_8BIT = 0x03, /* 8-bit */
+	UART_LCR_PODD = 0x08, /* Parity Odd */
 
-  UART_LSR_DA = 0x01, /* Data Available */
-  UART_LSR_OE = 0x02, /* Overrun Error */
-  UART_LSR_PE = 0x04, /* Parity Error */
-  UART_LSR_FE = 0x08, /* Framing Error */
-  UART_LSR_BI = 0x10, /* Break indicator */
-  UART_LSR_RE = 0x20, /* THR is empty */
-  UART_LSR_RI = 0x40, /* THR is empty and line is idle */
-  UART_LSR_EF = 0x80, /* Erroneous data in FIFO */
+	UART_LSR_DA = 0x01, /* Data Available */
+	UART_LSR_OE = 0x02, /* Overrun Error */
+	UART_LSR_PE = 0x04, /* Parity Error */
+	UART_LSR_FE = 0x08, /* Framing Error */
+	UART_LSR_BI = 0x10, /* Break indicator */
+	UART_LSR_RE = 0x20, /* THR is empty */
+	UART_LSR_RI = 0x40, /* THR is empty and line is idle */
+	UART_LSR_EF = 0x80, /* Erroneous data in FIFO */
 };
 
 enum {
-  /* UART Registers */
-  UART_REG_TXFIFO = 0,
-  UART_REG_RXFIFO = 1,
-  UART_REG_TXCTRL = 2,
-  UART_REG_RXCTRL = 3,
-  UART_REG_IE = 4,
-  UART_REG_IP = 5,
-  UART_REG_DIV = 6,
+	/* UART Registers */
+	UART_REG_TXFIFO = 0,
+	UART_REG_RXFIFO = 1,
+	UART_REG_TXCTRL = 2,
+	UART_REG_RXCTRL = 3,
+	UART_REG_IE = 4,
+	UART_REG_IP = 5,
+	UART_REG_DIV = 6,
 
-  /* TXCTRL register */
-  UART_TXEN = 1,
-  UART_TXSTOP = 2,
+	/* TXCTRL register */
+	UART_TXEN = 1,
+	UART_TXSTOP = 2,
 
-  /* RXCTRL register */
-  UART_RXEN = 1,
+	/* RXCTRL register */
+	UART_RXEN = 1,
 
-  /* IP register */
-  UART_IP_TXWM = 1,
-  UART_IP_RXWM = 2,
+	/* IP register */
+	UART_IP_TXWM = 1,
+	UART_IP_RXWM = 2,
 
-  /* INTERRUPT ENABLE */
-  UART_RX_IT_EN = 2,
-  UART_TX_IT_EN = 1
+	/* INTERRUPT ENABLE */
+	UART_RX_IT_EN = 2,
+	UART_TX_IT_EN = 1
 };
 
 #if __ASSEMBLER__ == 0
