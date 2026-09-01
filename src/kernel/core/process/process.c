@@ -8,8 +8,8 @@
 
 #if TEST_CONFIG
 #include "mocks/kernel_mocks.h"
-#include <mm_malloc.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 #else
 #include "cpu.h"
@@ -17,10 +17,6 @@
 #include "minilib/string.h"
 #include "tinyalloc.h"
 #endif
-
-#define RA_INDEX 0
-#define SP_INDEX 1
-#define S0_INDEX 4
 
 #define MAX_PROC 32
 
@@ -46,10 +42,11 @@ static void _init_proc_table()
 }
 
 // Getters and setter on fields
-uint64_t *get_ctx(process_t *proc)
+ctx_t *get_ctx(process_t *proc)
 {
-	return proc->ctx;
+	return &proc->ctx;
 }
+
 uint8_t get_pid(const process_t *proc)
 {
 	return proc->pid;
@@ -285,11 +282,11 @@ static void _config_process(void code(), const char *nom, priority prior,
 	proc->parent = NULL;
 
 	if (proc->pid == 0) {
-		proc->ctx[RA_INDEX] = (uintptr_t)idle;
+		proc->ctx.ra = (uintptr_t)idle;
 	} else {
-		proc->ctx[SP_INDEX] = (uint64_t)&proc->stack[STACK_SIZE - 1];
-		proc->ctx[RA_INDEX] = (uintptr_t)proc_launcher;
-		proc->ctx[S0_INDEX] = (uintptr_t)code;
+		proc->ctx.sp = (uint64_t)&proc->stack[STACK_SIZE - 1];
+		proc->ctx.ra = (uintptr_t)proc_launcher;
+		proc->code = code;
 	}
 }
 
@@ -314,7 +311,7 @@ process_t *spawn_process(void code(), const char *nom, priority prior)
 	if (proc_table.active_process >= MAX_PROC) {
 		return NULL; // Error already max processus launched
 	}
-	process_t *proc = malloc(sizeof(process_t));
+	process_t *proc = calloc(1, sizeof(process_t));
 	if (!proc) {
 		return NULL;
 	}

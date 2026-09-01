@@ -86,6 +86,5 @@ void scheduler_terminate();
 /**
  * @brief Launcher handling the launch and the terminaison of a process.
  *
- * @param proc Entry point of the process to run.
  */
-void proc_launcher(void proc());
+void proc_launcher();
