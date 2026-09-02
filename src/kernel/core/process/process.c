@@ -284,7 +284,7 @@ static void _config_process(void code(), const char *nom, priority prior,
 	if (proc->pid == 0) {
 		proc->ctx.ra = (uintptr_t)idle;
 	} else {
-		proc->ctx.sp = (uint64_t)&proc->stack[STACK_SIZE - 1];
+		proc->ctx.sp = (uint64_t)&proc->kstack[KSTACK_SIZE];
 		proc->ctx.ra = (uintptr_t)proc_launcher;
 		proc->code = code;
 	}

@@ -28,11 +28,6 @@ save_context:
   sd s10,8 * 12(a0)
   sd s11,8 * 13(a0)
 
-  csrr t0, mepc
-  csrr t1, mstatus
-
-  sd t0, 8 * 14(a0)
-  sd t1, 8 * 15(a0)
 // Load new context
 restore_new_context:
   ld ra, 8 * 0(a1)
@@ -49,11 +44,6 @@ restore_new_context:
   ld s9, 8 * 11(a1)
   ld s10,8 * 12(a1)
   ld s11,8 * 13(a1)
-  ld t0, 8 * 14(a1)
-  ld t1, 8 * 15(a1)
-
-  csrw mepc, t0
-  csrw mstatus, t1
 
   # return
   ret

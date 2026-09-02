@@ -88,11 +88,27 @@
 #define TIMER_FREQ 10000000 // 10MHz
 #define TIMER_RATIO 500
 
+// MCAUSE descriptors bit values
+#define MCAUSE_IRQ_BIT (1UL << 63)
+#define MCAUSE_IRQ_MASK (0xff)
+
+// Irq mcause values
+#define IRQ_M_TMR 7 /* Machine time interrupt */
+#define IRQ_M_EXT 11 /* Maching external interrupt */
+
+// Ecall mcause values
+#define ECALL_UMODE 8
+#define ECALL_MMODE 11
+
 // Bit in mstatus
-#define MSTATUS_MIE 0x00000008
-// Bit in mie/mip
-#define IRQ_M_TMR 7
-#define IRQ_M_EXT 11
+#define MSTATUS_MIE (1 << 3)
+#define MSTATUS_MPIE (1 << 7)
+#define MSTATUS_MPP_SHIFT 11
+#define MSTATUS_MPP_MASK (0b11 << MSTATUS_MPP_SHIFT)
+// Privilege mode
+#define U 0
+#define S 1
+#define M 3
 
 // UART
 #define UART_BASE 0x10000000

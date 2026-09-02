@@ -1,9 +1,10 @@
-#include "minilib/stdint.h"
 #include "mmio.h"
 #include "platform.h"
+#include "syscall.h"
 #include "time.h"
 #include "uart.h"
 
+/** Enable timer irq and trigger the timer **/
 void enable_timer()
 {
 	// Clock configuration
@@ -94,7 +95,7 @@ static void _complete_plic(uint32_t irq)
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
-static void _external_irq_handler()
+void external_irq_handler()
 {
 	uint32_t irq = _claim_plic();
 	switch (irq) {
@@ -103,22 +104,4 @@ static void _external_irq_handler()
 		break;
 	}
 	_complete_plic(irq);
-}
-
-void init_trap_entry(void (*entry)())
-{
-	__asm__("csrw mtvec, %0" ::"r"(entry));
-}
-
-void trap_handler(uint64_t mcause, uint64_t mie, uint64_t mip)
-{
-	// Ignore the bit 63
-	mcause &= ~(1ULL << 63);
-	if ((mie & (1 << IRQ_M_EXT)) && (mcause == IRQ_M_EXT)) {
-		// Extern interrupt
-		_external_irq_handler();
-	} else if ((mie & (1 << IRQ_M_TMR)) && (mcause == IRQ_M_TMR)) {
-		// Timer interrupt
-		timer_irq_handler();
-	}
 }
