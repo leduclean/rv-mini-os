@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
-project(OS C)
+project(OS C ASM)
 
 add_subdirectory(lib)
+add_subdirectory(user)
 add_subdirectory(kernel/core)
 add_subdirectory(kernel/init)
 add_subdirectory(arch/riscv)
@@ -11,6 +12,7 @@ add_executable(kernel.bin
     $<TARGET_OBJECTS:kernel_init>
     $<TARGET_OBJECTS:kernel_core>
     $<TARGET_OBJECTS:lib>
+    $<TARGET_OBJECTS:user>
 )
 
 target_link_options(kernel.bin PRIVATE
