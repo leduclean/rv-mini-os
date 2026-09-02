@@ -1,5 +1,3 @@
-enable_language(ASM)
-
 set(CRT0_SRC ${CMAKE_CURRENT_SOURCE_DIR}/crt0.S)
 
 file(GLOB OTHER_ASM_SRCS
