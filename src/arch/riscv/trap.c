@@ -1,3 +1,4 @@
+#include "cpu.h"
 #include "platform.h"
 #include "trap.h"
 #include "syscall.h"
@@ -43,6 +44,20 @@ void init_trap_entry(void (*entry)())
 	__asm__("csrw mtvec, %0" ::"r"(entry));
 }
 
+static inline void _trap_panic(pt_regs_t *t)
+{
+	long mtval;
+	__asm__ __volatile__("csrr %0, mtval" : "=r"(mtval));
+
+	printf("[PANIC] cause=%ld mepc=0x%lx mtval=0x%lx\n", t->mcause, t->mepc,
+	       mtval);
+	;
+
+	_disable_it();
+	for (;;)
+		_hlt();
+}
+
 void trap_handler(pt_regs_t *t)
 {
 	uint64_t mcause = t->mcause;
@@ -66,8 +81,7 @@ void trap_handler(pt_regs_t *t)
 			break;
 
 		default:
-			printf("[Kernel/ERROR]: cannot handle this ecall: %lu \n",
-			       mcause);
+			_trap_panic(t);
 			break;
 		}
 	}
