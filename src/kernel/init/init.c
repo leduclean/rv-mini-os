@@ -6,6 +6,7 @@
 #include "shell.h"
 #include "process.h"
 #include "progs.h"
+#include "time.h"
 #include "trap.h"
 #include "uart.h"
 #include "memory.h"
@@ -36,31 +37,25 @@ void kernel_start()
 
 extern void enter_kernel(void (*entry)());
 extern void delegate_traps();
+
 /**
- * @brief This function will be executed first by the bootloader.
+ * @brief Boot entry point in machine mode.
  */
 void start()
 {
-	// Need machine mode privilege (device dependant)
-	// Plic config
+	// Device init
 	init_screen();
 	plic_uart_config();
 	uart_init();
 	pmp_allow_all();
 
 	delegate_traps();
-
-	// Interupt handling
-	enable_m_irq();
-	enable_m_external();
-	//NOTE: Since the timer is clint dependant
-	// we don't set up it until timer is redirected
-	// to S mode.
-	//
-	//  A good way could be to trigger a software s interrupt
-	//  on each machine interrupt.
-	// enable_m_timer();
-
 	init_trap_entries();
+
+	// Timer init.
+	// WARNING: this should always resides
+	// just befor entering the kernel and S mode.
+	init_timer();
+
 	enter_kernel(kernel_start);
 }

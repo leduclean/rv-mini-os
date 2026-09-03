@@ -75,18 +75,12 @@
 #define PLIC_UART_ID 10
 #define PLIC_ENABLE_UART (1 << PLIC_UART_ID)
 
-// CLINT registers addresses
-#define CLINT_MSIP 0x02000000
-#define CLINT_TIMER_CMP 0x02004000
-#define CLINT_TIMER_CMP_LO 0x02004000
-#define CLINT_TIMER_CMP_HI 0x02004004
-#define CLINT_TIMER 0x0200bff8
-#define CLINT_TIMER_LOW 0x0200bff8
-#define CLINT_TIMER_HI 0x0200bffc
-
 // Timer options
 #define TIMER_FREQ 10000000 // 10MHz
 #define TIMER_RATIO 500
+
+#define MENVCFG_STCE (1UL << 63) /* stimecmp enable */
+#define MCOUNTEREN_TM (1UL << 1) /* Timer counter enable */
 
 #define XCAUSE_IRQ_BIT (1UL << 63)
 
