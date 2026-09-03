@@ -2,13 +2,13 @@
 #include "cpu.h"
 #include "irq.h"
 #include "minilib/stddef.h"
+#include "minilib/stdio.h"
+#include "shell.h"
 #include "process.h"
 #include "progs.h"
 #include "trap.h"
 #include "uart.h"
 #include "memory.h"
-
-extern void trap_entry(void);
 
 static long ustack1[KSTACK_SIZE] = { 0 };
 static long ustack2[KSTACK_SIZE] = { 0 };
@@ -26,22 +26,41 @@ void u2()
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start()
 {
-	// Plic config
-	plic_uart_config();
-	init_proc();
-	init_screen();
-	uart_init();
+	enable_s_irq();
+	enable_s_external();
 
-	// Config the user mode
+	init_proc();
+	spawn_process(shell, "shell", NORMAL);
+	idle();
+}
+
+extern void enter_kernel(void (*entry)());
+extern void delegate_traps();
+/**
+ * @brief This function will be executed first by the bootloader.
+ */
+void start()
+{
+	// Need machine mode privilege (device dependant)
+	// Plic config
+	init_screen();
+	plic_uart_config();
+	uart_init();
 	pmp_allow_all();
 
-	// Interupt handling
-	_enable_it();
-	init_trap_entry(trap_entry);
-	enable_external();
-	enable_timer();
+	delegate_traps();
 
-	spawn_process(u1, "u1", NORMAL);
-	spawn_process(u2, "u2", NORMAL);
-	idle();
+	// Interupt handling
+	enable_m_irq();
+	enable_m_external();
+	//NOTE: Since the timer is clint dependant
+	// we don't set up it until timer is redirected
+	// to S mode.
+	//
+	//  A good way could be to trigger a software s interrupt
+	//  on each machine interrupt.
+	// enable_m_timer();
+
+	init_trap_entries();
+	enter_kernel(kernel_start);
 }

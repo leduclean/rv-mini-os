@@ -1,7 +1,7 @@
 /*
  * Trap entry and exit, shared by the user and the kernel paths.
  *
- * Convention: mscratch holds the top of the kernel stack of the current
+ * Convention: sscratch holds the top of the kernel stack of the current
  * process while it runs in user mode, and 0 while we are in the kernel.
  *
  * Offsets follow struct pt_regs in trap.h, keep both in sync.
@@ -10,11 +10,11 @@
     .section .text
     .global trap_entry, trap_return
 trap_entry:
-    csrrw sp, mscratch, sp      // sp = kernel sp (from U) | 0 (from M)
+    csrrw sp, sscratch, sp      // sp = kernel sp (from U) | 0 (from M)
     bnez  sp, _from_user
 
 _from_kernel:
-    csrrw sp, mscratch, sp      // take our sp back, mscratch returns to 0
+    csrrw sp, sscratch, sp      // take our sp back, sscratch returns to 0
     addi  sp, sp, -8 * 32
     sd    t0, 10 * 8(sp)        // free a working register
     addi  t0, sp, 8 * 32        // the interrupted sp
@@ -22,11 +22,16 @@ _from_kernel:
     j     _save_rest
 
 _from_user:
+    // Use the kernel sp to save the state
     addi  sp, sp, -8 * 32
+
+    // Save the stack pointer of the kernel
     sd    t0, 10 * 8(sp)
-    csrr  t0, mscratch          // the interrupted sp, stashed by the swap
+    csrr  t0, sscratch
     sd    t0,  0 * 8(sp)
-    csrw  mscratch, zero        // we are in the kernel from now on
+    
+    // We are in the kernel from now on 
+    csrw  sscratch, zero 
 
 _save_rest:
     sd ra,  1 * 8(sp)
@@ -63,28 +68,37 @@ _save_rest:
     sd s10, 27 * 8(sp)
     sd s11, 28 * 8(sp)
 
-    csrr t0, mepc
+    csrr t0, sepc
     sd   t0, 29 * 8(sp)
-    csrr t0, mcause
+    csrr t0, scause
     sd   t0, 30 * 8(sp)
-    csrr t0, mstatus
+    csrr t0, sstatus
     sd   t0, 31 * 8(sp)
-
-    mv  a0, sp                  // trap_handler(pt_regs_t *)
+    
+    // The stack now points 
+    // to the top of the structure
+    mv  a0, sp
+    // trap_handler(pt_regs_t *)
     jal trap_handler
 
 trap_return:
     ld   t0, 31 * 8(sp)
-    csrw mstatus, t0
+    csrw sstatus, t0
 
-    li   t1, 0x1800             // MPP mask
+    // SPP mask
+    li   t1, 0x100
     and  t1, t0, t1
-    bnez t1, 1f                 // MPP != 0, we return into the kernel
-    addi t1, sp, 8 * 32         // back to user: mscratch = top of kernel stack
-    csrw mscratch, t1
-1:
+
+    // SPP != 0 means we don't return to user mode
+    bnez t1, _restore_rest
+
+    // Back to user so sscratch is top of the kernel stack 
+    // (without the context allocation)
+    addi t1, sp, 8 * 32
+    csrw sscratch, t1
+_restore_rest:
     ld   t0, 29 * 8(sp)
-    csrw mepc, t0
+    csrw sepc, t0
 
     ld ra,  1 * 8(sp)
 
@@ -123,4 +137,4 @@ trap_return:
 
     ld sp,  0 * 8(sp)           // sp last, it is the base of every load above
 
-    mret
+    sret
