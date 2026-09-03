@@ -6,16 +6,22 @@
 #pragma once
 
 /** @brief Disable the timer irq. */
-void disable_timer();
+void disable_m_timer();
 
 /** @brief Init the timer and enable the timer irq. */
-void enable_timer();
+void enable_m_timer();
 
 /** @brief Enable the machine external irq. */
-void enable_external();
+void enable_m_external();
 
 /** @brief Disable the machine external irq. */
-void disable_external();
+void disable_m_external();
+
+/** @brief Enable the supervisor external irq. */
+void enable_s_external();
+
+/** @brief Disable the supervisor external irq. */
+void disable_s_external();
 
 /**
  * @brief Config the plic for the uart irq.
