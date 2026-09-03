@@ -123,6 +123,28 @@ TEST(CList, InsertAfter)
 	free(node2);
 }
 
+TEST(CList, PushFront)
+{
+	clist_node_t *list = create_list();
+	clist_node_t *node1 = create_node();
+	clist_node_t *node2 = create_node();
+
+	clist_push_front(list, node1);
+	clist_push_front(list, node2);
+
+	TEST_ASSERT_EQUAL_INT(1, node1->in_list);
+	TEST_ASSERT_EQUAL_INT(1, node2->in_list);
+
+	TEST_ASSERT_EQUAL_PTR(list->next, node2);
+	TEST_ASSERT_EQUAL_PTR(node1->next, list);
+	TEST_ASSERT_EQUAL_PTR(list->prev, node1);
+	TEST_ASSERT_EQUAL_PTR(node1->prev, node2);
+
+	free(list);
+	free(node1);
+	free(node2);
+}
+
 TEST(CList, PushBack)
 {
 	clist_node_t *list = create_list();
