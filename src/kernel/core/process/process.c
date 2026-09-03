@@ -129,7 +129,7 @@ void switch_active(process_t *next)
  */
 static void _clear_from_blocking_queues(process_t *proc)
 {
-	irq_flags_t state = _irq_save();
+	irq_flags_t state = irq_save();
 	// Remove it if it from sleeping queue (timeout).
 	if (is_in_sleeping_queue(proc)) {
 		remove_from_sleeping(proc);
@@ -138,7 +138,7 @@ static void _clear_from_blocking_queues(process_t *proc)
 	if (clist_is_in_list(&proc->wait_node)) {
 		clist_remove(&proc->wait_node);
 	}
-	_irq_restore(state);
+	irq_restore(state);
 }
 
 // State handling
@@ -155,13 +155,13 @@ void process_block(process_t *proc)
 
 void process_wake(process_t *proc)
 {
-	irq_flags_t state = _irq_save();
+	irq_flags_t state = irq_save();
 	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
 		// Remove it from sleeping and blocked queue if remaining
 		_clear_from_blocking_queues(proc);
 		proc->state = RUNNING;
 	}
-	_irq_restore(state);
+	irq_restore(state);
 }
 
 /**
@@ -189,14 +189,14 @@ static inline void _remove_from_all_queues(process_t *proc)
  */
 static inline void _process_clean_up(process_t *proc)
 {
-	irq_flags_t state = _irq_save();
+	irq_flags_t state = irq_save();
 
 	proc->state = TERMINATED;
 	_remove_from_all_queues(proc);
 	free(proc);
 	proc_table.active_process--;
 
-	_irq_restore(state);
+	irq_restore(state);
 }
 
 /**
@@ -208,7 +208,7 @@ static inline void _process_clean_up(process_t *proc)
  */
 static inline void _process_zombify(process_t *proc)
 {
-	irq_flags_t state = _irq_save();
+	irq_flags_t state = irq_save();
 
 	process_t *parent = proc->parent;
 	if (!parent)
@@ -223,7 +223,7 @@ static inline void _process_zombify(process_t *proc)
 		scheduler_wake_waiting_queue(&parent->child_wq);
 	}
 
-	_irq_restore(state);
+	irq_restore(state);
 }
 
 void process_terminate(process_t *proc)
@@ -306,7 +306,7 @@ static process_t *_add_process_to_scheduler(process_t *slot)
 
 process_t *spawn_process(void code(), const char *nom, priority prior)
 {
-	irq_flags_t state = _irq_save();
+	irq_flags_t state = irq_save();
 
 	if (proc_table.active_process >= MAX_PROC) {
 		return NULL; // Error already max processus launched
@@ -319,7 +319,7 @@ process_t *spawn_process(void code(), const char *nom, priority prior)
 	clist_push_back(&proc_table.head, &proc->proc_node);
 	process_t *spawned = _add_process_to_scheduler(proc);
 
-	_irq_restore(state);
+	irq_restore(state);
 	return spawned;
 }
 
@@ -354,6 +354,6 @@ void init_proc()
 void idle()
 {
 	for (;;) {
-		_hlt();
+		hlt();
 	}
 }

@@ -7,8 +7,8 @@
 
 // Mocked functions
 typedef unsigned long irq_flags_t;
-irq_flags_t _irq_save();
-void _irq_restore(irq_flags_t state);
+irq_flags_t irq_save();
+void irq_restore(irq_flags_t state);
 void scheduler_admit(process_t *p);
 void scheduler_wake_waiting_queue(wait_queue_t *wq);
 void init_scheduler_queues(void);
@@ -23,7 +23,7 @@ void remove_from_sleeping(process_t *p);
 
 uint8_t wait_pid(int8_t pid);
 
-void _hlt(void);
+void hlt(void);
 
 void proc_launcher(void proc());
 
