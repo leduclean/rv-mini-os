@@ -148,24 +148,24 @@ static void _update_highest(process_t *proc)
 
 void scheduler_admit(process_t *proc)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	_ready_queue_enqueue(proc);
 	_update_highest(proc);
 	_check_and_preempt(proc);
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 void scheduler_rotate()
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	process_t *next = _rotate_ready_queue(_pick_highest());
 	if (next != get_active())
 		_do_ctx_switch(next);
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 /**
@@ -176,25 +176,25 @@ void scheduler_rotate()
  */
 static void _switch_out_active()
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	refresh_highest_prio();
 	clist_node_t *next_node = clist_first(_pick_highest());
 	_do_ctx_switch(container_of(next_node, process_t, ready_node));
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 void scheduler_terminate()
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 	process_t *current = get_active();
 
 	_ready_queue_remove(current);
 	process_terminate(current);
 	_switch_out_active();
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 void proc_launcher()
@@ -205,7 +205,7 @@ void proc_launcher()
 
 void scheduler_ready_process(process_t *proc)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	// Wake the process
 	process_wake(proc);
@@ -218,7 +218,7 @@ void scheduler_ready_process(process_t *proc)
 
 	// Preempt if needed
 	_check_and_preempt(proc);
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 // Sleeping queue handling
@@ -267,14 +267,14 @@ void remove_from_sleeping(process_t *proc)
 
 void scheduler_sleep(uint32_t nbr_secs)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	process_t *proc = get_active();
 	_ready_queue_remove(proc);
 	process_sleep(proc, nbr_secs);
 	_insert_sleep(proc);
 	_switch_out_active();
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 /**
@@ -298,12 +298,12 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
 
 void scheduler_wake_sleeping()
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	uint32_t now = seconds();
 	clist_for_each(&sleeping_head, _wake_up_sleeping_cb, &now);
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 /**
@@ -321,18 +321,18 @@ static inline void _move_to_wq(process_t *proc, wait_queue_t *wq)
 
 void scheduler_block_on(wait_queue_t *wq)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	process_t *proc = get_active();
 	_move_to_wq(proc, wq);
 	_switch_out_active();
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 
 	process_t *proc = get_active();
 	_move_to_wq(proc, wq);
@@ -342,7 +342,7 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs)
 	}
 	_switch_out_active();
 
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 /**
@@ -363,9 +363,9 @@ static inline int _wake_up_waiting_cb(clist_node_t *current, void *args)
 
 void scheduler_wake_waiting_queue(wait_queue_t *wq)
 {
-	irq_flags_t flags = _irq_save();
+	irq_flags_t flags = irq_save();
 	wq_for_each_and_del(wq, _wake_up_waiting_cb, NULL);
-	_irq_restore(flags);
+	irq_restore(flags);
 }
 
 void init_scheduler_queues()

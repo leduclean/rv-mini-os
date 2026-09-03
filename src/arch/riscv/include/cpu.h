@@ -7,7 +7,7 @@
 #include "platform.h"
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
-inline static void _hlt()
+inline static void hlt()
 {
 	__asm__ __volatile__("wfi" ::: "memory");
 }
@@ -32,7 +32,7 @@ typedef unsigned long irq_flags_t;
  *
  * @return Previous mstatus, to give back to _irq_restore().
  */
-static inline irq_flags_t _irq_save()
+static inline irq_flags_t irq_save()
 {
 	irq_flags_t flags;
 	__asm__("csrr %0, mstatus" : "=r"(flags));
@@ -47,7 +47,7 @@ static inline irq_flags_t _irq_save()
  *
  * @param flags State returned by the matching _irq_save() call.
  */
-inline static void _irq_restore(irq_flags_t flags)
+inline static void irq_restore(irq_flags_t flags)
 {
 	// Interupt were enabled so we restore them
 	if (flags & MSTATUS_MIE)
