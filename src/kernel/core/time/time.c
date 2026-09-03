@@ -1,7 +1,6 @@
 #include "time.h"
 #include "console.h"
 #include "minilib/stdio.h"
-#include "mmio.h"
 #include "platform.h"
 #include "scheduler.h"
 
@@ -13,19 +12,40 @@
 static uint32_t ticks;
 static uint32_t prev;
 
+static inline void _enable_sstc_extension()
+{
+	__asm__ __volatile__("csrs menvcfg, %0" ::"r"(MENVCFG_STCE));
+}
+
+static inline void _enable_stimecmp()
+{
+	__asm__ volatile("csrs mcounteren, %0" ::"r"(MCOUNTEREN_TM));
+}
+
+static inline void _enable_s_timer()
+{
+	__asm__("csrs sie, %0" ::"r"(1 << S_IRQ_TMR));
+}
+
+/** @brief Arm the supervisor timer comparator for the next tick. */
+static inline void _update_timer()
+{
+	long t;
+	__asm__ __volatile__("csrr %0, time" : "=r"(t));
+	__asm__ __volatile__("csrw stimecmp, %0" ::"r"(t + DELAY));
+}
+
 inline uint32_t seconds()
 {
 	return ticks / ITFREQ;
 }
 
-/** @brief Arm the timer comparator for the next tick. */
-static inline void _update_timer()
-{
-	MMIO64(CLINT_TIMER_CMP) = MMIO64(CLINT_TIMER) + DELAY;
-}
-
 void init_timer()
 {
+	_enable_sstc_extension();
+	_enable_s_timer();
+	_enable_stimecmp();
+
 	ticks = 0;
 	prev = -1;
 	_update_timer();
