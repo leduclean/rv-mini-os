@@ -19,9 +19,9 @@ typedef struct pt_regs {
 	uint64_t a[8];
 	uint64_t t[7];
 	uint64_t s[12];
-	uint64_t mepc; ///< Address the trap returns to.
-	uint64_t mcause; ///< Cause of the trap.
-	uint64_t mstatus; ///< Status of the interrupted context, MPP included.
+	uint64_t sepc; ///< Address the trap returns to.
+	uint64_t scause; ///< Cause of the trap.
+	uint64_t sstatus; ///< Status of the interrupted context, SPP included.
 } pt_regs_t;
 
 /* trampoline.S hardcodes these offsets, keep both in sync. */
@@ -32,9 +32,9 @@ _Static_assert(__builtin_offsetof(pt_regs_t, t) == 10 * 8,
 	       "trampoline.S offsets stale");
 _Static_assert(__builtin_offsetof(pt_regs_t, s) == 17 * 8,
 	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, mepc) == 29 * 8,
+_Static_assert(__builtin_offsetof(pt_regs_t, sepc) == 29 * 8,
 	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, mstatus) == 31 * 8,
+_Static_assert(__builtin_offsetof(pt_regs_t, sstatus) == 31 * 8,
 	       "trampoline.S offsets stale");
 
 /**
@@ -48,12 +48,11 @@ _Static_assert(__builtin_offsetof(pt_regs_t, mstatus) == 31 * 8,
 void enter_user_mode(void (*entry)(), uintptr_t ustack);
 
 /**
- * @brief Set the trap entry point called to treat the irq.
+ * @brief Inits trap entries of M and S privileges modes.
+ * @warning This function MUST be called during the kernel boot.
  *
- * @param entry Trap vector written in the mtvec register.
  */
-void init_trap_entry(void (*entry)());
-
+void init_trap_entries();
 /**
  * @brief Trap handler called by the trampoline, on the kernel stack.
  *

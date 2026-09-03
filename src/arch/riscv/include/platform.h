@@ -66,9 +66,9 @@
 // PLIC registers addresses
 #define PLIC_PENDING 0x0c001000
 #define PLIC_SOURCE 0x0c000000
-#define PLIC_ENABLE 0x0c002000
-#define PLIC_TARGET 0x0c200000
-#define PLIC_IRQ_CLAIM 0x0c200004
+#define PLIC_ENABLE_S 0x0c002080
+#define PLIC_TARGET_S 0x0c201000
+#define PLIC_IRQ_CLAIM_S 0x0c201004
 
 // PLIC pushbutton irq
 #define PLIC_IRQ_2 0x2
@@ -88,16 +88,19 @@
 #define TIMER_FREQ 10000000 // 10MHz
 #define TIMER_RATIO 500
 
-// MCAUSE descriptors bit values
-#define MCAUSE_IRQ_BIT (1UL << 63)
-#define MCAUSE_IRQ_MASK (0xff)
+#define XCAUSE_IRQ_BIT (1UL << 63)
 
-// Irq mcause values
-#define IRQ_M_TMR 7 /* Machine time interrupt */
-#define IRQ_M_EXT 11 /* Maching external interrupt */
+// Mcause irq flags
+#define M_IRQ_TMR 7 /* Machine time interrupt */
+#define M_IRQ_EXT 11 /* Maching external interrupt */
 
-// Ecall mcause values
+// Scause irq flags
+#define S_IRQ_TMR 5 /* Supervisor timer interrupt bit */
+#define S_IRQ_EXT 9 /* Supervisor external interrupt bit */
+
+// Ecall values
 #define ECALL_UMODE 8
+#define ECALL_SMODE 9
 #define ECALL_MMODE 11
 
 // Bit in mstatus
@@ -105,6 +108,14 @@
 #define MSTATUS_MPIE (1 << 7)
 #define MSTATUS_MPP_SHIFT 11
 #define MSTATUS_MPP_MASK (0b11 << MSTATUS_MPP_SHIFT)
+#define MSTATUS_SUM (1 << 18)
+#define MSTATUS_MXR (1 << 19)
+
+// Bit in sstatus
+#define SSTATUS_SIE (1UL << 1)
+#define SSTATUS_SPIE (1UL << 5)
+#define SSTATUS_SPP (1UL << 8)
+
 // Privilege mode
 #define U 0
 #define S 1
@@ -123,6 +134,7 @@
 #define UART_IIR_NO_INT 0x01 /* No interrupts pending */
 #define UART_IIR_ID 0x06 /* Mask for the interrupt ID */
 
+#if __ASSEMBLER__ == 0
 enum {
 	UART_RBR = 0x00, /* Receive Buffer Register */
 	UART_THR = 0x00, /* Transmit Hold Register */
@@ -177,7 +189,6 @@ enum {
 	UART_TX_IT_EN = 1
 };
 
-#if __ASSEMBLER__ == 0
 void timer_set(uint32_t period, uint32_t start_value);
 void timer_wait();
 void timer_set_and_wait(uint32_t period, uint32_t time);

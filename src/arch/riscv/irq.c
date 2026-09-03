@@ -5,28 +5,38 @@
 #include "uart.h"
 
 /** Enable timer irq and trigger the timer **/
-void enable_timer()
+void enable_m_timer()
 {
 	// Clock configuration
 	init_timer();
 
 	// Timer irq support
-	__asm__("csrs mie, %0" ::"r"(1 << IRQ_M_TMR));
+	__asm__("csrs mie, %0" ::"r"(1 << M_IRQ_TMR));
 }
 
-void disable_timer()
+void disable_m_timer()
 {
-	__asm__("csrc mie, %0" ::"r"(1 << IRQ_M_TMR));
+	__asm__("csrc mie, %0" ::"r"(1 << M_IRQ_TMR));
 }
 
-void enable_external()
+void enable_m_external()
 {
-	__asm__("csrs mie, %0" ::"r"(1 << IRQ_M_EXT));
+	__asm__("csrs mie, %0" ::"r"(1 << M_IRQ_EXT));
 }
 
-void disable_external()
+void disable_m_external()
 {
-	__asm__("csrc mie, %0" ::"r"(1 << IRQ_M_EXT));
+	__asm__("csrc mie, %0" ::"r"(1 << M_IRQ_EXT));
+}
+
+void enable_s_external()
+{
+	__asm__("csrs sie, %0" ::"r"(1 << S_IRQ_EXT));
+}
+
+void disable_s_external()
+{
+	__asm__("csrc sie, %0" ::"r"(1 << S_IRQ_EXT));
 }
 
 /**
@@ -61,13 +71,13 @@ static void _set_priority_treshold(uint32_t threshold)
 	if (threshold > 7) {
 		threshold = 7;
 	}
-	MMIO32(PLIC_TARGET) = threshold;
+	MMIO32(PLIC_TARGET_S) = threshold;
 }
 
 void plic_uart_config()
 {
 	/* Enable UART irq */
-	MMIO32(PLIC_ENABLE) |= PLIC_ENABLE_UART;
+	MMIO32(PLIC_ENABLE_S) |= PLIC_ENABLE_UART;
 	/* Set Uart priority to  3 */
 	_plic_set_pty(PLIC_UART_ID, 3);
 	/* Set threshold to 0 to enable all < 0 interrupts */
@@ -81,7 +91,7 @@ void plic_uart_config()
  */
 static uint32_t _claim_plic()
 {
-	return MMIO32(PLIC_IRQ_CLAIM);
+	return MMIO32(PLIC_IRQ_CLAIM_S);
 }
 
 /**
@@ -91,7 +101,7 @@ static uint32_t _claim_plic()
  */
 static void _complete_plic(uint32_t irq)
 {
-	MMIO32(PLIC_IRQ_CLAIM) = irq;
+	MMIO32(PLIC_IRQ_CLAIM_S) = irq;
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
