@@ -7,14 +7,14 @@
 #include "minilib/stdint.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
+#include "csr.h"
 
 extern void enter_user(pt_regs_t *regs);
 extern void trap_entry(void);
 
-static inline long _get_stub_sstatus()
+static inline unsigned long _get_stub_sstatus()
 {
-	long sstatus;
-	__asm__ volatile("csrr %0, sstatus" : "=r"(sstatus));
+	unsigned long sstatus = csr_read(sstatus);
 
 	// Set the previous mode to user mode: SPP=0 -> sret returns to U,
 	// SPP=1 would return to S.
@@ -30,7 +30,7 @@ void enter_user_mode(void (*entry)(), uintptr_t ustack)
 	// This structure is gonna be on kernel stack
 	pt_regs_t regs = { 0 };
 
-	long sstatus = _get_stub_sstatus();
+	unsigned long sstatus = _get_stub_sstatus();
 	// Smoke regs entry from the user
 	regs.sepc = (long)entry;
 	regs.sstatus = sstatus;
@@ -51,12 +51,12 @@ void enter_user_mode(void (*entry)(), uintptr_t ustack)
  */
 static inline void init_mtvec(void (*entry)())
 {
-	__asm__("csrw mtvec, %0" ::"r"(entry));
+	csr_write(mtvec, entry);
 }
 
 static inline void init_stvec(void (*entry)())
 {
-	__asm__ __volatile__("csrw stvec, %0" ::"r"(entry));
+	csr_write(stvec, entry);
 }
 
 static inline void _stop()
@@ -73,7 +73,8 @@ static inline void _stop()
  * @param pc m/sepc register.
  * @param tval Trap value of the exception m/stval.
  */
-static inline void _panic_print(long cause, long pc, long tval)
+static inline void _panic_print(unsigned long cause, unsigned long pc,
+				unsigned long tval)
 {
 	if (cause & XCAUSE_IRQ_BIT) {
 		cause &= XCAUSE_IRQ_BIT;
@@ -91,13 +92,9 @@ static inline void _panic_print(long cause, long pc, long tval)
  */
 static inline void _machine_trap_panic()
 {
-	long mtval;
-	long mepc;
-	long mcause;
-
-	__asm__ __volatile__("csrr %0, mtval" : "=r"(mtval));
-	__asm__ __volatile__("csrr %0, mepc" : "=r"(mepc));
-	__asm__ __volatile__("csrr %0, mcause" : "=r"(mcause));
+	unsigned long mtval = csr_read(mtval);
+	unsigned long mepc = csr_read(mepc);
+	unsigned long mcause = csr_read(mcause);
 
 	printf("[PANIC]: FROM MACHINE \n");
 	_panic_print(mcause, mepc, mtval);
@@ -112,8 +109,7 @@ static inline void _machine_trap_panic()
  */
 static inline void _kernel_trap_panic(pt_regs_t *t)
 {
-	long stval;
-	__asm__ __volatile__("csrr %0, stval" : "=r"(stval));
+	unsigned long stval = csr_read(stval);
 
 	printf("[PANIC]: FROM KERNEL \n");
 	_panic_print(t->scause, t->sepc, stval);

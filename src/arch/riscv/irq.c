@@ -1,3 +1,4 @@
+#include "csr.h"
 #include "mmio.h"
 #include "platform.h"
 #include "time.h"
@@ -6,36 +7,32 @@
 /** Enable timer irq and trigger the timer **/
 void enable_m_timer()
 {
-	// Clock configuration
-	init_timer();
-
-	// Timer irq support
-	__asm__("csrs mie, %0" ::"r"(1 << M_IRQ_TMR));
+	csr_set(mie, (1 << M_IRQ_TMR));
 }
 
 void disable_m_timer()
 {
-	__asm__("csrc mie, %0" ::"r"(1 << M_IRQ_TMR));
+	csr_clear(mie, (1 << M_IRQ_TMR));
 }
 
 void enable_m_external()
 {
-	__asm__("csrs mie, %0" ::"r"(1 << M_IRQ_EXT));
+	csr_set(mie, (1 << M_IRQ_EXT));
 }
 
 void disable_m_external()
 {
-	__asm__("csrc mie, %0" ::"r"(1 << M_IRQ_EXT));
+	csr_clear(mie, (1 << M_IRQ_EXT));
 }
 
 void enable_s_external()
 {
-	__asm__("csrs sie, %0" ::"r"(1 << S_IRQ_EXT));
+	csr_set(sie, (1 << S_IRQ_EXT));
 }
 
 void disable_s_external()
 {
-	__asm__("csrc sie, %0" ::"r"(1 << S_IRQ_EXT));
+	csr_clear(sie, (1 << S_IRQ_EXT));
 }
 
 /**
