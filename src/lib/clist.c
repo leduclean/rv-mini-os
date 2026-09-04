@@ -39,6 +39,11 @@ void clist_push_back(clist_node_t *head, clist_node_t *node)
 	clist_insert_before(head, node);
 }
 
+void clist_push_front(clist_node_t *head, clist_node_t *node)
+{
+	clist_insert_after(head, node);
+}
+
 void clist_remove(clist_node_t *node)
 {
 	if (!node || !node->in_list)
