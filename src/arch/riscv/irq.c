@@ -1,6 +1,5 @@
 #include "mmio.h"
 #include "platform.h"
-#include "syscall.h"
 #include "time.h"
 #include "uart.h"
 
