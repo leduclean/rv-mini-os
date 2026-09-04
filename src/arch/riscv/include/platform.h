@@ -92,6 +92,11 @@
 #define S_IRQ_TMR 5 /* Supervisor timer interrupt bit */
 #define S_IRQ_EXT 9 /* Supervisor external interrupt bit */
 
+#define MIE_MTIE (1UL << M_IRQ_TMR)
+#define MIE_MEIE (1UL << M_IRQ_EXT)
+#define SIE_STIE (1UL << S_IRQ_TMR)
+#define SIE_SEIE (1UL << S_IRQ_EXT)
+
 // Ecall values
 #define ECALL_UMODE 8
 #define ECALL_SMODE 9
