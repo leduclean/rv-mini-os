@@ -4,27 +4,6 @@
 #include "time.h"
 #include "uart.h"
 
-/** Enable timer irq and trigger the timer **/
-void enable_m_timer()
-{
-	csr_set(mie, (1 << M_IRQ_TMR));
-}
-
-void disable_m_timer()
-{
-	csr_clear(mie, (1 << M_IRQ_TMR));
-}
-
-void enable_m_external()
-{
-	csr_set(mie, (1 << M_IRQ_EXT));
-}
-
-void disable_m_external()
-{
-	csr_clear(mie, (1 << M_IRQ_EXT));
-}
-
 void enable_s_external()
 {
 	csr_set(sie, (1 << S_IRQ_EXT));

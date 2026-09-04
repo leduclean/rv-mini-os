@@ -5,18 +5,6 @@
 
 #pragma once
 
-/** @brief Disable the timer irq. */
-void disable_m_timer();
-
-/** @brief Init the timer and enable the timer irq. */
-void enable_m_timer();
-
-/** @brief Enable the machine external irq. */
-void enable_m_external();
-
-/** @brief Disable the machine external irq. */
-void disable_m_external();
-
 /** @brief Enable the supervisor external irq. */
 void enable_s_external();
 
