@@ -136,6 +136,14 @@ clist_node_t *clist_for_each_and_del(clist_node_t *head,
 				     void *args);
 
 /**
+ * @brief Add an element at the head of the clist.
+ *
+ * @param head Head sentinel of the clist.
+ * @param node Node to add.
+ */
+void clist_push_front(clist_node_t *head, clist_node_t *node);
+
+/**
  * @brief Add an element at the end of the clist.
  *
  * @param head Head sentinel of the clist.
