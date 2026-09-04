@@ -4,6 +4,8 @@
  */
 
 #pragma once
+
+#include "csr.h"
 #include "platform.h"
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
@@ -15,25 +17,25 @@ inline static void hlt()
 /** @brief Enable the interrupts at the machine level. */
 inline static void enable_m_irq()
 {
-	__asm__("csrs mstatus, %0" ::"i"(MSTATUS_MIE));
+	csr_set(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Disable the interrupts at the machine level. */
 inline static void disable_m_irq()
 {
-	__asm__("csrc mstatus, %0" ::"r"(MSTATUS_MIE));
+	csr_clear(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Enable the interrupts at the supervisor level. */
 inline static void enable_s_irq()
 {
-	__asm__("csrs sstatus, %0" ::"i"(SSTATUS_SIE));
+	csr_set(sstatus, SSTATUS_SIE);
 }
 
 /** @brief Disable the interrupts at the supervisor level. */
 inline static void disable_s_irq()
 {
-	__asm__("csrc sstatus, %0" ::"r"(SSTATUS_SIE));
+	csr_clear(sstatus, SSTATUS_SIE);
 }
 
 /** @brief Saved interrupt state, as returned by irq_save(). */
@@ -46,8 +48,7 @@ typedef unsigned long irq_flags_t;
  */
 static inline irq_flags_t irq_save()
 {
-	irq_flags_t flags;
-	__asm__("csrr %0, sstatus" : "=r"(flags));
+	irq_flags_t flags = csr_read(sstatus);
 	if (flags & SSTATUS_SIE) {
 		disable_s_irq();
 	}
