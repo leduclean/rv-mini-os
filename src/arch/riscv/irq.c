@@ -6,12 +6,12 @@
 
 void enable_s_external()
 {
-	csr_set(sie, (1 << S_IRQ_EXT));
+	csr_set(sie, SIE_SEIE);
 }
 
 void disable_s_external()
 {
-	csr_clear(sie, (1 << S_IRQ_EXT));
+	csr_clear(sie, SIE_SEIE);
 }
 
 /**
