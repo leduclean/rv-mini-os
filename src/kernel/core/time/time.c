@@ -25,7 +25,7 @@ static inline void _enable_stimecmp()
 
 static inline void _enable_s_timer()
 {
-	csr_set(sie, (1 << S_IRQ_TMR));
+	csr_set(sie, SIE_STIE);
 }
 
 /** @brief Arm the supervisor timer comparator for the next tick. */
