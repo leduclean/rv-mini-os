@@ -31,6 +31,7 @@ void kernel_start()
 	enable_s_external();
 
 	init_proc();
+	spawn_process(u1, "u1", NORMAL);
 	spawn_process(shell, "shell", NORMAL);
 	idle();
 }

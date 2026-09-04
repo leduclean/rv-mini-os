@@ -16,8 +16,9 @@ static inline long _get_stub_sstatus()
 	long sstatus;
 	__asm__ volatile("csrr %0, sstatus" : "=r"(sstatus));
 
-	// Set the previous mode to user mode
-	sstatus |= SSTATUS_SPP;
+	// Set the previous mode to user mode: SPP=0 -> sret returns to U,
+	// SPP=1 would return to S.
+	sstatus &= ~SSTATUS_SPP;
 	// SPIE is set to 1 in kernel trap since MIE is set to 1
 	sstatus |= SSTATUS_SPIE;
 
@@ -61,7 +62,6 @@ static inline void init_stvec(void (*entry)())
 static inline void _stop()
 {
 	disable_s_irq();
-	disable_m_irq();
 	for (;;)
 		hlt();
 }
