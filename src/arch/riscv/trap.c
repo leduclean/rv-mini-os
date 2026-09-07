@@ -1,45 +1,30 @@
 #include "cpu.h"
+#include "asm_defs.h"
+#include "mmap.h"
 #include "platform.h"
 #include "trap.h"
+#include "process.h"
 #include "syscall.h"
 #include "time.h"
 #include "irq.h"
-#include "minilib/stdint.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
 #include "csr.h"
 
-extern void enter_user(pt_regs_t *regs);
-extern void trap_entry(void);
+extern char trap_return[];
 
-static inline unsigned long _get_stub_sstatus()
+static inline unsigned long _get_user_sstatus()
 {
-	unsigned long sstatus = csr_read(sstatus);
+	unsigned long val = csr_read(sstatus);
 
 	// Set the previous mode to user mode: SPP=0 -> sret returns to U,
 	// SPP=1 would return to S.
-	sstatus &= ~SSTATUS_SPP;
+	val &= ~SSTATUS_SPP;
 	// SPIE is set to 1 in kernel trap since MIE is set to 1
-	sstatus |= SSTATUS_SPIE;
+	val |= SSTATUS_SPIE;
 
-	return sstatus;
+	return val;
 }
-
-void enter_user_mode(void (*entry)(), uintptr_t ustack)
-{
-	// This structure is gonna be on kernel stack
-	pt_regs_t regs = { 0 };
-
-	unsigned long sstatus = _get_stub_sstatus();
-	// Smoke regs entry from the user
-	regs.sepc = (long)entry;
-	regs.sstatus = sstatus;
-	regs.sp = ustack;
-
-	// Make the sp points to the stub frame
-	// and then return from this frame to user mode
-	enter_user(&regs);
-};
 
 /**
  * @brief Set the trap entry point called to treat the irq.
@@ -107,36 +92,65 @@ static inline void _machine_trap_panic()
  *
  * @param t A pointer to the saved register of the trap.
  */
-static inline void _kernel_trap_panic(pt_regs_t *t)
+static inline void _kernel_trap_panic(unsigned long scause, unsigned long sepc,
+				      unsigned long stval)
 {
-	unsigned long stval = csr_read(stval);
-
 	printf("[PANIC]: FROM KERNEL \n");
-	_panic_print(t->scause, t->sepc, stval);
+	_panic_print(scause, sepc, stval);
 	_stop();
 }
 
-void init_trap_entries()
+static inline void _handler_async_irq(unsigned long irq_cause)
 {
-	init_mtvec(_machine_trap_panic);
-	init_stvec(trap_entry);
+	switch (irq_cause) {
+	case S_IRQ_EXT:
+		external_irq_handler();
+		break;
+	case S_IRQ_TMR:
+		timer_irq_handler();
+		break;
+	}
 }
 
-void trap_handler(pt_regs_t *t)
+/**
+ * @brief Asm entry point called when trapping from kernel mode.
+ */
+void kerneltrap()
 {
+	unsigned long scause = csr_read(scause);
+	volatile unsigned long sstatus = csr_read(sstatus);
+	volatile unsigned long sepc = csr_read(sepc);
+
+	long irq_flag = scause & XCAUSE_IRQ_BIT;
+	if (irq_flag) {
+		unsigned long irq_cause = scause & ~XCAUSE_IRQ_BIT;
+		_handler_async_irq(irq_cause);
+
+	} else {
+		//TODO: We do not handle exception from kernel to kernel.
+		unsigned long stval = csr_read(stval);
+		_kernel_trap_panic(scause, sepc, stval);
+	};
+
+	// Restore initial csr for trap in trap handling
+	csr_write(sstatus, sstatus);
+	csr_write(sepc, sepc);
+}
+
+/**
+ * @brief Asm entry point called when trapping from user mode.
+ */
+unsigned long usertrap()
+{
+	process_t *p = get_active();
+	pt_regs_t *t = &p->tframe->saved_regs;
+
 	uint64_t scause = t->scause;
 	long irq_flag = scause & XCAUSE_IRQ_BIT;
 
 	if (irq_flag) {
-		long irq_cause = scause & ~XCAUSE_IRQ_BIT;
-		switch (irq_cause) {
-		case S_IRQ_EXT:
-			external_irq_handler();
-			break;
-		case S_IRQ_TMR:
-			timer_irq_handler();
-			break;
-		}
+		unsigned long irq_cause = scause & ~XCAUSE_IRQ_BIT;
+		_handler_async_irq(irq_cause);
 	} else {
 		switch (scause) {
 		case ECALL_UMODE:
@@ -146,9 +160,40 @@ void trap_handler(pt_regs_t *t)
 						   t->a[2]);
 			break;
 
-		default:
-			_kernel_trap_panic(t);
+		default: {
+			unsigned long stval = csr_read(stval);
+			_kernel_trap_panic(t->scause, t->sepc, stval);
 			break;
 		}
+		}
 	}
+	return t->satp;
 }
+
+extern void kernelvec();
+
+void init_trap_entries()
+{
+	init_mtvec(_machine_trap_panic);
+	// Kernel vec when starting the OS
+	init_stvec(kernelvec);
+}
+
+void enter_user_mode(const process_t *proc)
+{
+	tframe_t *t = proc->tframe;
+
+	// Wanted initial user state
+	t->saved_regs.sp = USTACK;
+	t->saved_regs.sepc = (unsigned long)proc->code;
+	t->saved_regs.sstatus = _get_user_sstatus();
+	t->saved_regs.satp = get_satp(proc->root_ptable);
+
+	// Kernel state
+	t->ksatp = get_kernel_satp();
+	t->kstack = (unsigned long)&proc->kstack[KSTACK_SIZE];
+
+	void (*trap_return_va)(unsigned long) = (void (*)(unsigned long))(
+		TRAMPOLINE + (trap_return - _trampoline_start));
+	trap_return_va(t->saved_regs.satp);
+};
