@@ -1,37 +1,31 @@
+#include  "asm_defs.h"
+
 /*
- * Trap entry and exit, shared by the user and the kernel paths.
- *
- * Convention: sscratch holds the top of the kernel stack of the current
- * process while it runs in user mode, and 0 while we are in the kernel.
- *
- * Offsets follow struct pt_regs in trap.h, keep both in sync.
+ * Trap entry from user mode.
+ * Offsets follow struct tframe_t in trap.h, keep both in sync.
  */
+.section .trampoline, "ax", @progbits
+.global trap_entry, trap_return
 
-    .section .text
-    .global trap_entry, trap_return
+/* We start in supervisor mode but with
+ * the page table of the user mode */
 trap_entry:
-    csrrw sp, sscratch, sp      // sp = kernel sp (from U) | 0 (from M)
-    bnez  sp, _from_user
+    // User:
+    //   sp       = USTACK
+    //   sscratch = TRAPFRAME
+    //   stvec    = TRAMPOLINE
 
-_from_kernel:
-    csrrw sp, sscratch, sp      // take our sp back, sscratch returns to 0
-    addi  sp, sp, -8 * 32
-    sd    t0, 10 * 8(sp)        // free a working register
-    addi  t0, sp, 8 * 32        // the interrupted sp
-    sd    t0,  0 * 8(sp)
-    j     _save_rest
 
-_from_user:
-    // Use the kernel sp to save the state
-    addi  sp, sp, -8 * 32
+    // sp = TRAPFRAME = tframe_t
+    csrrw sp, sscratch, sp
 
-    // Save the stack pointer of the kernel
-    sd    t0, 10 * 8(sp)
+    // Use the structure so save the state
+    // Save t0 to use it as scratch
+    sd  t0, 10 * 8(sp)
+
+    // Save the user mode sp which is in sscratch
     csrr  t0, sscratch
-    sd    t0,  0 * 8(sp)
-    
-    // We are in the kernel from now on 
-    csrw  sscratch, zero 
+    sd    t0,  0 * 8(sp) 
 
 _save_rest:
     sd ra,  1 * 8(sp)
@@ -74,29 +68,58 @@ _save_rest:
     sd   t0, 30 * 8(sp)
     csrr t0, sstatus
     sd   t0, 31 * 8(sp)
-    
-    // The stack now points 
-    // to the top of the structure
-    mv  a0, sp
-    // trap_handler(pt_regs_t *)
-    jal trap_handler
+    csrr t0, satp
+    sd   t0, 32 * 8(sp)
+ 
+_kernel_config:
+    // t0 = kstack
+    ld t0, 33 * 8(sp)
 
-trap_return:
+    // t1 = kstap
+    ld t1, 34 * 8(sp) 
+    // sp = kstack
+    mv sp, t0
+
+    // Switch to kernel pages
+    csrw  satp, t1 
+    sfence.vma zero, zero 
+
+    // Write zero in sscratch because 
+    // we are now in kernel
+    csrw  sscratch, zero 
+
+    // Update the stvec to the kernelvec
+    ld t0, 1f
+    csrw stvec, t0
+    // Load the handling function physical address
+    ld t1, 2f
+    j trap_handler
+
+// Literral pooling because we are in the user 
+// page table so the pc is virtual and too far from
+// those function.
+1:  .quad kernelvec
+2:  .quad usertrap
+
+trap_handler:
+    // call usertrap()
+    // The user trap will call returns the user pages satp in a0.
+    jalr t1
+// void trap_return(unsigned long usatp);
+trap_return:    
+    // When entering user mode, stvec should 
+    // be the trampoline page again.
+    li t0, TRAMPOLINE
+    csrw stvec, t0
+
+    // Switch back to user pages.
+    csrw  satp, a0 
+    sfence.vma zero, zero 
+
+    li sp, TRAPFRAME
+
     ld   t0, 31 * 8(sp)
     csrw sstatus, t0
-
-    // SPP mask
-    li   t1, 0x100
-    and  t1, t0, t1
-
-    // SPP != 0 means we don't return to user mode
-    bnez t1, _restore_rest
-
-    // Back to user so sscratch is top of the kernel stack 
-    // (without the context allocation)
-    addi t1, sp, 8 * 32
-    csrw sscratch, t1
-_restore_rest:
     ld   t0, 29 * 8(sp)
     csrw sepc, t0
 
@@ -135,6 +158,8 @@ _restore_rest:
     ld t1, 11 * 8(sp)
     ld t0, 10 * 8(sp)
 
+    // scratch should be TRAPFRAME again
+    csrw sscratch, sp
     ld sp,  0 * 8(sp)           // sp last, it is the base of every load above
 
     sret

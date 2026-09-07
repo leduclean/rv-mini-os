@@ -3,6 +3,8 @@
 #include "irq.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
+#include "mmap.h"
+#include "pages.h"
 #include "shell.h"
 #include "process.h"
 #include "progs.h"
@@ -11,28 +13,34 @@
 #include "uart.h"
 #include "memory.h"
 
-static long ustack1[KSTACK_SIZE] = { 0 };
-static long ustack2[KSTACK_SIZE] = { 0 };
-
-void u1()
-{
-	enter_user_mode(sleep_call, (uintptr_t)&ustack1[KSTACK_SIZE]);
-}
-
-void u2()
-{
-	enter_user_mode(sleep_call, (uintptr_t)&ustack2[KSTACK_SIZE]);
-}
-
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start()
 {
-	enable_s_irq();
-	enable_s_external();
+	printf("[INFO] Kernel start \n");
+
+	pages_init();
+	printf("[INFO] pages initialized \n");
+
+	map_kernel();
+	printf("[INFO] kernel map \n");
 
 	init_proc();
-	spawn_process(u1, "u1", NORMAL);
-	spawn_process(shell, "shell", NORMAL);
+	printf("[INFO] init proc \n");
+
+	enable_s_irq();
+
+	printf("[INFO] S irq enabled\n");
+
+	enable_s_external();
+
+	printf("[INFO] external irq enabled\n");
+	if (!spawn_process(sleep_call, "u1", NORMAL, true)) {
+		printf("[FAILURE]: failed to spawn u1");
+	}
+	printf("[INFO]: spawned u1");
+
+	// spawn_process(shell, "shell", NORMAL, false);
+	// printf("[INFO]: spawned shell");
 	idle();
 }
 
@@ -55,7 +63,7 @@ void start()
 
 	// Timer init.
 	// WARNING: this should always resides
-	// just befor entering the kernel and S mode.
+	// just before entering the kernel and S mode.
 	init_timer();
 
 	enter_kernel(kernel_start);

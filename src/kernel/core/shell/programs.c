@@ -55,7 +55,7 @@ static void _proc2()
 		       seconds());
 		if (i == 1) {
 			printf("[proc2] spawning proc3 dynamically...\n");
-			spawn_process(_proc3, "proc3", LOW);
+			spawn_process(_proc3, "proc3", LOW, false);
 		}
 		scheduler_sleep(6);
 	}

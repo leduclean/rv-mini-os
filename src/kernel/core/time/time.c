@@ -53,6 +53,9 @@ void init_timer()
 
 void timer_irq_handler(void)
 {
+	// Ack the timer
+	_update_timer();
+
 	// Treat the timer interupt
 	ticks++;
 	uint32_t s = seconds();
@@ -68,7 +71,9 @@ void timer_irq_handler(void)
 		prev = s;
 	};
 
+	//TODO: scheduler imbrication results
+	// to undefined behaviour if treated in the handler
+	// flag + daemon should be better.
 	scheduler_wake_sleeping();
 	scheduler_rotate();
-	_update_timer();
 }

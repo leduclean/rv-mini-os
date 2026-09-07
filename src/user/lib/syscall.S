@@ -1,9 +1,9 @@
 # TODO: Since this is specific to riscv asm maybe it should resid on the arch/riscv/
-.text
-.global syscall
+.section .user_text
+.global usyscall
 
-# long syscall(long n, long a, long b, long c, long d, long e, long f)
-syscall:
+# long usyscall(long n, long a, long b, long c, long d, long e, long f)
+usyscall:
     mv a7, a0
     mv a0, a1
     mv a1, a2

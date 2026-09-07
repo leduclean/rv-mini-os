@@ -4,6 +4,8 @@
 #include "cpu.h"
 #include "minilib/stddef.h"
 #include "minilib/string.h"
+#include "minilib/stdio.h"
+#include "mmap.h"
 #include "process.h"
 #include "time.h"
 #include "waitqueue.h"
@@ -205,7 +207,11 @@ void scheduler_terminate()
 
 void proc_launcher()
 {
-	get_active()->code();
+	process_t *p = get_active();
+	if (p->user) {
+		enter_user_mode(p);
+	}
+	p->code();
 	scheduler_terminate();
 }
 
@@ -295,8 +301,9 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
 	uint32_t now = *(uint32_t *)arg;
 	process_t *proc = container_of(node, process_t, sleep_node);
 	if (get_wake_up(proc) > now)
-		return -1;
+		return 0;
 
+	printf("Waked %s process", proc->name);
 	clist_remove(node);
 	scheduler_ready_process(proc);
 	return 0;
