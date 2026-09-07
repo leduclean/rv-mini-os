@@ -17,7 +17,10 @@ add_executable(kernel.bin
 
 target_link_options(kernel.bin PRIVATE
     -T${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.lds
-    -nostdlib -static -lgcc -Wl,--nmagic -Wl,--gc-sections -e entry -g
+    -nostdlib -static -lgcc
+    -Wl,--nmagic
+    -Wl,--gc-sections
+    -e entry -g
 )
 
 set(QEMU qemu-system-riscv64)
