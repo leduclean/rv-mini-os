@@ -92,8 +92,14 @@ static process_t *_rotate_ready_queue(clist_node_t *rq)
  */
 static void _check_and_preempt(process_t *proc)
 {
+	process_t *current = get_active();
+
+	if (!current) {
+		return;
+	}
+
 	priority prior = get_priority(proc);
-	priority current_prior = get_priority(get_active());
+	priority current_prior = get_priority(current);
 	if (higher_priority(prior, current_prior)) {
 		// Immediatly switch to this process
 		_do_ctx_switch(proc);
