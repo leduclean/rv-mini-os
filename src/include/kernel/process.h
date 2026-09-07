@@ -5,7 +5,10 @@
 
 #pragma once
 #include "clist.h"
+#include "tinyalloc.h"
+#include "trap.h"
 #include "waitqueue.h"
+#include "vpages.h"
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
@@ -41,6 +44,9 @@ typedef struct process {
 	state state; ///< Current lifecycle state.
 	ctx_t ctx; ///< Registers saved on a context switch.
 	uint64_t kstack[KSTACK_SIZE]; ///< Process stack.
+	pte_t *root_ptable; ///< Process Root Page table.
+	bool user; ///< User mode Process flag (fixed at creation).
+	tframe_t *tframe; //< The User trap frame used to save the user context.
 
 	clist_node_t proc_node; ///< Process table node.
 
@@ -249,10 +255,12 @@ void init_proc();
  * @param code Entry point of the process.
  * @param name Name of the process, truncated to MAXNAME - 1 chars.
  * @param prior Priority of the process.
+ * @param user User mode process flag.
  * @return Pointer to the spawned process, NULL if the table is full or the
  * allocation failed.
  */
-process_t *spawn_process(void code(), const char *name, priority prior);
+process_t *spawn_process(void code(), const char *name, priority prior,
+			 bool user);
 
 /**
  * @brief Spawn a child process and block until it terminates.
@@ -260,6 +268,8 @@ process_t *spawn_process(void code(), const char *name, priority prior);
  * @param code Entry point of the child.
  * @param name Name of the child, truncated to MAXNAME - 1 chars.
  * @param prior Priority of the child.
+ * @param user User mode process flag.
  * @return Pid of the child, -1 if the spawn failed.
  */
-int8_t spawn_foreground(void code(), const char *name, priority prior);
+int8_t spawn_foreground(void code(), const char *name, priority prior,
+			bool user);
