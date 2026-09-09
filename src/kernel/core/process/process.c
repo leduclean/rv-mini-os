@@ -2,9 +2,9 @@
 #include "clist.h"
 #include "kernel_config.h"
 #include "mmap.h"
+#include "syscall.h"
 #include "pages.h"
 #include "scheduler.h"
-#include "sync.h"
 #include "time.h"
 #include "waitqueue.h"
 #include "vpages.h"
@@ -374,7 +374,7 @@ int8_t spawn_foreground(void code(), const char *name, priority prior,
 	}
 	child->parent = parent;
 	uint8_t pid = child->pid;
-	wait_pid(child->pid);
+	sys_wait_pid(child->pid);
 	return pid;
 };
 

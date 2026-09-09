@@ -9,6 +9,7 @@
 #include "trap.h"
 #include "waitqueue.h"
 #include "vpages.h"
+#include "minilib/stdint.h"
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
@@ -65,7 +66,7 @@ typedef struct process {
 	process_t *parent; ///< Parent process, NULL if orphan.
 	wait_queue_t child_wq; ///< Queue blocked on while waiting for a child.
 	wait_queue_t zombies; ///< Terminated children waiting to be reaped.
-	int exit_code; ///< Code to identify what made our process exit.
+	int8_t exit_code; ///< Code to identify what made our process exit.
 
 	priority priority; ///< Scheduling priority class.
 } process_t;
@@ -275,3 +276,11 @@ process_t *spawn_process(void code(), const char *name, priority prior,
  */
 int8_t spawn_foreground(void code(), const char *name, priority prior,
 			bool user);
+
+/**
+ * @brief Dupplicate a process state making a copy of it execution
+ *
+ * @return The pid of the current process in the parent flow or 0 
+ * in the child flow.
+ */
+int8_t sys_fork();
