@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define bool _Bool
+
 #include "minilib/stdint.h"
 #include "minilib/stddef.h"
 
@@ -60,3 +62,10 @@ static inline int map_urange(pte_t *root, void *va, void *pa, size_t size,
 {
 	return map_range(root, va, pa, size, PTE_U | flags);
 }
+
+/**
+ * @brief Release the whole sv39 tree from the root itself 
+ *
+ * @param root The root table of the tree
+ */
+void tree_free(pte_t *root);
