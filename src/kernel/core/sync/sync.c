@@ -12,6 +12,7 @@ uint8_t wait()
 	irq_flags_t flags = irq_save();
 
 	process_t *parent = get_active();
+	//TODO: Should return an error this process has no child
 	wait_queue_t *zombies = get_zombies(parent);
 	while (wq_is_empty(zombies)) {
 		scheduler_block_on(get_wait_child_queue(parent));
