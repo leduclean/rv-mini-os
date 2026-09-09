@@ -65,6 +65,7 @@ typedef struct process {
 	process_t *parent; ///< Parent process, NULL if orphan.
 	wait_queue_t child_wq; ///< Queue blocked on while waiting for a child.
 	wait_queue_t zombies; ///< Terminated children waiting to be reaped.
+	int exit_code; ///< Code to identify what made our process exit.
 
 	priority priority; ///< Scheduling priority class.
 } process_t;
@@ -233,8 +234,9 @@ void process_wake(process_t *proc);
  * @note It is zombified if it has a parent, cleaned up otherwise.
  *
  * @param proc Process to terminate.
+ * @param exit_code 0 if the process finished normally else exit code.
  */
-void process_terminate(process_t *proc);
+void process_terminate(process_t *proc, int exit_code);
 
 /**
  * @brief Reap a zombie process, called by its parent.
