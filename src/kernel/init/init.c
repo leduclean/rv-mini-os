@@ -7,7 +7,7 @@
 #include "pages.h"
 #include "shell.h"
 #include "process.h"
-#include "progs.h"
+#include "apps.h"
 #include "time.h"
 #include "trap.h"
 #include "uart.h"
@@ -37,7 +37,7 @@ void kernel_start()
 	if (!spawn_process(sleep_call, "u1", NORMAL, true)) {
 		printf("[FAILURE]: failed to spawn u1");
 	}
-	printf("[INFO]: spawned u1");
+	printf("[INFO]: spawned u1 \n");
 
 	// spawn_process(shell, "shell", NORMAL, false);
 	// printf("[INFO]: spawned shell");

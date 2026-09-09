@@ -114,6 +114,11 @@ char *get_active_name()
 	return active->name;
 }
 
+void set_exit_code(process_t *p, int code)
+{
+	p->exit_code = code;
+}
+
 void switch_active(process_t *next)
 {
 	if (active->state == RUNNING)
@@ -197,7 +202,10 @@ static inline void _process_clean_up(process_t *proc)
 	proc->state = TERMINATED;
 	_remove_from_all_queues(proc);
 
-	page_free(proc->root_ptable);
+	if (proc->user && proc->root_ptable) {
+		tree_free(proc->root_ptable);
+	}
+
 	free(proc);
 	proc_table.active_process--;
 
@@ -211,7 +219,7 @@ static inline void _process_clean_up(process_t *proc)
  *
  * @param proc Process to zombify.
  */
-static inline void _process_zombify(process_t *proc)
+static inline void _process_zombify(process_t *proc, int exit_code)
 {
 	irq_flags_t state = irq_save();
 
@@ -220,6 +228,7 @@ static inline void _process_zombify(process_t *proc)
 		return;
 
 	proc->state = ZOMBIE;
+	proc->exit_code = exit_code;
 
 	wq_enqueue(&parent->zombies, &proc->wait_node);
 	if (parent->state == BLOCKED) {
@@ -231,11 +240,11 @@ static inline void _process_zombify(process_t *proc)
 	irq_restore(state);
 }
 
-void process_terminate(process_t *proc)
+void process_terminate(process_t *proc, int exit_code)
 {
 	process_t *parent = proc->parent;
 	if (parent) {
-		_process_zombify(proc);
+		_process_zombify(proc, exit_code);
 	} else {
 		_process_clean_up(proc);
 	}

@@ -3,7 +3,6 @@
 #include "container.h"
 #include "cpu.h"
 #include "minilib/stddef.h"
-#include "minilib/string.h"
 #include "minilib/stdio.h"
 #include "mmap.h"
 #include "process.h"
@@ -193,13 +192,13 @@ static void _switch_out_active()
 	irq_restore(flags);
 }
 
-void scheduler_terminate()
+void scheduler_terminate(int exit_code)
 {
 	irq_flags_t flags = irq_save();
 	process_t *current = get_active();
 
 	_ready_queue_remove(current);
-	process_terminate(current);
+	process_terminate(current, exit_code);
 	_switch_out_active();
 
 	irq_restore(flags);
@@ -210,9 +209,10 @@ void proc_launcher()
 	process_t *p = get_active();
 	if (p->user) {
 		enter_user_mode(p);
+	} else {
+		p->code();
+		scheduler_terminate(0);
 	}
-	p->code();
-	scheduler_terminate();
 }
 
 void scheduler_ready_process(process_t *proc)
@@ -303,7 +303,6 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
 	if (get_wake_up(proc) > now)
 		return 0;
 
-	printf("Waked %s process", proc->name);
 	clist_remove(node);
 	scheduler_ready_process(proc);
 	return 0;
