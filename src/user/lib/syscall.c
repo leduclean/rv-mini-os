@@ -40,3 +40,8 @@ __attribute__((section(".user_text"))) uint8_t wait_pid(int8_t pid)
 {
 	return _syscall1(SYS_WAIT, pid);
 }
+
+__attribute__((section(".user_text"))) uint8_t getpid()
+{
+	return _syscall0(SYS_GETPID);
+}
