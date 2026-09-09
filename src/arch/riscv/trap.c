@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "user_entry.h"
 #include "asm_defs.h"
 #include "mmap.h"
 #include "platform.h"
@@ -63,11 +64,11 @@ static inline void _panic_print(unsigned long cause, unsigned long pc,
 {
 	if (cause & XCAUSE_IRQ_BIT) {
 		cause &= XCAUSE_IRQ_BIT;
-		printf("[PANIC/IRQ]: cause=%ld mepc=0x%lx mtval=0x%lx\n", cause,
+		printf("[PANIC/IRQ]: cause=%ld epc=0x%lx tval=0x%lx\n", cause,
 		       pc, tval);
 		;
 	} else {
-		printf("[PANIC/EXCEPTION]: cause=%ld mepc=0x%lx mtval=0x%lx\n",
+		printf("[PANIC/EXCEPTION]: cause=%ld epc=0x%lx tval=0x%lx\n",
 		       cause, pc, tval);
 	};
 }
@@ -185,7 +186,11 @@ void enter_user_mode(const process_t *proc)
 
 	// Wanted initial user state
 	t->saved_regs.sp = USTACK;
-	t->saved_regs.sepc = (unsigned long)proc->code;
+
+	// Set the starting function to the app code
+	t->saved_regs.a[0] = (unsigned long)proc->code;
+	t->saved_regs.sepc = (unsigned long)user_entry_point;
+
 	t->saved_regs.sstatus = _get_user_sstatus();
 	t->saved_regs.satp = get_satp(proc->root_ptable);
 

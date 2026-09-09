@@ -1,7 +1,9 @@
 #include "syscall.h"
 #include "syscall_id.h"
 
-extern long usyscall(long n, long a, long b, long c, long d, long e, long f);
+extern unsigned long usyscall(unsigned long n, unsigned long a, unsigned long b,
+			      unsigned long c, unsigned long d, unsigned long e,
+			      unsigned long f);
 __attribute__((section(".user_text"))) static inline long _syscall1(long n,
 								    long a)
 {
@@ -9,7 +11,7 @@ __attribute__((section(".user_text"))) static inline long _syscall1(long n,
 }
 
 __attribute__((section(".user_text"))) static inline long
-_syscall2(long n, long a, long b)
+_syscall2(unsigned long n, unsigned long a, unsigned long b)
 {
 	return usyscall(n, a, b, 0, 0, 0, 0);
 }
@@ -17,4 +19,8 @@ _syscall2(long n, long a, long b)
 __attribute__((section(".user_text"))) void sleep(uint32_t sec)
 {
 	_syscall1(SYS_SLEEP, sec);
+}
+__attribute__((section(".user_text"))) void exit(int code)
+{
+	_syscall1(SYS_EXIT, code);
 }

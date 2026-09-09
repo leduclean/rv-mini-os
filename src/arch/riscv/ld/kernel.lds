@@ -19,6 +19,7 @@ SECTIONS {
     /* Section Utilisateur */
     .user_text ALIGN(4096) : {
         _user_start = . ;
+        *(.user_text.init)
         *(.user_text)
         *(.user_text.*)
     } > ram
