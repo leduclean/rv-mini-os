@@ -2,6 +2,7 @@
 #include "mmap.h"
 #include "process.h"
 #include "scheduler.h"
+#include "sync.h"
 #include "syscall_id.h"
 #include "minilib/stdio.h"
 #include "trap.h"
@@ -21,6 +22,15 @@ long syscall_dispatch(long n, long a, long b, long c)
 		printf("[Kernel/INFO]: Called EXIT for process %d \n", pid);
 		scheduler_terminate(a);
 		return 0;
+	}
+	case SYS_WAIT: {
+		uint8_t res;
+		if (a == 0) {
+			res = wait();
+		} else {
+			res = wait_pid(a);
+		}
+		return res;
 	}
 	default:
 		return -1;
