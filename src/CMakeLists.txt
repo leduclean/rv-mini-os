@@ -26,9 +26,10 @@ target_link_options(kernel.bin PRIVATE
 set(QEMU qemu-system-riscv64)
 set(QEMU_BASE_OPTS -machine virt -m 128M -bios none)
 set(QEMU_RUN_OPTS -nographic ${QEMU_BASE_OPTS})
-set(QEMU_DEBUG_OPTS -gdb tcp::1234 ${QEMU_RUN_OPTS})
+set(QEMU_DEBUG_OPTS -gdb tcp::1234 -S ${QEMU_RUN_OPTS})
 set(QEMU_RUN_GUI_OPTS -device bochs-display -serial mon:stdio -display default,show-cursor=on ${QEMU_BASE_OPTS})
 set(QEMU_DEBUGG_OPTS -gdb tcp::1234 -S ${QEMU_RUN_GUI_OPTS})
+set(QEMU_DEBUGT_OPTS -gdb tcp::1234 -S -d int,cpu -D qemu.log  ${QEMU_RUN_GUI_OPTS})
 
 add_custom_target(run
     COMMAND ${QEMU} ${QEMU_RUN_OPTS} -kernel kernel.bin
@@ -46,5 +47,10 @@ add_custom_target(debug
 )
 add_custom_target(debugg
     COMMAND ${QEMU} ${QEMU_DEBUGG_OPTS} -kernel kernel.bin
+    DEPENDS kernel.bin
+)
+
+add_custom_target(debugt
+    COMMAND ${QEMU} ${QEMU_DEBUG_OPTS} -kernel kernel.bin
     DEPENDS kernel.bin
 )
