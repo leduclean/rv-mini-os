@@ -31,17 +31,22 @@ __attribute__((section(".user_text"))) void exit(int code)
 	_syscall1(SYS_EXIT, code);
 }
 
-__attribute__((section(".user_text"))) uint8_t wait()
+__attribute__((section(".user_text"))) int8_t wait()
 {
 	return _syscall0(SYS_WAIT);
 }
 
-__attribute__((section(".user_text"))) uint8_t wait_pid(int8_t pid)
+__attribute__((section(".user_text"))) int8_t wait_pid(int8_t pid)
 {
 	return _syscall1(SYS_WAIT, pid);
 }
 
 __attribute__((section(".user_text"))) uint8_t getpid()
+{
+	return _syscall0(SYS_GETPID);
+}
+
+__attribute__((section(".user_text"))) int8_t fork()
 {
 	return _syscall0(SYS_GETPID);
 }
