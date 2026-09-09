@@ -1,4 +1,8 @@
-#include "sync.h"
+/**
+ * @file
+ * @brief Parent side synchronisation syscalls.
+ */
+
 #include "clist.h"
 #include "container.h"
 #include "cpu.h"
@@ -7,7 +11,7 @@
 #include "minilib/stddef.h"
 #include "minilib/stdint.h"
 
-uint8_t wait()
+int8_t sys_wait()
 {
 	irq_flags_t flags = irq_save();
 
@@ -27,7 +31,7 @@ uint8_t wait()
 	return pid;
 }
 
-uint8_t wait_pid(int8_t pid)
+int8_t sys_wait_pid(int8_t pid)
 {
 	irq_flags_t flags = irq_save();
 

@@ -24,7 +24,7 @@ void exit(int code);
  *
  * @return Pid of the reaped child.
  */
-uint8_t wait();
+int8_t wait();
 
 /**
  * @brief Wait for the terminaison of a specific child, then reap it.
@@ -34,4 +34,12 @@ uint8_t wait();
  * @param pid Pid of the child to wait for.
  * @return Pid of the reaped child.
  */
-uint8_t wait_pid(int8_t pid);
+int8_t wait_pid(int8_t pid);
+
+/**
+ * @brief Dupplicate a process state making a copy of it execution
+ *
+ * @return The pid of the current process in the parent flow or 0 
+ * in the child flow.
+ */
+int8_t fork();
