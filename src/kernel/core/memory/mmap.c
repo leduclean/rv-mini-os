@@ -27,6 +27,12 @@ unsigned long get_kernel_satp()
 	return get_satp(kroot);
 }
 
+void switch_to_kernel_ptable()
+{
+	csr_write(satp, get_kernel_satp());
+	update_tlb();
+}
+
 int map_kernel()
 {
 	int res;

@@ -36,6 +36,10 @@ int map_uprocess(process_t *p);
 unsigned long get_kernel_satp();
 
 /**
+ * @brief Switch to the kernel ptable updating the satp reg.
+ */
+void switch_to_kernel_ptable();
+/**
  * @brief Get satp encoded value from a physical page pointer
  *
  * @param pt A physical page pointer.
