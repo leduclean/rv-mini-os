@@ -32,6 +32,8 @@ long syscall_dispatch(long n, long a, long b, long c)
 		}
 		return res;
 	}
+	case SYS_GETPID:
+		return get_active_pid();
 	default:
 		return -1;
 	}
