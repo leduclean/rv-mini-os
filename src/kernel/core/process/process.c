@@ -6,6 +6,7 @@
 #include "pages.h"
 #include "scheduler.h"
 #include "time.h"
+#include "trap.h"
 #include "waitqueue.h"
 #include "vpages.h"
 
@@ -277,7 +278,13 @@ static inline void _init_process_queues(process_t *proc)
 	wq_init(&proc->child_wq);
 }
 
-static pte_t *_allocate_root_ptable(process_t *proc)
+/**
+ * @brief Alloc and set the page of the root page table of a processsus.
+ *
+ * @param proc A pointer to the processus.
+ * @return The allocated page on success, NULL on failure.
+ */
+static pte_t *_alloc_root_ptable(process_t *proc)
 {
 	pte_t *root = page_alloc();
 	proc->root_ptable = root;
@@ -285,51 +292,17 @@ static pte_t *_allocate_root_ptable(process_t *proc)
 }
 
 /**
- * @brief Config a process in its slot of the process table.
- *
- * @param code Entry point of the process.
- * @param nom Name of the process, truncated to MAXNAME - 1 chars.
- * @param prior Priority of the process.
- * @param proc Process slot to configure.
+ * @brief Alloc a process squeleton ie without activating it or setting context.
+ * 
+ * @param name Name of the proc. 
+ * @param prior Priority of the proc.
+ * @param user User proc flag.
+ * @param parent Parent of the proc.
+ * @return NULL on failure, else the new allocated proc structure.
  */
-static void _config_process(void code(), const char *name, priority prior,
-			    process_t *proc)
+static inline process_t *_alloc_squeletton(const char *name, priority prior,
+					   bool user, process_t *parent)
 {
-	_init_process_queues(proc);
-	proc->pid = proc_table.next_pid;
-	strncpy(proc->name, name, MAXNAME - 1);
-	proc->priority = prior;
-	proc->state = READY;
-	proc->parent = NULL;
-
-	if (proc->pid == 0) {
-		proc->ctx.ra = (uintptr_t)idle;
-	} else {
-		proc->ctx.sp = (uint64_t)&proc->kstack[KSTACK_SIZE];
-		proc->ctx.ra = (uintptr_t)proc_launcher;
-		proc->code = code;
-	}
-}
-
-/**
- * @brief Add a process to the running queue.
- *
- * @param slot Process to admit.
- * @return Pointer to the admitted process.
- */
-static process_t *_add_process_to_scheduler(process_t *slot)
-{
-	proc_table.active_process++;
-	proc_table.next_pid++;
-	scheduler_admit(slot);
-	return slot;
-}
-
-process_t *spawn_process(void code(), const char *nom, priority prior,
-			 bool user)
-{
-	irq_flags_t state = irq_save();
-
 	if (proc_table.active_process >= MAX_PROC) {
 		return NULL; // Error already max processus launched
 	}
@@ -339,41 +312,99 @@ process_t *spawn_process(void code(), const char *nom, priority prior,
 		return NULL;
 	}
 
-	pte_t *ptable = _allocate_root_ptable(proc);
+	_init_process_queues(proc);
+
+	pte_t *ptable = _alloc_root_ptable(proc);
 	if (!ptable) {
 		goto err_free_proc;
 	}
 
-	_config_process(code, nom, prior, proc);
-
+	strncpy(proc->name, name, sizeof(proc->name) - 1);
 	proc->user = user;
-	if (user) {
-		if (map_uprocess(proc) != 0) {
-			goto err_free_proc;
-		}
-	}
-
-	clist_push_back(&proc_table.head, &proc->proc_node);
-	process_t *spawned = _add_process_to_scheduler(proc);
-
-	irq_restore(state);
-	return spawned;
+	proc->priority = prior;
+	proc->parent = parent;
+	proc->pid = proc_table.next_pid++;
+	proc->state = NEW;
+	return proc;
 
 err_free_proc:
 	free(proc);
 	return NULL;
 }
 
+/**
+ * @brief Config a new process.
+ *
+ * @notes This function will only be called once on by the init_proc() and the first 
+ * user program spawned.
+ * @param p Pointer to the process.
+ * @param code The executing code of the process.
+ */
+static void _config_new_process(process_t *p, void code())
+{
+	if (p->pid == 0) {
+		p->ctx.ra = (uintptr_t)code;
+	} else {
+		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
+		p->ctx.ra = (uintptr_t)proc_launcher;
+		p->code = code;
+	}
+}
+
+/**
+ * @brief Activate with the scheduler a new process.
+ *
+ * @param p A pointer to the process.
+ */
+static void _activate_process(process_t *p)
+{
+	p->state = READY;
+	clist_push_back(&proc_table.head, &p->proc_node);
+	proc_table.active_process++;
+	scheduler_admit(p);
+	return;
+}
+
+process_t *spawn_process(void code(), const char *name, priority prior,
+			 bool user)
+{
+	irq_flags_t state = irq_save();
+	process_t *p = _alloc_squeletton(name, prior, user, get_active());
+	if (!p) {
+		goto err_restore_irq;
+	}
+
+	_config_new_process(p, code);
+
+	if (user && map_uprocess(p) != 0) {
+		goto err_free_ptable;
+	}
+
+	_activate_process(p);
+	irq_restore(state);
+	return p;
+
+err_free_ptable:
+	tree_free(p->root_ptable);
+	free(p);
+	p = NULL;
+
+err_restore_irq:
+	irq_restore(state);
+	return p;
+}
+
 int8_t spawn_foreground(void code(), const char *name, priority prior,
 			bool user)
 {
-	process_t *parent = get_active();
 	process_t *child = spawn_process(code, name, prior, user);
 	if (!child) {
 		return -1;
 	}
-	child->parent = parent;
 	uint8_t pid = child->pid;
+	// Wait for the child to terminate.
+	// FIX: It's weird that there is some
+	// syscall here.
 	sys_wait_pid(child->pid);
 	return pid;
 };
