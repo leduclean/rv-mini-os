@@ -1,5 +1,10 @@
 #pragma once
 
+// Memory Address
+#define TA_HEAP_BLOCK 256
+#define TA_BLOCK_SPLIT 256
+#define TA_ALIGNMENT 8
+
 // PMPaddr bit values
 #define PMP_R_BIT (1 << 0)
 #define PMP_W_BIT (1 << 1)
