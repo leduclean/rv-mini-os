@@ -15,7 +15,7 @@
 
 /** @brief Lifecycle states of a process. */
 typedef enum {
-	FREE = 0,
+	NEW = 0,
 	RUNNING,
 	READY,
 	SLEEPING,
