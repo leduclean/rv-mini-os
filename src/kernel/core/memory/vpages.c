@@ -1,7 +1,7 @@
 #include "vpages.h"
 #include "asm_defs.h"
 #include "minilib/stddef.h"
-#include "mmap.h"
+#include "minilib/stdbool.h"
 #include "pages.h"
 
 /* Sv39 indirection levels */

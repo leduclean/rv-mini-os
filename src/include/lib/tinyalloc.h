@@ -6,9 +6,8 @@ extern "C" {
 #endif
 
 #include "minilib/stddef.h"
-#define bool _Bool
-#define true 1
-#define false 0
+#include "minilib/stdint.h"
+#include "minilib/stdbool.h"
 
 /* CR begin */
 void free(void *ptr);
