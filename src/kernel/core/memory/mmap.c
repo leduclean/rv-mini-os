@@ -94,7 +94,7 @@ int map_uprocess(process_t *p)
 
 	// The whole code is identity mapped for now.
 	res = map_urange(root, _user_start, _user_start,
-			 _user_end - _user_start, PTE_X | PTE_R);
+			 _user_end - _user_start, PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
 		return res;
 	}
@@ -103,7 +103,11 @@ int map_uprocess(process_t *p)
 	if (!stack) {
 		return -1;
 	}
-	map_upage(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
+	res = map_upage(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
+	if (res < 0) {
+		goto err_free_stack;
+	}
+	p->ustack_pa = stack;
 
 	void *tframe = page_alloc();
 	if (!tframe) {
@@ -114,12 +118,13 @@ int map_uprocess(process_t *p)
 	if (res < 0) {
 		goto err_free_tframe;
 	}
-	p->tframe = tframe;
+	p->tframe_pa = tframe;
 
 	// This is not U page because we will go back to user page
 	// in S mode before the sret returns to user mode.
 	res = map_range(root, (void *)TRAMPOLINE, _trampoline_start,
-			_trampoline_end - _trampoline_start, PTE_X | PTE_R);
+			_trampoline_end - _trampoline_start,
+			PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
 		goto err_free_tframe;
 	}
