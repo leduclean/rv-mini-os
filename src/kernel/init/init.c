@@ -39,7 +39,7 @@ void kernel_start()
 	enable_s_external();
 
 	printf("[INFO] external irq enabled\n");
-	if (!spawn_process(sleep_call, "u1", NORMAL, true)) {
+	if (!spawn_process(fork_test, "u1", NORMAL, true)) {
 		printf("[FAILURE]: failed to spawn u1");
 	}
 	printf("[INFO]: spawned u1 \n");

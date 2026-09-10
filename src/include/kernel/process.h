@@ -47,6 +47,7 @@ typedef struct process {
 	pte_t *root_ptable; ///< Process Root Page table.
 	bool user; ///< User mode Process flag (fixed at creation).
 	tframe_t *tframe_pa; //< The User trap frame used to save the user context.
+	void *ustack_pa; ///< Process ustack physical page.
 
 	clist_node_t proc_node; ///< Process table node.
 
@@ -277,9 +278,8 @@ int8_t spawn_foreground(void code(), const char *name, priority prior,
 			bool user);
 
 /**
- * @brief Dupplicate a process state making a copy of it execution
+ * @brief Duplicate a process state making a copy of it execution state.
  *
- * @return The pid of the current process in the parent flow or 0 
- * in the child flow.
+ * @return The child process or NULL if failed.
  */
-int8_t sys_fork();
+process_t *spawn_child(process_t *parent);

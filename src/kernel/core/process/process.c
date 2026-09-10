@@ -394,6 +394,56 @@ err_restore_irq:
 	return p;
 }
 
+static inline void _fork_return()
+{
+	process_t *p = get_active();
+	get_trap_return_va()(p->tframe_pa->saved_regs.satp);
+}
+
+process_t *spawn_child(process_t *parent)
+{
+	irq_flags_t state = irq_save();
+
+	process_t *child =
+		_alloc_squeletton(parent->name, parent->priority, true, parent);
+	if (!child) {
+		goto err_restore_irq;
+	}
+
+	if (!parent->user || map_uprocess(child) != 0) {
+		goto err_free_ptable;
+	}
+
+	// Copy the stack
+	memcpy(child->ustack_pa, parent->ustack_pa, PAGE_SIZE);
+
+	// Copy the TRAPFRAME
+	memcpy(child->tframe_pa, parent->tframe_pa, sizeof(*child->tframe_pa));
+
+	// Child returns 0 from fork()
+	// This is going to be restored from trap_return
+	child->tframe_pa->saved_regs.a[0] = 0;
+	child->tframe_pa->saved_regs.satp = get_satp(child->root_ptable);
+	child->tframe_pa->kstack = (unsigned long)&child->kstack[KSTACK_SIZE];
+
+	// On ctx switch on fork, we want this state
+	child->ctx.ra = (unsigned long)_fork_return;
+	child->ctx.sp = (unsigned long)&child->kstack[KSTACK_SIZE];
+
+	_activate_process(child);
+	irq_restore(state);
+	return child;
+
+err_free_ptable:
+	tree_free(child->root_ptable);
+	free(child);
+	child = NULL;
+
+err_restore_irq:
+	irq_restore(state);
+	return child;
+}
+
 int8_t spawn_foreground(void code(), const char *name, priority prior,
 			bool user)
 {

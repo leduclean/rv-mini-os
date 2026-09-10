@@ -129,7 +129,9 @@ static void walk_free(pte_t *table, int lvl)
 				walk_free(_get_next_lvl_pte(pte), lvl - 1);
 			} else {
 				// Leaf pte
-				if (pte & (PTE_V) && !_is_a_next_lvl_ptr(pte)) {
+				// Free only valid and not shared leaf
+				if (pte & (PTE_V) && !(pte & PTE_G) &&
+				    !_is_a_next_lvl_ptr(pte)) {
 					void *page = _get_next_lvl_pte(pte);
 					page_free((void *)page);
 				}
