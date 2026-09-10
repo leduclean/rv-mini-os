@@ -7,6 +7,7 @@
 
 #include "csr.h"
 #include "platform.h"
+#include "minilib/stdio.h"
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
 inline static void hlt()
@@ -37,6 +38,18 @@ inline static void disable_s_irq()
 {
 	csr_clear(sstatus, SSTATUS_SIE);
 }
+
+/**
+ * @brief Report @msg with its call site, then halt the cpu for good.
+ *
+ * @note Never call _panic() directly, use the panic() macro: __FILE__ and
+ * __LINE__ must expand at the call site, not here.
+ */
+__attribute__((noreturn)) void _panic(const char *msg, const char *file,
+				      int line);
+
+/** @brief Halt the kernel, reporting @msg and where it was raised. */
+#define panic(msg) _panic((msg), __FILE__, __LINE__)
 
 /** @brief Saved interrupt state, as returned by irq_save(). */
 typedef unsigned long irq_flags_t;

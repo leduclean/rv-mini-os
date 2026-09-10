@@ -43,13 +43,6 @@ static inline void init_stvec(void (*entry)())
 	csr_write(stvec, entry);
 }
 
-static inline void _stop()
-{
-	disable_s_irq();
-	for (;;)
-		hlt();
-}
-
 /**
  * @brief Pretty print panic function for trap handling.
  *
@@ -83,7 +76,7 @@ static inline void _machine_trap_panic()
 	printf("[PANIC]: FROM MACHINE \n");
 	_panic_print(mcause, mepc, mtval);
 
-	_stop();
+	panic("unhandled machine trap");
 }
 
 /**
@@ -96,7 +89,7 @@ static inline void _kernel_trap_panic(unsigned long scause, unsigned long sepc,
 {
 	printf("[PANIC]: FROM KERNEL \n");
 	_panic_print(scause, sepc, stval);
-	_stop();
+	panic("unhandled kernel trap");
 }
 
 static inline void _handler_async_irq(unsigned long irq_cause)
