@@ -48,5 +48,5 @@ __attribute__((section(".user_text"))) uint8_t getpid()
 
 __attribute__((section(".user_text"))) int8_t fork()
 {
-	return _syscall0(SYS_GETPID);
+	return _syscall0(SYS_FORK);
 }
