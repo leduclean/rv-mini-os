@@ -46,7 +46,7 @@ typedef struct process {
 	uint64_t kstack[KSTACK_SIZE]; ///< Process stack.
 	pte_t *root_ptable; ///< Process Root Page table.
 	bool user; ///< User mode Process flag (fixed at creation).
-	tframe_t *tframe; //< The User trap frame used to save the user context.
+	tframe_t *tframe_pa; //< The User trap frame used to save the user context.
 
 	clist_node_t proc_node; ///< Process table node.
 

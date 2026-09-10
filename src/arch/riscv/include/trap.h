@@ -4,6 +4,8 @@
  */
 
 #pragma once
+#include "asm_defs.h"
+#include "ldsym.h"
 #include "minilib/stdint.h"
 
 // Forward declaration
@@ -70,3 +72,17 @@ void enter_user_mode(const process_t *proc);
  *
  */
 void init_trap_entries();
+
+extern char trap_return[];
+
+typedef void (*trap_return_fn)(unsigned long satp);
+
+/**
+ * @brief Get a pointer to the trap return virtual addr.
+ *
+ * @return Pointer to the function
+ */
+static inline trap_return_fn get_trap_return_va()
+{
+	return (trap_return_fn)(TRAMPOLINE + (trap_return - _trampoline_start));
+}
