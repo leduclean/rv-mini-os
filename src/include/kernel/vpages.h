@@ -5,8 +5,6 @@
 
 #pragma once
 
-#define bool _Bool
-
 #include "minilib/stdint.h"
 #include "minilib/stddef.h"
 

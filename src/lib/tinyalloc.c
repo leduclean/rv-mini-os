@@ -1,7 +1,4 @@
 #include "tinyalloc.h"
-/* CR begin */
-#include "minilib/stdint.h"
-/* CR end */
 
 #ifdef TA_DEBUG
 extern void print_s(char *);

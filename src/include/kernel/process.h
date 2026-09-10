@@ -5,11 +5,10 @@
 
 #pragma once
 #include "clist.h"
-#include "tinyalloc.h"
 #include "trap.h"
 #include "waitqueue.h"
 #include "vpages.h"
-#include "minilib/stdint.h"
+#include "stdbool.h"
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.

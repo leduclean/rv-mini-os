@@ -3,6 +3,7 @@
 #include "minilib/stddef.h"
 #include "minilib/stdint.h"
 #include "minilib/stdio.h"
+#include "minilib/stdbool.h"
 #include "parser.h"
 #include "process.h"
 #include "programs.h"

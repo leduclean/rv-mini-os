@@ -3,6 +3,7 @@
 #include "irq.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
+#include "minilib/stdbool.h"
 #include "mmap.h"
 #include "pages.h"
 #include "shell.h"

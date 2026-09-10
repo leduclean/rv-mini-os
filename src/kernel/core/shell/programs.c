@@ -4,6 +4,7 @@
 #include "container.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
+#include "minilib/stdbool.h"
 #include "mutex.h"
 #include "process.h"
 #include "scheduler.h"
