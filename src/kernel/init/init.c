@@ -10,6 +10,7 @@
 #include "process.h"
 #include "apps.h"
 #include "time.h"
+#include "tinyalloc.h"
 #include "trap.h"
 #include "uart.h"
 #include "memory.h"
@@ -18,6 +19,10 @@
 void kernel_start()
 {
 	printf("[INFO] Kernel start \n");
+
+	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
+		TA_ALIGNMENT);
+	printf("[INFO] Tiny alloc initialized \n");
 
 	pages_init();
 	printf("[INFO] pages initialized \n");
@@ -29,7 +34,6 @@ void kernel_start()
 	printf("[INFO] init proc \n");
 
 	enable_s_irq();
-
 	printf("[INFO] S irq enabled\n");
 
 	enable_s_external();
