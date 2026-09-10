@@ -99,8 +99,8 @@ static void _mutex_waiter()
 static const char *_state_str(state s)
 {
 	switch (s) {
-	case FREE:
-		return "FREE";
+	case NEW:
+		return "NEW";
 	case RUNNING:
 		return "RUN";
 	case READY:
