@@ -294,22 +294,13 @@ void free(void *ptr)
 	ta_free(ptr);
 }
 
-/* Variables définies dans le ficher kernel.lds qui sert à l'édition de liens */
-extern uint64_t _heap_start, _heap_end;
-
 void *malloc(size_t size)
 {
-	if (!heap) {
-		ta_init(&_heap_start, &_heap_end, 256, 16, 8);
-	}
 	return ta_alloc(size);
 }
 
 void *calloc(size_t num, size_t size)
 {
-	if (!heap) {
-		ta_init(&_heap_start, &_heap_end, 256, 16, 8);
-	}
 	return ta_calloc(num, size);
 }
 

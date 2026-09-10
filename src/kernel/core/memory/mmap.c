@@ -6,10 +6,7 @@
 #include "vpages.h"
 #include "asm_defs.h"
 #include "minilib/stdio.h"
-
-/* Linker symbols needed for mapping */
-extern char _etext[], _edata[], _user_start[], _user_end[], _trampoline_start[],
-	_trampoline_end[], _ram_start[], _end[];
+#include "ldsym.h"
 
 pte_t *kroot;
 
