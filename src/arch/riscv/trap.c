@@ -12,8 +12,6 @@
 #include "minilib/stdio.h"
 #include "csr.h"
 
-extern char trap_return[];
-
 static inline unsigned long _get_user_sstatus()
 {
 	unsigned long val = csr_read(sstatus);
@@ -144,7 +142,7 @@ void kerneltrap()
 unsigned long usertrap()
 {
 	process_t *p = get_active();
-	pt_regs_t *t = &p->tframe->saved_regs;
+	pt_regs_t *t = &p->tframe_pa->saved_regs;
 
 	uint64_t scause = t->scause;
 	long irq_flag = scause & XCAUSE_IRQ_BIT;
@@ -182,7 +180,7 @@ void init_trap_entries()
 
 void enter_user_mode(const process_t *proc)
 {
-	tframe_t *t = proc->tframe;
+	tframe_t *t = proc->tframe_pa;
 
 	// Wanted initial user state
 	t->saved_regs.sp = USTACK;
@@ -198,7 +196,5 @@ void enter_user_mode(const process_t *proc)
 	t->ksatp = get_kernel_satp();
 	t->kstack = (unsigned long)&proc->kstack[KSTACK_SIZE];
 
-	void (*trap_return_va)(unsigned long) = (void (*)(unsigned long))(
-		TRAMPOLINE + (trap_return - _trampoline_start));
-	trap_return_va(t->saved_regs.satp);
+	get_trap_return_va()(t->saved_regs.satp);
 };
