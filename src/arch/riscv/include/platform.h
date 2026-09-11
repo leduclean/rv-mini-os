@@ -104,6 +104,9 @@
 #define ECALL_UMODE 8
 #define ECALL_SMODE 9
 #define ECALL_MMODE 11
+#define INSTRUCTION_PAGE_FAULT 12
+#define LOAD_PAGE_FAULT 13
+#define STORE_PAGE_FAULT 15
 
 // Bit in mstatus
 #define MSTATUS_MIE (1 << 3)

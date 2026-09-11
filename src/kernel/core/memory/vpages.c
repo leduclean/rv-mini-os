@@ -2,7 +2,9 @@
 #include "asm_defs.h"
 #include "minilib/stddef.h"
 #include "minilib/stdbool.h"
+#include "mmap.h"
 #include "pages.h"
+#include "minilib/stdint.h"
 
 /* Sv39 indirection levels */
 #define LEVELS 3
@@ -149,5 +151,158 @@ int map_range(pte_t *root, void *va, void *pa, size_t size, unsigned long flags)
 		}
 	}
 
+	return 0;
+}
+
+/**
+ * @brief Descend the sv39 tree down to the leaf entry mapping @va.
+ *
+ * @param lvl Receives the leaf level.
+ * @return NULL if @va is not mapped, else a pointer to its leaf PTE.
+ */
+static pte_t *walk_leaf(pte_t *root, const void *va)
+{
+	pte_t *table = root;
+
+	for (int l = LEVELS - 1; l >= 0; l--) {
+		pte_t *pte = _get_pte(table, va, l);
+
+		if (!(*pte & PTE_V)) {
+			return NULL;
+		}
+		if (!_is_a_next_lvl_ptr(*pte)) {
+			return pte;
+		}
+		table = _get_next_lvl_pte(*pte);
+	}
+	return NULL;
+}
+
+static inline uint32_t get_flags(pte_t pte)
+{
+	return pte & PTE_FLAGS_MASK;
+}
+
+static inline void set_cow(pte_t *leaf)
+{
+	if (!(*leaf & PTE_W)) {
+		return;
+	}
+	*leaf &= ~PTE_W;
+	*leaf |= PTE_COW;
+
+	void *page = (void *)_get_next_lvl_pte(*leaf);
+	page_get(page);
+	return;
+}
+
+static inline void unset_cow(pte_t *leaf)
+{
+	if (!(*leaf & PTE_COW)) {
+		return;
+	}
+	*leaf &= ~PTE_COW;
+	*leaf |= PTE_W;
+
+	void *page = (void *)_get_next_lvl_pte(*leaf);
+	page_put(page);
+
+	return;
+}
+
+int vpage_handle_cow(pte_t *root, void *va)
+{
+	int res;
+
+	pte_t *leaf = walk_leaf(root, va);
+	if (!leaf || !(*leaf & PTE_COW)) {
+		res = -1;
+		goto out;
+	}
+	void *page = (void *)(_get_next_lvl_pte(*leaf));
+	if (page_get_rc(page) == 1) {
+		// We are the last that has access to this page
+		*leaf &= ~PTE_COW;
+		*leaf |= PTE_W;
+		return 0;
+	}
+
+	void *new_page = page_alloc();
+	if (!new_page) {
+		res = -1;
+		goto out;
+	}
+
+	page_copy(new_page, page);
+	unset_cow(leaf);
+
+	res = map_page(root, (void *)((unsigned long)va & ~OFFSET_MASK),
+		       new_page, get_flags(*leaf));
+	if (res < 0) {
+		goto err_free_page;
+	}
+
+	update_tlb();
+	return 0;
+
+err_free_page:
+	page_put(new_page);
+out:
+	return res;
+}
+
+static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
+{
+	for (int i = 0; i < PTE_ENTRY_PER_TABLE; i++) {
+		pte_t pte = src[i];
+		if (!(pte & PTE_V))
+			continue;
+
+		unsigned long child_va =
+			va |
+			((unsigned long)i << (PAGE_SHIFT + VA_VPN_BITS * lvl));
+
+		int res;
+		if (_is_a_next_lvl_ptr(pte)) {
+			res = _copy_level(dst, _get_next_lvl_pte(pte), lvl - 1,
+					  child_va);
+			if (res < 0) {
+				return res;
+			}
+
+		} else {
+			// leaf level
+			void *page = _get_next_lvl_pte(pte);
+
+			// Set up CoW on every writable page
+			// else than TRAPFRAME
+			if (child_va != TRAPFRAME) {
+				if (pte & PTE_W) {
+					set_cow(&src[i]);
+				}
+
+				res = map_page(dst, (void *)child_va, page,
+					       get_flags(src[i]));
+				if (res < 0) {
+					return res;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+int tree_copy(pte_t *dst, pte_t *src)
+{
+	if (!dst || !src) {
+		return -1;
+	}
+	int res;
+	res = _copy_level(dst, src, LEVELS - 1, 0);
+	if (res < 0) {
+		return res;
+	}
+
+	update_tlb();
 	return 0;
 }
