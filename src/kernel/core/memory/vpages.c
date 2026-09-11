@@ -6,18 +6,18 @@
 
 /* Sv39 indirection levels */
 #define LEVELS 3
+#define OFFSET_MASK 0xfffUL
 
 /* Sv39 Virtual Address bit mappings */
-#define VA_VPN0_SHIFT 12
-#define VA_VPN0_MASK (0x1ffUL << VA_VPN0_SHIFT)
-#define VA_VPN1_SHIFT 21
-#define VA_VPN1_MASK (0x1ffUL << VA_VPN1_SHIFT)
-#define VA_VPN2_SHIFT 30
-#define VA_VPN2_MASK (0x1ffUL << VA_VPN2_SHIFT)
+#define VA_VPN_SHIFT 12
+#define VA_VPN_BITS 9
+#define VA_VPN_MASK 0x1ffUL
 
-/* PTE PPN first indirection shift */
-#define PTE_PPN0_SHIFT 10
+#define PTE_PPN_SHIFT 10
+#define PTE_PPN_SIZE 0x1ffUL
+
 #define PTE_SHIFT 3
+#define PTE_SIZE (1 << PTE_SHIFT)
 #define PTE_ENTRY_PER_TABLE (PAGE_SIZE >> PTE_SHIFT)
 
 /**
@@ -31,24 +31,8 @@
  */
 static inline unsigned long _get_va_vpn(const void *va, uint8_t lvl)
 {
-	unsigned long addr = (unsigned long)va;
-	unsigned long mask;
-	unsigned long shift;
-	switch (lvl) {
-	case 0:
-		mask = VA_VPN0_MASK;
-		shift = VA_VPN0_SHIFT;
-		break;
-	case 1:
-		mask = VA_VPN1_MASK;
-		shift = VA_VPN1_SHIFT;
-		break;
-	case 2:
-		mask = VA_VPN2_MASK;
-		shift = VA_VPN2_SHIFT;
-		break;
-	}
-	return (addr & mask) >> shift;
+	return ((unsigned long)va >> (PAGE_SHIFT + VA_VPN_BITS * lvl)) &
+	       VA_VPN_MASK;
 }
 
 static inline pte_t *_get_pte(pte_t *table, const void *va, int lvl)
@@ -58,7 +42,7 @@ static inline pte_t *_get_pte(pte_t *table, const void *va, int lvl)
 
 static inline pte_t *_get_next_lvl_pte(const pte_t pte)
 {
-	return (pte_t *)((pte >> PTE_PPN0_SHIFT) << PAGE_SHIFT);
+	return (pte_t *)((pte >> PTE_PPN_SHIFT) << PAGE_SHIFT);
 }
 
 int map_page(pte_t *root, const void *va, void *pa, unsigned long flags)
@@ -81,7 +65,7 @@ int map_page(pte_t *root, const void *va, void *pa, unsigned long flags)
 			}
 
 			alloc_tables[lvl] = next;
-			*pte = (PAGE_NUMBER(next) << PTE_PPN0_SHIFT) | PTE_V;
+			*pte = (PAGE_NUMBER(next) << PTE_PPN_SHIFT) | PTE_V;
 		}
 
 		// Go to the next level of indirection
@@ -94,7 +78,7 @@ int map_page(pte_t *root, const void *va, void *pa, unsigned long flags)
 	if (flags & PTE_W)
 		pte_flags |= PTE_D;
 
-	*leaf_pte = (PAGE_NUMBER(pa) << PTE_PPN0_SHIFT) | pte_flags;
+	*leaf_pte = (PAGE_NUMBER(pa) << PTE_PPN_SHIFT) | pte_flags;
 
 	return 0;
 
