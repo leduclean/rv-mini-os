@@ -11,6 +11,7 @@
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
 #include "csr.h"
+#include "vpages.h"
 
 static inline unsigned long _get_user_sstatus()
 {
@@ -151,6 +152,17 @@ unsigned long usertrap()
 			t->a[0] = syscall_dispatch(t->a[7], t->a[0], t->a[1],
 						   t->a[2]);
 			break;
+		case STORE_PAGE_FAULT: {
+			unsigned long stval = csr_read(stval);
+			// TODO: drop once CoW is trusted, this fires per page.
+			printf("[Kernel/INFO]: CoW fault on 0x%lx (pid %d)\n",
+			       stval, p->pid);
+			if (vpage_handle_cow(p->root_ptable, (void *)stval) <
+			    0) {
+				panic("Can't Copy On Write the wanted address");
+			}
+			break;
+		}
 
 		default: {
 			unsigned long stval = csr_read(stval);
