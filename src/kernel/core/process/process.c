@@ -12,8 +12,7 @@
 
 #if TEST_CONFIG
 #include "mocks/kernel_mocks.h"
-#include <stddef.h>
-#include <stdlib.h>
+#include "minilib/stddef.h"
 #include <string.h>
 #else
 #include "cpu.h"
@@ -406,18 +405,27 @@ process_t *spawn_child(process_t *parent)
 
 	process_t *child =
 		_alloc_squeletton(parent->name, parent->priority, true, parent);
-	if (!child) {
+	if (!child || !parent->user) {
 		goto err_restore_irq;
 	}
 
-	if (!parent->user || map_uprocess(child) != 0) {
-		goto err_free_ptable;
+	// Copy the tree
+	if (tree_copy(child->root_ptable, parent->root_ptable) < 0) {
+		goto err_free_tree;
 	}
 
-	// Copy the stack
-	memcpy(child->ustack_pa, parent->ustack_pa, PAGE_SIZE);
+	// Allocate a page for the trap frame
+	void *tframe = page_alloc();
+	if (!tframe) {
+		goto err_free_tree;
+	}
+	if (map_page(child->root_ptable, (void *)TRAPFRAME, tframe,
+		     PTE_R | PTE_W) < 0) {
+		goto err_free_tframe;
+	}
+	child->tframe_pa = tframe;
 
-	// Copy the TRAPFRAME
+	// Copy the trap frame of the parent
 	memcpy(child->tframe_pa, parent->tframe_pa, sizeof(*child->tframe_pa));
 
 	// Child returns 0 from fork()
@@ -434,11 +442,12 @@ process_t *spawn_child(process_t *parent)
 	irq_restore(state);
 	return child;
 
-err_free_ptable:
+err_free_tframe:
+	page_put(tframe);
+err_free_tree:
 	tree_free(child->root_ptable);
 	free(child);
 	child = NULL;
-
 err_restore_irq:
 	irq_restore(state);
 	return child;
