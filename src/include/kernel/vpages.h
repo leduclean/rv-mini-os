@@ -21,6 +21,10 @@ typedef uint32_t ppn_t;
 #define PTE_A (1 << 6)
 #define PTE_D (1 << 7)
 
+/* Software defined flags */
+#define PTE_COW (1 << 8)
+#define PTE_FLAGS_MASK ((1 << 10) - 1)
+
 /**
  * @brief Memory map a virtual address to physical address of a page table.
  *
@@ -67,3 +71,17 @@ static inline int map_urange(pte_t *root, void *va, void *pa, size_t size,
  * @param root The root table of the tree
  */
 void tree_free(pte_t *root);
+
+/**
+ * @brief Set up lazy copy of a whole sv39 tree.
+ *
+ * This function use CoW (Copy on Write) policy to ensure we don't copy the entire
+ * page.
+ *
+ * @param dst The destination root page directory.
+ * @param src The source root page directory.
+ * @return 0 on SUCCES else error code < 0.
+ */
+int tree_copy(pte_t *dst, pte_t *src);
+
+int vpage_handle_cow(pte_t *root, void *va);
