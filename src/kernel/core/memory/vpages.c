@@ -101,7 +101,7 @@ int map_page(pte_t *root, const void *va, void *pa, unsigned long flags)
 err_release_prv:
 	for (int lvl = LEVELS - 1; lvl > error_lvl; lvl--) {
 		if (alloc_tables[lvl])
-			page_free(alloc_tables[lvl]);
+			page_put(alloc_tables[lvl]);
 	}
 
 	return LEVELS - 1 - error_lvl;
@@ -133,7 +133,7 @@ static void walk_free(pte_t *table, int lvl)
 				if (pte & (PTE_V) && !(pte & PTE_G) &&
 				    !_is_a_next_lvl_ptr(pte)) {
 					void *page = _get_next_lvl_pte(pte);
-					page_free((void *)page);
+					page_put((void *)page);
 				}
 				// Reset the entry
 				table[i] = 0;
@@ -141,7 +141,7 @@ static void walk_free(pte_t *table, int lvl)
 		}
 	}
 	// Free the table itself
-	page_free(table);
+	page_put(table);
 }
 
 void tree_free(pte_t *root)

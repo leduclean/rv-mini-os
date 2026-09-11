@@ -77,7 +77,7 @@ int map_kernel()
 	return 0;
 
 err_free_root:
-	page_free(kroot);
+	page_put(kroot);
 	return res;
 }
 
@@ -133,8 +133,8 @@ int map_uprocess(process_t *p)
 	return 0;
 
 err_free_tframe:
-	page_free(tframe);
+	page_put(tframe);
 err_free_stack:
-	page_free(stack);
+	page_put(stack);
 	return res;
 }
