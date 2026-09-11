@@ -88,7 +88,7 @@ err_release_prv:
 			page_put(alloc_tables[lvl]);
 	}
 
-	return LEVELS - 1 - error_lvl;
+	return -1;
 }
 
 static inline bool _is_a_next_lvl_ptr(pte_t pte)
