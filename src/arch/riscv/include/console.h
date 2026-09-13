@@ -28,7 +28,7 @@ void console_putbytes(const char *s, int len);
  *
  * @return 0 on success, -1 if the device was not found or has a wrong type.
  */
-int init_screen();
+int console_init();
 
 /**
  * @brief Display a text on the top right corner of the screen.
@@ -38,6 +38,6 @@ int init_screen();
  * @param s Characters to display.
  * @param len Number of characters to display.
  */
-void display_top_right(const char *s, int len);
+void console_display_top_right(const char *s, int len);
 
 #endif
