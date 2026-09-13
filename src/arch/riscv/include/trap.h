@@ -62,14 +62,14 @@ _Static_assert(__builtin_offsetof(tframe_t, ksatp) == 34 * 8,
  *
  * @notes This function should be used only for user programs.
  */
-void enter_user_mode();
+void trap_enter_user_mode();
 
 /**
  * @brief Inits trap entries of M and S privileges modes.
  * @warning This function MUST be called during the kernel boot.
  *
  */
-void init_trap_entries();
+void trap_init();
 
 extern char trap_return[];
 
@@ -80,7 +80,7 @@ typedef void (*trap_return_fn)(unsigned long satp);
  *
  * @return Pointer to the function
  */
-static inline trap_return_fn get_trap_return_va()
+static inline trap_return_fn trap_return_va()
 {
 	return (trap_return_fn)(TRAMPOLINE + (trap_return - _trampoline_start));
 }
