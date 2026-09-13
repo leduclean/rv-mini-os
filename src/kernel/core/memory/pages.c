@@ -33,7 +33,7 @@ static inline void _push_free(void *page)
  * ram pages are allocated for the code itself. But only the
  * entire ram size is known at compile time.
  */
-uint8_t page_rc[RAM_PAGE_COUNT] = { 0 };
+static uint8_t page_rc[RAM_PAGE_COUNT] = { 0 };
 
 uint8_t page_get_ref_count(const void *page)
 {

@@ -158,8 +158,8 @@ static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 };
 
 // Cursor position init
-uint8_t cursor_row = 1;
-uint8_t cursor_col = 0;
+static uint8_t cursor_row = 1;
+static uint8_t cursor_col = 0;
 
 /**
  * @brief Cursor position handling, drawing an 8 pixel horizontal line.
