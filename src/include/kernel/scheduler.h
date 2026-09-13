@@ -45,7 +45,7 @@ void scheduler_wake_waiting_queue(wait_queue_t *wq);
  *
  * @param proc Process to remove.
  */
-void remove_from_sleeping(process_t *proc);
+void scheduler_remove_sleeping(process_t *proc);
 
 /**
  * @brief Check if a process is in the sleeping queue.
@@ -53,7 +53,7 @@ void remove_from_sleeping(process_t *proc);
  * @param proc Process to check.
  * @return 1 if it is sleeping, 0 otherwise.
  */
-uint8_t is_in_sleeping_queue(process_t *proc);
+uint8_t scheduler_is_sleeping(process_t *proc);
 
 /**
  * @brief Block the active process on a wait queue.
@@ -71,7 +71,7 @@ void scheduler_block_on(wait_queue_t *wq);
 void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs);
 
 /** @brief Init the ready queues and the sleeping queue. */
-void init_scheduler_queues();
+void scheduler_init();
 
 /**
  * @brief Set the active process to sleeping state.

@@ -357,17 +357,17 @@ void scheduler_wake_waiting_queue(wait_queue_t *wq)
 	irq_restore(flags);
 }
 
-uint8_t is_in_sleeping_queue(process_t *proc)
+uint8_t scheduler_is_sleeping(process_t *proc)
 {
 	return clist_is_in_list(&proc->sleep_node);
 }
 
-void remove_from_sleeping(process_t *proc)
+void scheduler_remove_sleeping(process_t *proc)
 {
 	clist_remove(&proc->sleep_node);
 }
 
-void init_scheduler_queues()
+void scheduler_init()
 {
 	_init_ready_queues();
 	_init_sleep_queue();

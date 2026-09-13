@@ -55,8 +55,8 @@ static void _clear_from_blocking_queues(process_t *proc)
 {
 	irq_flags_t state = irq_save();
 	// Remove it if it from sleeping queue (timeout).
-	if (is_in_sleeping_queue(proc)) {
-		remove_from_sleeping(proc);
+	if (scheduler_is_sleeping(proc)) {
+		scheduler_remove_sleeping(proc);
 	};
 
 	if (clist_is_in_list(&proc->wait_node)) {
@@ -420,7 +420,7 @@ int8_t process_spawn_foreground(void code(), const char *name, priority prior,
 void process_init()
 {
 	_init_proc_table();
-	init_scheduler_queues();
+	scheduler_init();
 	_init_idle();
 }
 
