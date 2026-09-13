@@ -26,9 +26,6 @@ typedef struct {
 	} cmd;
 } cmd_desc_t;
 
-/** @brief Clear the registry. */
-void clear_cmd_registry();
-
 /**
  * @brief Register a builtin command, executed in the shell process.
  *
@@ -36,7 +33,7 @@ void clear_cmd_registry();
  * @param fn Function to call.
  * @return 0 on success, -1 on invalid arguments or a full registry.
  */
-int8_t register_builtin(const char *name, void (*fn)());
+int8_t cmd_register_builtin(const char *name, void (*fn)());
 
 /**
  * @brief Register a program, spawned in its own process when invoked.
@@ -46,7 +43,7 @@ int8_t register_builtin(const char *name, void (*fn)());
  * @param prior Priority the program is spawned with.
  * @return 0 on success, -1 on invalid arguments or a full registry.
  */
-int8_t register_prog(const char *name, void (*fn)(), priority prior);
+int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior);
 
 /**
  * @brief Look a command up in the registry.
@@ -54,7 +51,7 @@ int8_t register_prog(const char *name, void (*fn)(), priority prior);
  * @param name Name to look for.
  * @return Pointer to the matching command, NULL if it is unknown.
  */
-const cmd_desc_t *command_lookup(const char *name);
+const cmd_desc_t *cmd_lookup(const char *name);
 
 /**
  * @brief Get the nth registered command.
@@ -62,11 +59,11 @@ const cmd_desc_t *command_lookup(const char *name);
  * @param idx Index of the command.
  * @return Pointer to the command, NULL if @p idx is out of range.
  */
-const cmd_desc_t *registry_get_nth(uint8_t idx);
+const cmd_desc_t *cmd_nth(uint8_t idx);
 
 /**
  * @brief Get the number of registered commands.
  *
  * @return Size of the registry.
  */
-uint8_t registry_get_size();
+uint8_t cmd_count();
