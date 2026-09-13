@@ -50,16 +50,9 @@ typedef struct process {
 	void *ustack_pa; ///< Process ustack physical page.
 
 	clist_node_t proc_node; ///< Process table node.
-
 	clist_node_t ready_node; ///< Scheduler ready queue node.
-
-	/**
-   * @brief Wait queue node, used to put the process in a zombie, IO or
-   * mutex wait.
-   */
-	clist_node_t wait_node;
-	wait_queue_t *current_wq; ///< Wait queue blocked on, NULL if not blocked.
-
+	clist_node_t
+		wait_node; ///< Wait queue node, used to put the process in a zombie, IO or Mutex wait state.
 	clist_node_t sleep_node; ///< Sleeping queue node.
 	uint64_t wake_up_time; ///< Wake up date, in secondes since boot.
 

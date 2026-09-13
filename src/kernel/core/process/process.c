@@ -92,10 +92,6 @@ clist_node_t *get_sleep_node(process_t *proc)
 {
 	return &proc->sleep_node;
 }
-wait_queue_t *get_current_wq(process_t *proc)
-{
-	return proc->current_wq;
-}
 
 /** @brief Currently running process. */
 static process_t *active = NULL;
