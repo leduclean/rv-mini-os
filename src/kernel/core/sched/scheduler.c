@@ -204,17 +204,6 @@ void scheduler_terminate(int exit_code)
 	irq_restore(flags);
 }
 
-void proc_launcher()
-{
-	process_t *p = get_active();
-	if (p->user) {
-		enter_user_mode(p);
-	} else {
-		p->code();
-		scheduler_terminate(0);
-	}
-}
-
 void scheduler_ready_process(process_t *proc)
 {
 	irq_flags_t flags = irq_save();

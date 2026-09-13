@@ -61,10 +61,8 @@ _Static_assert(__builtin_offsetof(tframe_t, ksatp) == 34 * 8,
  * @brief Entrypoint to the user mode from the kernel.
  *
  * @notes This function should be used only for user programs.
- *
- * @param entry The user program entry point.
  */
-void enter_user_mode(const process_t *proc);
+void enter_user_mode();
 
 /**
  * @brief Inits trap entries of M and S privileges modes.

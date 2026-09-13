@@ -328,25 +328,6 @@ err_free_proc:
 }
 
 /**
- * @brief Config a new process.
- *
- * @notes This function will only be called once on by the init_proc() and the first 
- * user program spawned.
- * @param p Pointer to the process.
- * @param code The executing code of the process.
- */
-static void _config_new_process(process_t *p, void code())
-{
-	if (p->pid == 0) {
-		p->ctx.ra = (uintptr_t)code;
-	} else {
-		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = (uintptr_t)proc_launcher;
-		p->code = code;
-	}
-}
-
-/**
  * @brief Activate with the scheduler a new process.
  *
  * @param p A pointer to the process.
@@ -360,6 +341,20 @@ static void _activate_process(process_t *p)
 	return;
 }
 
+/**
+ * @brief Kernel privilege proessus entry point.
+ */
+static void _kproc_launcher()
+{
+	//NOTE: We force this because there is no guarantee,
+	// after a kprocess spawn to have irq enable.
+	// (ctx switch does not preserve the sstatus)
+	enable_s_irq();
+	process_t *p = get_active();
+	p->code();
+	scheduler_terminate(0);
+}
+
 process_t *spawn_process(void code(), const char *name, priority prior,
 			 bool user)
 {
@@ -369,7 +364,14 @@ process_t *spawn_process(void code(), const char *name, priority prior,
 		goto err_restore_irq;
 	}
 
-	_config_new_process(p, code);
+	if (p->pid == 0) {
+		p->ctx.ra = (uintptr_t)code;
+	} else {
+		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
+		p->ctx.ra = user ? (uintptr_t)enter_user_mode :
+				   (uintptr_t)_kproc_launcher;
+		p->code = code;
+	}
 
 	if (user && map_uprocess(p) != 0) {
 		goto err_free_ptable;

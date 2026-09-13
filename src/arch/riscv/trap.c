@@ -190,23 +190,24 @@ void init_trap_entries()
 	init_stvec(kernelvec);
 }
 
-void enter_user_mode(const process_t *proc)
+void enter_user_mode()
 {
-	tframe_t *t = proc->tframe_pa;
+	process_t *p = get_active();
+	tframe_t *t = p->tframe_pa;
 
 	// Wanted initial user state
 	t->saved_regs.sp = USTACK;
 
 	// Set the starting function to the app code
-	t->saved_regs.a[0] = (unsigned long)proc->code;
+	t->saved_regs.a[0] = (unsigned long)p->code;
 	t->saved_regs.sepc = (unsigned long)user_entry_point;
 
 	t->saved_regs.sstatus = _get_user_sstatus();
-	t->saved_regs.satp = get_satp(proc->root_ptable);
+	t->saved_regs.satp = get_satp(p->root_ptable);
 
 	// Kernel state
 	t->ksatp = get_kernel_satp();
-	t->kstack = (unsigned long)&proc->kstack[KSTACK_SIZE];
+	t->kstack = (unsigned long)&p->kstack[KSTACK_SIZE];
 
 	get_trap_return_va()(t->saved_regs.satp);
 };
