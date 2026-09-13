@@ -14,23 +14,23 @@ pte_t *kroot;
 #define SATP_MODE_SHIFT 60
 #define SATP_MODE_MASK (0xfUL << SATP_MODE_SHIFT)
 
-unsigned long get_satp(void *pt)
+unsigned long mmap_satp(void *pt)
 {
 	return ((SATP_SV39_MODE << SATP_MODE_SHIFT) | PAGE_NUMBER(pt));
 }
 
-unsigned long get_kernel_satp()
+unsigned long mmap_kernel_satp()
 {
-	return get_satp(kroot);
+	return mmap_satp(kroot);
 }
 
-void switch_to_kernel_ptable()
+void mmap_switch_to_kernel()
 {
-	csr_write(satp, get_kernel_satp());
-	update_tlb();
+	csr_write(satp, mmap_kernel_satp());
+	mmap_update_tlb();
 }
 
-int map_kernel()
+int mmap_kernel()
 {
 	int res;
 	kroot = page_alloc();
@@ -46,7 +46,8 @@ int map_kernel()
 	}
 
 	res = vpage_map_range(kroot, (void *)TRAMPOLINE, _trampoline_start,
-			      _trampoline_end - _trampoline_start, PTE_X | PTE_R);
+			      _trampoline_end - _trampoline_start,
+			      PTE_X | PTE_R);
 	if (res < 0) {
 		goto err_free_root;
 	}
@@ -72,8 +73,8 @@ int map_kernel()
 	}
 
 	// Alow Sv39 and write the kroot PPN to satp.
-	csr_write(satp, get_satp(kroot));
-	update_tlb();
+	csr_write(satp, mmap_satp(kroot));
+	mmap_update_tlb();
 
 	return 0;
 
@@ -82,7 +83,7 @@ err_free_root:
 	return res;
 }
 
-int map_uprocess(process_t *p)
+int mmap_uprocess(process_t *p)
 {
 	printf("[INFO]: mapping user process %s \n", p->name);
 

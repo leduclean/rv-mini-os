@@ -203,10 +203,10 @@ void enter_user_mode()
 	t->saved_regs.sepc = (unsigned long)user_entry_point;
 
 	t->saved_regs.sstatus = _get_user_sstatus();
-	t->saved_regs.satp = get_satp(p->root_ptable);
+	t->saved_regs.satp = mmap_satp(p->root_ptable);
 
 	// Kernel state
-	t->ksatp = get_kernel_satp();
+	t->ksatp = mmap_kernel_satp();
 	t->kstack = (unsigned long)&p->kstack[KSTACK_SIZE];
 
 	get_trap_return_va()(t->saved_regs.satp);

@@ -330,7 +330,7 @@ process_t *process_spawn(void code(), const char *name, priority prior,
 		p->code = code;
 	}
 
-	if (user && map_uprocess(p) != 0) {
+	if (user && mmap_uprocess(p) != 0) {
 		goto err_free_ptable;
 	}
 
@@ -380,7 +380,7 @@ process_t *process_spawn_child(process_t *parent)
 	// Child returns 0 from fork()
 	// This is going to be restored from trap_return
 	child->tframe_pa->saved_regs.a[0] = 0;
-	child->tframe_pa->saved_regs.satp = get_satp(child->root_ptable);
+	child->tframe_pa->saved_regs.satp = mmap_satp(child->root_ptable);
 	child->tframe_pa->kstack = (unsigned long)&child->kstack[KSTACK_SIZE];
 
 	// On ctx switch on fork, we want this state
