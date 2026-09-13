@@ -256,8 +256,8 @@ uint8_t is_in_sleeping_queue(process_t *proc)
  */
 static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other)
 {
-	process_t *cur_proc = container_of(current, process_t, wait_node);
-	process_t *other_proc = container_of(other, process_t, wait_node);
+	process_t *cur_proc = container_of(current, process_t, sleep_node);
+	process_t *other_proc = container_of(other, process_t, sleep_node);
 	return (get_wake_up(cur_proc) > get_wake_up(other_proc));
 }
 
