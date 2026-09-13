@@ -148,7 +148,7 @@ static void _ps()
 
 /* --- Register all programs --- */
 
-void init_programs()
+void programs_init()
 {
 	cmd_register_prog("proc1", _proc1, HIGH);
 	cmd_register_prog("proc2", _proc2, NORMAL);

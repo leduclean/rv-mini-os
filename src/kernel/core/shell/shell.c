@@ -74,10 +74,10 @@ static void _cmd_handler(shell_cmd_tokens_t *cmd)
 
 static char line_buffer[MAX_COLS];
 
-void shell()
+void shell_run()
 {
 	_init_builtins();
-	init_programs();
+	programs_init();
 	for (;;) {
 		if (parser_read_line(line_buffer, MAX_COLS) != 0) {
 			shell_cmd_tokens_t cmd = parser_get_cmd(line_buffer);

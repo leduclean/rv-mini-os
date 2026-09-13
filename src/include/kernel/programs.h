@@ -6,4 +6,4 @@
 #pragma once
 
 /** @brief Register every demo program in the command registry. */
-void init_programs();
+void programs_init();
