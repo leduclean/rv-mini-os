@@ -47,7 +47,7 @@ void page_get(const void *page)
 	irq_restore(state);
 }
 
-void pages_init()
+void page_init()
 {
 	clist_init_node(&free_pages);
 	page_t *p;
