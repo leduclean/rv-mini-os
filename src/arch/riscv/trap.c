@@ -8,7 +8,7 @@
 #include "process.h"
 #include "syscall.h"
 #include "time.h"
-#include "irq.h"
+#include "plic.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
 #include "csr.h"

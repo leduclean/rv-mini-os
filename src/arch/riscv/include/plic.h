@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Machine level interrupt configuration and dispatch.
+ * @brief Plic configuration and dispatch.
  */
 
 #pragma once
