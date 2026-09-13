@@ -233,7 +233,7 @@ static void _kproc_launcher()
 static inline void _fork_return()
 {
 	process_t *p = process_active();
-	get_trap_return_va()(p->tframe_pa->saved_regs.satp);
+	trap_return_va()(p->tframe_pa->saved_regs.satp);
 }
 
 /** @brief Create the idle process and make it active. */
@@ -325,7 +325,7 @@ process_t *process_spawn(void code(), const char *name, priority prior,
 		p->ctx.ra = (uintptr_t)code;
 	} else {
 		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = user ? (uintptr_t)enter_user_mode :
+		p->ctx.ra = user ? (uintptr_t)trap_enter_user_mode :
 				   (uintptr_t)_kproc_launcher;
 		p->code = code;
 	}

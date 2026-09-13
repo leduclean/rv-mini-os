@@ -63,7 +63,7 @@ void start()
 	pmp_allow_all();
 
 	delegate_traps();
-	init_trap_entries();
+	trap_init();
 
 	// Timer init.
 	// WARNING: this should always resides

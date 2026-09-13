@@ -35,12 +35,12 @@ static inline unsigned long _get_user_sstatus()
  * @param entry Trap vector written in the mtvec register.
  *
  */
-static inline void init_mtvec(void (*entry)())
+static inline void _init_mtvec(void (*entry)())
 {
 	csr_write(mtvec, entry);
 }
 
-static inline void init_stvec(void (*entry)())
+static inline void _init_stvec(void (*entry)())
 {
 	csr_write(stvec, entry);
 }
@@ -183,14 +183,14 @@ unsigned long usertrap()
 
 extern void kernelvec();
 
-void init_trap_entries()
+void trap_init()
 {
-	init_mtvec(_machine_trap_panic);
+	_init_mtvec(_machine_trap_panic);
 	// Kernel vec when starting the OS
-	init_stvec(kernelvec);
+	_init_stvec(kernelvec);
 }
 
-void enter_user_mode()
+void trap_enter_user_mode()
 {
 	process_t *p = process_active();
 	tframe_t *t = p->tframe_pa;
@@ -209,5 +209,5 @@ void enter_user_mode()
 	t->ksatp = mmap_kernel_satp();
 	t->kstack = (unsigned long)&p->kstack[KSTACK_SIZE];
 
-	get_trap_return_va()(t->saved_regs.satp);
+	trap_return_va()(t->saved_regs.satp);
 };
