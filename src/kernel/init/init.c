@@ -1,6 +1,6 @@
 #include "console.h"
 #include "cpu.h"
-#include "irq.h"
+#include "plic.h"
 #include "minilib/stddef.h"
 #include "minilib/stdio.h"
 #include "minilib/stdbool.h"
