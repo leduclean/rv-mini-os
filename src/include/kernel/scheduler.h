@@ -85,9 +85,3 @@ void scheduler_sleep(uint32_t nbr_secondes);
  * @param exit_code Exit code of the process to terminate.
  */
 void scheduler_terminate(int exit_code);
-
-/**
- * @brief Launcher handling the launch and the terminaison of a process.
- *
- */
-void proc_launcher();

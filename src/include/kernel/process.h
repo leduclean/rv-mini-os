@@ -25,7 +25,7 @@ typedef enum {
 } state;
 
 typedef struct ctx {
-	uint64_t ra; ///> Return adress pointer pointing to proc_launcher()
+	uint64_t ra; ///> Return adress pointer.
 	uint64_t sp; ///> Stack pointer of the process.
 	uint64_t s[12]; ///> Callee saved registry.
 } ctx_t;
