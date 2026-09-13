@@ -20,7 +20,7 @@ void init_uart()
 }
 
 /**
- * @brief Alias of spawn_process().
+ * @brief Alias of process_spawn().
  *
  * @param entry Entry point of the process.
  * @param name Name of the process.
@@ -29,7 +29,7 @@ void init_uart()
  */
 int8_t cree_processus(void (*entry)(void), char *name, priority prior)
 {
-	spawn_process(entry, name, prior);
+	process_spawn(entry, name, prior);
 	return process_active()->pid;
 }
 

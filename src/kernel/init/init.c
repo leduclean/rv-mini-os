@@ -30,7 +30,7 @@ void kernel_start()
 	map_kernel();
 	printf("[INFO] kernel map \n");
 
-	init_proc();
+	process_init();
 	printf("[INFO] init proc \n");
 
 	enable_s_irq();
@@ -39,13 +39,13 @@ void kernel_start()
 	enable_s_external();
 
 	printf("[INFO] external irq enabled\n");
-	if (!spawn_process(segfault_test, "test", NORMAL, true)) {
+	if (!process_spawn(segfault_test, "test", NORMAL, true)) {
 		printf("[FAILURE]: failed to spawn test");
 	}
 
-	// spawn_process(shell, "shell", NORMAL, false);
+	// process_spawn(shell, "shell", NORMAL, false);
 	// printf("[INFO]: spawned shell");
-	idle();
+	process_idle();
 }
 
 extern void enter_kernel(void (*entry)());

@@ -239,12 +239,12 @@ static inline void _fork_return()
 /** @brief Create the idle process and make it active. */
 static void _init_idle()
 {
-	process_t *init_proc = spawn_process(idle, "idle", IDLE, false);
-	if (!init_proc) {
+	process_t *p = process_spawn(process_idle, "idle", IDLE, false);
+	if (!p) {
 		//TODO: handle error
 		return;
 	}
-	active = init_proc;
+	active = p;
 	active->state = RUNNING;
 }
 
@@ -262,7 +262,7 @@ void process_switch_active(process_t *next)
 	active = next;
 }
 
-const clist_node_t *get_proc_table_clist()
+const clist_node_t *process_table_clist()
 {
 	return &proc_table.head;
 }
@@ -312,7 +312,7 @@ void process_reap(process_t *proc)
 	_process_clean_up(proc);
 }
 
-process_t *spawn_process(void code(), const char *name, priority prior,
+process_t *process_spawn(void code(), const char *name, priority prior,
 			 bool user)
 {
 	irq_flags_t state = irq_save();
@@ -348,7 +348,7 @@ err_restore_irq:
 	return p;
 }
 
-process_t *spawn_child(process_t *parent)
+process_t *process_spawn_child(process_t *parent)
 {
 	irq_flags_t state = irq_save();
 
@@ -402,10 +402,10 @@ err_restore_irq:
 	return child;
 }
 
-int8_t spawn_foreground(void code(), const char *name, priority prior,
+int8_t process_spawn_foreground(void code(), const char *name, priority prior,
 			bool user)
 {
-	process_t *child = spawn_process(code, name, prior, user);
+	process_t *child = process_spawn(code, name, prior, user);
 	if (!child) {
 		return -1;
 	}
@@ -417,14 +417,14 @@ int8_t spawn_foreground(void code(), const char *name, priority prior,
 	return pid;
 };
 
-void init_proc()
+void process_init()
 {
 	_init_proc_table();
 	init_scheduler_queues();
 	_init_idle();
 }
 
-void idle()
+void process_idle()
 {
 	for (;;) {
 		hlt();
