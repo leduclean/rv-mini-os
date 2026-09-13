@@ -220,7 +220,7 @@ int vpage_handle_cow(pte_t *root, void *va)
 		goto out;
 	}
 	void *page = (void *)(_get_next_lvl_pte(*leaf));
-	if (page_get_rc(page) == 1) {
+	if (page_get_ref_count(page) == 1) {
 		// We are the last that has access to this page
 		*leaf &= ~PTE_COW;
 		*leaf |= PTE_W;
