@@ -27,7 +27,7 @@ void kernel_start()
 	pages_init();
 	printf("[INFO] pages initialized \n");
 
-	map_kernel();
+	mmap_kernel();
 	printf("[INFO] kernel map \n");
 
 	process_init();

@@ -243,7 +243,7 @@ int vpage_handle_cow(pte_t *root, void *va)
 		goto err_free_page;
 	}
 
-	update_tlb();
+	mmap_update_tlb();
 	return 0;
 
 err_free_page:
@@ -304,6 +304,6 @@ int vpage_tree_copy(pte_t *dst, pte_t *src)
 		return res;
 	}
 
-	update_tlb();
+	mmap_update_tlb();
 	return 0;
 }
