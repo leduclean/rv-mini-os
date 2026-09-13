@@ -36,7 +36,7 @@ extern char _heap_start[], _heap_end[];
 /**
  * @brief Init the paging allocator. 
  */
-void pages_init();
+void page_init();
 
 /**
  * @brief Allocate the first free page.

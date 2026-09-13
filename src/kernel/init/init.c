@@ -24,7 +24,7 @@ void kernel_start()
 		TA_ALIGNMENT);
 	printf("[INFO] Tiny alloc initialized \n");
 
-	pages_init();
+	page_init();
 	printf("[INFO] pages initialized \n");
 
 	mmap_kernel();
