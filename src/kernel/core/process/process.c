@@ -44,78 +44,15 @@ static void _init_proc_table()
 	proc_table.active_process = 0;
 }
 
-// Getters and setter on fields
-ctx_t *get_ctx(process_t *proc)
-{
-	return &proc->ctx;
-}
-
-uint8_t get_pid(const process_t *proc)
-{
-	return proc->pid;
-};
-const char *get_name(const process_t *proc)
-{
-	return proc->name;
-}
-uint32_t get_wake_up(const process_t *proc)
-{
-	return proc->wake_up_time;
-}
-priority get_priority(const process_t *proc)
-{
-	return proc->priority;
-}
-wait_queue_t *get_wait_child_queue(process_t *proc)
-{
-	return &proc->child_wq;
-};
-wait_queue_t *get_zombies(process_t *proc)
-{
-	return &proc->zombies;
-};
-void set_state(process_t *proc, state state)
-{
-	proc->state = state;
-}
-
-// Node getters
-clist_node_t *get_ready_node(process_t *proc)
-{
-	return &proc->ready_node;
-}
-clist_node_t *get_wait_node(process_t *proc)
-{
-	return &proc->wait_node;
-}
-clist_node_t *get_sleep_node(process_t *proc)
-{
-	return &proc->sleep_node;
-}
-
 /** @brief Currently running process. */
 static process_t *active = NULL;
 
-// Active getters
-process_t *get_active()
+process_t *process_active()
 {
 	return active;
 }
-uint8_t get_active_pid()
-{
-	return active->pid;
-}
-char *get_active_name()
-{
-	return active->name;
-}
 
-void set_exit_code(process_t *p, int code)
-{
-	p->exit_code = code;
-}
-
-void switch_active(process_t *next)
+void process_switch_active(process_t *next)
 {
 	if (active->state == RUNNING)
 		active->state = READY;
@@ -219,9 +156,8 @@ static inline void _process_zombify(process_t *proc, int exit_code)
 {
 	irq_flags_t state = irq_save();
 
+	// ponytail: caller (process_terminate) already proved parent != NULL
 	process_t *parent = proc->parent;
-	if (!parent)
-		return;
 
 	proc->state = ZOMBIE;
 	proc->exit_code = exit_code;
@@ -254,7 +190,7 @@ void process_reap(process_t *proc)
 	_process_clean_up(proc);
 }
 
-uint8_t higher_priority(priority prior, priority other)
+uint8_t priority_higher(priority prior, priority other)
 {
 	return prior < other;
 }
@@ -350,7 +286,7 @@ static void _kproc_launcher()
 	// after a kprocess spawn to have irq enable.
 	// (ctx switch does not preserve the sstatus)
 	enable_s_irq();
-	process_t *p = get_active();
+	process_t *p = process_active();
 	p->code();
 	scheduler_terminate(0);
 }
@@ -359,7 +295,7 @@ process_t *spawn_process(void code(), const char *name, priority prior,
 			 bool user)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = _alloc_squeletton(name, prior, user, get_active());
+	process_t *p = _alloc_squeletton(name, prior, user, process_active());
 	if (!p) {
 		goto err_restore_irq;
 	}
@@ -393,7 +329,7 @@ err_restore_irq:
 
 static inline void _fork_return()
 {
-	process_t *p = get_active();
+	process_t *p = process_active();
 	get_trap_return_va()(p->tframe_pa->saved_regs.satp);
 }
 

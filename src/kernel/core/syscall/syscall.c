@@ -7,7 +7,7 @@
 //TODO: Use a syscall table instead of a large switch case.
 long syscall_dispatch(long n, long a, long b, long c)
 {
-	uint8_t pid = get_active_pid();
+	uint8_t pid = process_active()->pid;
 	switch (n) {
 	case SYS_SLEEP:
 		printf("[Kernel/INFO]: Sleeping for %lu seconds (pid %d) \n", a,

@@ -18,9 +18,9 @@ extern void ctx_sw(ctx_t *old_ctx, ctx_t *new_ctx);
  */
 static void _do_ctx_switch(process_t *next)
 {
-	ctx_t *old_ctx = get_ctx(get_active());
-	switch_active(next);
-	ctx_sw(old_ctx, get_ctx(next));
+	ctx_t *old_ctx = &process_active()->ctx;
+	process_switch_active(next);
+	ctx_sw(old_ctx, &next->ctx);
 }
 
 // Priority handling
@@ -50,7 +50,7 @@ static void _init_ready_queues()
  */
 static void _ready_queue_enqueue(process_t *proc)
 {
-	priority prior_class = get_priority(proc);
+	priority prior_class = proc->priority;
 	clist_node_t *rq = &ready_queues[prior_class];
 	clist_push_back(rq, &proc->ready_node);
 }
@@ -93,15 +93,15 @@ static process_t *_rotate_ready_queue(clist_node_t *rq)
  */
 static void _check_and_preempt(process_t *proc)
 {
-	process_t *current = get_active();
+	process_t *current = process_active();
 
 	if (!current) {
 		return;
 	}
 
-	priority prior = get_priority(proc);
-	priority current_prior = get_priority(current);
-	if (higher_priority(prior, current_prior)) {
+	priority prior = proc->priority;
+	priority current_prior = current->priority;
+	if (priority_higher(prior, current_prior)) {
 		// Immediatly switch to this process
 		_do_ctx_switch(proc);
 	}
@@ -147,8 +147,8 @@ void refresh_highest_prio()
  */
 static void _update_highest(process_t *proc)
 {
-	priority prior_class = get_priority(proc);
-	if (higher_priority(prior_class, highest_ready_tracking)) {
+	priority prior_class = proc->priority;
+	if (priority_higher(prior_class, highest_ready_tracking)) {
 		highest_ready_tracking = prior_class;
 	}
 }
@@ -169,7 +169,7 @@ void scheduler_rotate()
 	irq_flags_t flags = irq_save();
 
 	process_t *next = _rotate_ready_queue(_pick_highest());
-	if (next != get_active())
+	if (next != process_active())
 		_do_ctx_switch(next);
 
 	irq_restore(flags);
@@ -195,7 +195,7 @@ static void _switch_out_active()
 void scheduler_terminate(int exit_code)
 {
 	irq_flags_t flags = irq_save();
-	process_t *current = get_active();
+	process_t *current = process_active();
 
 	_ready_queue_remove(current);
 	process_terminate(current, exit_code);
@@ -233,7 +233,7 @@ static void _init_sleep_queue()
 
 uint8_t is_in_sleeping_queue(process_t *proc)
 {
-	return clist_is_in_list(get_sleep_node(proc));
+	return clist_is_in_list(&proc->sleep_node);
 }
 
 /**
@@ -247,7 +247,7 @@ static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other)
 {
 	process_t *cur_proc = container_of(current, process_t, sleep_node);
 	process_t *other_proc = container_of(other, process_t, sleep_node);
-	return (get_wake_up(cur_proc) > get_wake_up(other_proc));
+	return (cur_proc->wake_up_time > other_proc->wake_up_time);
 }
 
 /**
@@ -257,20 +257,20 @@ static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other)
  */
 static void _insert_sleep(process_t *proc)
 {
-	clist_node_t *node = get_sleep_node(proc);
+	clist_node_t *node = &proc->sleep_node;
 	clist_insert_sorted(&sleeping_head, node, _wake_up_cmp);
 }
 
 void remove_from_sleeping(process_t *proc)
 {
-	clist_remove(get_sleep_node(proc));
+	clist_remove(&proc->sleep_node);
 }
 
 void scheduler_sleep(uint32_t nbr_secs)
 {
 	irq_flags_t flags = irq_save();
 
-	process_t *proc = get_active();
+	process_t *proc = process_active();
 	_ready_queue_remove(proc);
 	process_sleep(proc, nbr_secs);
 	_insert_sleep(proc);
@@ -289,7 +289,7 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
 {
 	uint32_t now = *(uint32_t *)arg;
 	process_t *proc = container_of(node, process_t, sleep_node);
-	if (get_wake_up(proc) > now)
+	if (proc->wake_up_time > now)
 		return 0;
 
 	clist_remove(node);
@@ -324,7 +324,7 @@ void scheduler_block_on(wait_queue_t *wq)
 {
 	irq_flags_t flags = irq_save();
 
-	process_t *proc = get_active();
+	process_t *proc = process_active();
 	_move_to_wq(proc, wq);
 	_switch_out_active();
 
@@ -335,7 +335,7 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs)
 {
 	irq_flags_t flags = irq_save();
 
-	process_t *proc = get_active();
+	process_t *proc = process_active();
 	_move_to_wq(proc, wq);
 	if (timeout_secs > 0) {
 		process_sleep(proc, timeout_secs);
