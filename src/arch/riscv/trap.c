@@ -136,7 +136,7 @@ void kerneltrap()
  */
 unsigned long usertrap()
 {
-	process_t *p = get_active();
+	process_t *p = process_active();
 	pt_regs_t *t = &p->tframe_pa->saved_regs;
 
 	unsigned long scause = t->scause;
@@ -192,7 +192,7 @@ void init_trap_entries()
 
 void enter_user_mode()
 {
-	process_t *p = get_active();
+	process_t *p = process_active();
 	tframe_t *t = p->tframe_pa;
 
 	// Wanted initial user state

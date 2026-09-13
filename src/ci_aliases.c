@@ -30,7 +30,7 @@ void init_uart()
 int8_t cree_processus(void (*entry)(void), char *name, priority prior)
 {
 	spawn_process(entry, name, prior);
-	return get_active_pid();
+	return process_active()->pid;
 }
 
 /** @brief Alias of scheduler_rotate(). */
@@ -56,23 +56,23 @@ void fin_processus(void)
 }
 
 /**
- * @brief Alias of get_active_pid().
+ * @brief Alias of process_active()->pid.
  *
  * @return Pid of the active process.
  */
 uint8_t mon_pid(void)
 {
-	return get_active_pid();
+	return process_active()->pid;
 }
 
 /**
- * @brief Alias of get_active_name().
+ * @brief Alias of process_active()->name.
  *
  * @return Name of the active process.
  */
 char *mon_nom(void)
 {
-	return get_active_name();
+	return process_active()->name;
 }
 
 /**

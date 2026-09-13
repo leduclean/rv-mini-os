@@ -39,7 +39,7 @@ int8_t mutex_trylock(mutex_t *m)
 
 	// If not locked take the onership.
 	m->locked = 1;
-	m->owner = get_active();
+	m->owner = process_active();
 	irq_restore(flags);
 	return 0;
 }
@@ -59,7 +59,7 @@ void mutex_unlock(mutex_t *m)
 {
 	// Atomic
 	irq_flags_t flags = irq_save();
-	process_t *current = get_active();
+	process_t *current = process_active();
 	if ((!m->locked) || (m->owner != current)) {
 		irq_restore(flags);
 		return;

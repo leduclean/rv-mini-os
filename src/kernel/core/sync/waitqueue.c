@@ -37,7 +37,7 @@ process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid)
 	clist_node_t *n;
 	for (n = wq->head.next; n != &wq->head; n = n->next) {
 		process_t *p = container_of(n, process_t, wait_node);
-		if (get_pid(p) == pid) {
+		if (p->pid == pid) {
 			clist_remove(n);
 			return p;
 		}

@@ -65,99 +65,11 @@ typedef struct process {
 } process_t;
 
 /**
- * @brief Get the saved register context of a process.
- *
- * @param proc Process to read.
- * @return Pointer to its saved context.
- */
-ctx_t *get_ctx(process_t *proc);
-
-/**
- * @brief Get the wake up time of a process.
- *
- * @param proc Process to read.
- * @return Wake up time, in secondes since boot.
- */
-uint32_t get_wake_up(const process_t *proc);
-
-/**
- * @brief Get the priority of a process.
- *
- * @param proc Process to read.
- * @return Priority class of @p proc.
- */
-priority get_priority(const process_t *proc);
-
-/**
- * @brief Get the name of a process.
- *
- * @param proc Process to read.
- * @return Pointer to the name of @p proc.
- */
-const char *get_name(const process_t *proc);
-
-/**
- * @brief Get the pid of a process.
- *
- * @param proc Process to read.
- * @return Pid of @p proc.
- */
-uint8_t get_pid(const process_t *proc);
-
-/**
- * @brief Get the ready queue node of a process.
- *
- * @param proc Process to read.
- * @return Pointer to its ready queue node.
- */
-clist_node_t *get_ready_node(process_t *proc);
-
-/**
- * @brief Get the wait queue node of a process.
- *
- * @param proc Process to read.
- * @return Pointer to its wait queue node.
- */
-clist_node_t *get_wait_node(process_t *proc);
-
-/**
- * @brief Get the sleeping queue node of a process.
- *
- * @param proc Process to read.
- * @return Pointer to its sleeping queue node.
- */
-clist_node_t *get_sleep_node(process_t *proc);
-
-/**
- * @brief Get the queue holding the zombie children of a process.
- *
- * @param proc Parent process.
- * @return Pointer to its zombies queue.
- */
-wait_queue_t *get_zombies(process_t *proc);
-
-/**
- * @brief Get the queue a process blocks on while waiting for a child.
- *
- * @param proc Parent process.
- * @return Pointer to its child wait queue.
- */
-wait_queue_t *get_wait_child_queue(process_t *proc);
-
-/**
- * @brief Set the state of a process.
- *
- * @param proc Process to update.
- * @param state New state.
- */
-void set_state(process_t *proc, state state);
-
-/**
  * @brief Make a process the active one, demoting the previous one to READY.
  *
  * @param next Process to make active.
  */
-void switch_active(process_t *next);
+void process_switch_active(process_t *next);
 
 /**
  * @brief Get the clist holding every living process.
@@ -171,21 +83,7 @@ const clist_node_t *get_proc_table_clist();
  *
  * @return Pointer to the active process.
  */
-process_t *get_active();
-
-/**
- * @brief Get the pid of the running process.
- *
- * @return Pid of the active process.
- */
-uint8_t get_active_pid();
-
-/**
- * @brief Get the name of the running process.
- *
- * @return Pointer to the name of the active process.
- */
-char *get_active_name();
+process_t *process_active();
 
 /**
  * @brief Boolean helper to determine if a priority is higher than another.
@@ -196,7 +94,7 @@ char *get_active_name();
  * @param other Priority to compare against.
  * @return 1 if @p prior is higher than @p other, 0 otherwise.
  */
-uint8_t higher_priority(priority prior, priority other);
+uint8_t priority_higher(priority prior, priority other);
 
 /**
  * @brief Set a process in sleeping state with a timer.

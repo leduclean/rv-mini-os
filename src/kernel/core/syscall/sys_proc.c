@@ -5,12 +5,12 @@
 
 uint8_t sys_get_pid()
 {
-	return get_active_pid();
+	return process_active()->pid;
 }
 
 int8_t sys_fork()
 {
-	process_t *parent = get_active();
+	process_t *parent = process_active();
 	process_t *child = spawn_child(parent);
 	if (!child) {
 		return -1;

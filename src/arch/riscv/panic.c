@@ -14,7 +14,7 @@ void _panic(const char *msg, const char *file, int line)
 	printf("\n[PANIC] %s:%d: %s\n", file, line, msg);
 
 	// NULL before the first process is elected, panic must survive that.
-	const process_t *p = get_active();
+	const process_t *p = process_active();
 	if (p) {
 		printf("[PANIC] active process: %s (pid %d)\n", p->name,
 		       p->pid);

@@ -29,7 +29,7 @@ static void _ensure_mutex_init()
 
 static void _proc1()
 {
-	printf("[proc1] started (pid=%d, priority=HIGH)\n", get_active_pid());
+	printf("[proc1] started (pid=%d, priority=HIGH)\n", process_active()->pid);
 	for (int i = 0; i < 3; i++) {
 		printf("[proc1] running at t=%us — sleeping 5s...\n",
 		       seconds());
@@ -41,7 +41,7 @@ static void _proc1()
 static void _proc3()
 {
 	printf("[proc3] spawned dynamically by proc2 (pid=%d, priority=LOW)\n",
-	       get_active_pid());
+	       process_active()->pid);
 	for (;;) {
 		printf("[proc3] alive at t=%us — sleeping 4s\n", seconds());
 		scheduler_sleep(4);
@@ -50,7 +50,7 @@ static void _proc3()
 
 static void _proc2()
 {
-	printf("[proc2] started (pid=%d, priority=NORMAL)\n", get_active_pid());
+	printf("[proc2] started (pid=%d, priority=NORMAL)\n", process_active()->pid);
 	for (int i = 0; i < 6; i++) {
 		printf("[proc2] iteration %d at t=%us — sleeping 6s\n", i,
 		       seconds());
