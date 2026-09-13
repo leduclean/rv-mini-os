@@ -67,7 +67,7 @@ void time_irq_handler(void)
 
 		char buf[16];
 		sprintf(buf, "[%02d:%02d:%02d]", h, m, s % 60);
-		display_top_right(buf, 10);
+		console_display_top_right(buf, 10);
 		prev = s;
 	};
 

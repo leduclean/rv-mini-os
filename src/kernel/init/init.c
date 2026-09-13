@@ -57,7 +57,7 @@ extern void delegate_traps();
 void start()
 {
 	// Device init
-	init_screen();
+	console_init();
 	plic_uart_config();
 	uart_init();
 	pmp_allow_all();
