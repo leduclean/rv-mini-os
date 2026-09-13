@@ -275,7 +275,7 @@ uint8_t priority_higher(priority prior, priority other)
 void process_sleep(process_t *proc, uint32_t delay)
 {
 	proc->state = SLEEPING;
-	proc->wake_up_time = delay + seconds();
+	proc->wake_up_time = delay + time_seconds();
 }
 
 void process_block(process_t *proc)

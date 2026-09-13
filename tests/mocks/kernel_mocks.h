@@ -16,7 +16,7 @@ void scheduler_init(void);
 void wq_enqueue(wait_queue_t *wq, clist_node_t *node);
 void wq_init(wait_queue_t *wq);
 
-uint32_t seconds(void);
+uint32_t time_seconds(void);
 
 uint8_t scheduler_is_sleeping(process_t *p);
 void scheduler_remove_sleeping(process_t *p);

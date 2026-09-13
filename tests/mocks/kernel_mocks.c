@@ -23,7 +23,7 @@ void wq_init(wait_queue_t *wq)
 {
 }
 
-uint32_t seconds()
+uint32_t time_seconds()
 {
 	return 0;
 }
