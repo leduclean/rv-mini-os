@@ -13,8 +13,8 @@ static void _builtin_help()
 {
 	printf("Available commands: \n");
 	const cmd_desc_t *cmd = NULL;
-	for (uint8_t i = 0; i < registry_get_size(); i++) {
-		cmd = registry_get_nth(i);
+	for (uint8_t i = 0; i < cmd_count(); i++) {
+		cmd = cmd_nth(i);
 		switch (cmd->type) {
 		case CMD_BUILTIN:
 			printf("- [builtin] %s\n", cmd->name);
@@ -30,7 +30,7 @@ static void _builtin_help()
 /** @brief Register the shell builtins. */
 static inline void _init_builtins()
 {
-	register_builtin("help", _builtin_help);
+	cmd_register_builtin("help", _builtin_help);
 }
 
 /**
@@ -47,7 +47,7 @@ static void _cmd_handler(shell_cmd_tokens_t *cmd)
 		return;
 
 	// Lookup the command in the registry
-	const cmd_desc_t *matched = command_lookup(cmd->argv[0]);
+	const cmd_desc_t *matched = cmd_lookup(cmd->argv[0]);
 	if (!matched) {
 		printf("Unknown command entered. Please refer to `help`.\n");
 		return;

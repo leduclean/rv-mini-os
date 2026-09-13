@@ -10,14 +10,9 @@ typedef struct {
 	uint8_t size; ///< Number of registered commands.
 } exec_table;
 
-exec_table registry;
+static exec_table registry;
 
-void clear_cmd_registry()
-{
-	memset(&registry, 0, sizeof(registry));
-}
-
-int8_t register_builtin(const char *name, void (*fn)())
+int8_t cmd_register_builtin(const char *name, void (*fn)())
 {
 	if (!name || !fn || registry.size >= MAX_CMDS)
 		return -1;
@@ -30,7 +25,7 @@ int8_t register_builtin(const char *name, void (*fn)())
 	return 0;
 }
 
-int8_t register_prog(const char *name, void (*fn)(), priority prior)
+int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior)
 {
 	if (!name || !fn || registry.size >= MAX_CMDS)
 		return -1;
@@ -44,7 +39,7 @@ int8_t register_prog(const char *name, void (*fn)(), priority prior)
 	return 0;
 }
 
-const cmd_desc_t *command_lookup(const char *name)
+const cmd_desc_t *cmd_lookup(const char *name)
 {
 	if (!name)
 		return NULL;
@@ -56,7 +51,7 @@ const cmd_desc_t *command_lookup(const char *name)
 	return NULL;
 }
 
-const cmd_desc_t *registry_get_nth(uint8_t idx)
+const cmd_desc_t *cmd_nth(uint8_t idx)
 {
 	if (idx >= registry.size) {
 		return NULL;
@@ -64,7 +59,7 @@ const cmd_desc_t *registry_get_nth(uint8_t idx)
 	return &registry.tab[idx];
 }
 
-uint8_t registry_get_size()
+uint8_t cmd_count()
 {
 	return registry.size;
 }

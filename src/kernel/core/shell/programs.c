@@ -150,10 +150,10 @@ static void _ps()
 
 void init_programs()
 {
-	register_prog("proc1", _proc1, HIGH);
-	register_prog("proc2", _proc2, NORMAL);
-	register_prog("proc3", _proc3, LOW);
-	register_prog("ps", _ps, NORMAL);
-	register_prog("mutex-holder", _mutex_holder, NORMAL);
-	register_prog("mutex-waiter", _mutex_waiter, NORMAL);
+	cmd_register_prog("proc1", _proc1, HIGH);
+	cmd_register_prog("proc2", _proc2, NORMAL);
+	cmd_register_prog("proc3", _proc3, LOW);
+	cmd_register_prog("ps", _ps, NORMAL);
+	cmd_register_prog("mutex-holder", _mutex_holder, NORMAL);
+	cmd_register_prog("mutex-waiter", _mutex_waiter, NORMAL);
 }
