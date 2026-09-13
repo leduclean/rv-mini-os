@@ -8,7 +8,7 @@
 #include "minilib/stdio.h"
 #include "ldsym.h"
 
-pte_t *kroot;
+static pte_t *kroot;
 
 #define SATP_SV39_MODE 8UL
 #define SATP_MODE_SHIFT 60
