@@ -58,7 +58,7 @@ static void _proc2()
 		       seconds());
 		if (i == 1) {
 			printf("[proc2] spawning proc3 dynamically...\n");
-			spawn_process(_proc3, "proc3", LOW, false);
+			process_spawn(_proc3, "proc3", LOW, false);
 		}
 		scheduler_sleep(6);
 	}
@@ -142,7 +142,7 @@ static int _pretty_print_process(clist_node_t *node, void *args)
 static void _ps()
 {
 	printf("%-5s %-5s %-10s %-7s\n", "PID", "PPID", "CMD", "STATE");
-	clist_for_each(get_proc_table_clist(), _pretty_print_process, NULL);
+	clist_for_each(process_table_clist(), _pretty_print_process, NULL);
 }
 
 /* --- Register all programs --- */

@@ -11,7 +11,7 @@ uint8_t sys_get_pid()
 int8_t sys_fork()
 {
 	process_t *parent = process_active();
-	process_t *child = spawn_child(parent);
+	process_t *child = process_spawn_child(parent);
 	if (!child) {
 		return -1;
 	}

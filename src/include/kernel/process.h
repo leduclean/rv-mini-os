@@ -76,7 +76,7 @@ void process_switch_active(process_t *next);
  *
  * @return Head sentinel of the process table clist.
  */
-const clist_node_t *get_proc_table_clist();
+const clist_node_t *process_table_clist();
 
 /**
  * @brief Get the running process.
@@ -138,10 +138,10 @@ void process_terminate(process_t *proc, int exit_code);
 void process_reap(process_t *proc);
 
 /** @brief Idle process, runs whenever no other process is ready. */
-void idle();
+void process_idle();
 
 /** @brief Init the process table, the scheduler queues and the idle process. */
-void init_proc();
+void process_init();
 
 /**
  * @brief Spawn a process and admit it in the scheduler.
@@ -153,7 +153,7 @@ void init_proc();
  * @return Pointer to the spawned process, NULL if the table is full or the
  * allocation failed.
  */
-process_t *spawn_process(void code(), const char *name, priority prior,
+process_t *process_spawn(void code(), const char *name, priority prior,
 			 bool user);
 
 /**
@@ -165,7 +165,7 @@ process_t *spawn_process(void code(), const char *name, priority prior,
  * @param user User mode process flag.
  * @return Pid of the child, -1 if the spawn failed.
  */
-int8_t spawn_foreground(void code(), const char *name, priority prior,
+int8_t process_spawn_foreground(void code(), const char *name, priority prior,
 			bool user);
 
 /**
@@ -173,4 +173,4 @@ int8_t spawn_foreground(void code(), const char *name, priority prior,
  *
  * @return The child process or NULL if failed.
  */
-process_t *spawn_child(process_t *parent);
+process_t *process_spawn_child(process_t *parent);
