@@ -36,12 +36,12 @@ typedef uint32_t ppn_t;
  * @param pa The physical page address.
  * @param flags Memory access flags.
  */
-int map_page(pte_t *root, const void *va, void *pa, unsigned long flags);
+int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags);
 
-static inline int map_upage(pte_t *root, const void *va, void *pa,
+static inline int vpage_map_user(pte_t *root, const void *va, void *pa,
 			    unsigned long flags)
 {
-	return map_page(root, va, pa, PTE_U | flags);
+	return vpage_map(root, va, pa, PTE_U | flags);
 }
 
 /**
@@ -56,13 +56,13 @@ static inline int map_upage(pte_t *root, const void *va, void *pa,
  * @param size The size of the memory range to map.
  * @param flags Memory access flags.
  */
-int map_range(pte_t *root, void *va, void *pa, size_t size,
+int vpage_map_range(pte_t *root, void *va, void *pa, size_t size,
 	      unsigned long flags);
 
-static inline int map_urange(pte_t *root, void *va, void *pa, size_t size,
-			     unsigned long flags)
+static inline int vpage_map_user_range(pte_t *root, void *va, void *pa,
+				       size_t size, unsigned long flags)
 {
-	return map_range(root, va, pa, size, PTE_U | flags);
+	return vpage_map_range(root, va, pa, size, PTE_U | flags);
 }
 
 /**
@@ -70,7 +70,7 @@ static inline int map_urange(pte_t *root, void *va, void *pa, size_t size,
  *
  * @param root The root table of the tree
  */
-void tree_free(pte_t *root);
+void vpage_tree_free(pte_t *root);
 
 /**
  * @brief Set up lazy copy of a whole sv39 tree.
@@ -82,6 +82,6 @@ void tree_free(pte_t *root);
  * @param src The source root page directory.
  * @return 0 on SUCCES else error code < 0.
  */
-int tree_copy(pte_t *dst, pte_t *src);
+int vpage_tree_copy(pte_t *dst, pte_t *src);
 
 int vpage_handle_cow(pte_t *root, void *va);

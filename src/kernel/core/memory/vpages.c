@@ -47,7 +47,7 @@ static inline pte_t *_get_next_lvl_pte(const pte_t pte)
 	return (pte_t *)((pte >> PTE_PPN_SHIFT) << PAGE_SHIFT);
 }
 
-int map_page(pte_t *root, const void *va, void *pa, unsigned long flags)
+int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 {
 	pte_t *table = root;
 
@@ -130,7 +130,7 @@ static void walk_free(pte_t *table, int lvl)
 	page_put(table);
 }
 
-void tree_free(pte_t *root)
+void vpage_tree_free(pte_t *root)
 {
 	if (!root) {
 		return;
@@ -138,13 +138,14 @@ void tree_free(pte_t *root)
 	walk_free(root, LEVELS - 1);
 };
 
-int map_range(pte_t *root, void *va, void *pa, size_t size, unsigned long flags)
+int vpage_map_range(pte_t *root, void *va, void *pa, size_t size,
+		    unsigned long flags)
 {
 	const uint8_t *vaddr = (const uint8_t *)va;
 	uint8_t *paddr = (uint8_t *)pa;
 
 	for (size_t off = 0; off < size; off += PAGE_SIZE) {
-		int res = map_page(root, vaddr + off, paddr + off, flags);
+		int res = vpage_map(root, vaddr + off, paddr + off, flags);
 
 		if (res < 0) {
 			return -1;
@@ -236,7 +237,7 @@ int vpage_handle_cow(pte_t *root, void *va)
 	page_copy(new_page, page);
 	unset_cow(leaf);
 
-	res = map_page(root, (void *)((unsigned long)va & ~OFFSET_MASK),
+	res = vpage_map(root, (void *)((unsigned long)va & ~OFFSET_MASK),
 		       new_page, get_flags(*leaf));
 	if (res < 0) {
 		goto err_free_page;
@@ -281,7 +282,7 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 					set_cow(&src[i]);
 				}
 
-				res = map_page(dst, (void *)child_va, page,
+				res = vpage_map(dst, (void *)child_va, page,
 					       get_flags(src[i]));
 				if (res < 0) {
 					return res;
@@ -292,7 +293,7 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 	return 0;
 }
 
-int tree_copy(pte_t *dst, pte_t *src)
+int vpage_tree_copy(pte_t *dst, pte_t *src)
 {
 	if (!dst || !src) {
 		return -1;

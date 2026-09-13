@@ -38,34 +38,35 @@ int map_kernel()
 		return -1;
 	}
 
-	res = map_range(kroot, (void *)_ram_start, (void *)_ram_start,
-			(size_t)_heap_end - (size_t)_ram_start,
-			PTE_R | PTE_W | PTE_X);
+	res = vpage_map_range(kroot, (void *)_ram_start, (void *)_ram_start,
+			      (size_t)_heap_end - (size_t)_ram_start,
+			      PTE_R | PTE_W | PTE_X);
 	if (res < 0) {
 		goto err_free_root;
 	}
 
-	res = map_range(kroot, (void *)TRAMPOLINE, _trampoline_start,
-			_trampoline_end - _trampoline_start, PTE_X | PTE_R);
+	res = vpage_map_range(kroot, (void *)TRAMPOLINE, _trampoline_start,
+			      _trampoline_end - _trampoline_start, PTE_X | PTE_R);
 	if (res < 0) {
 		goto err_free_root;
 	}
 
-	res = map_range(kroot, (void *)UART_BASE, (void *)UART_BASE, PAGE_SIZE,
-			PTE_R | PTE_W);
+	res = vpage_map_range(kroot, (void *)UART_BASE, (void *)UART_BASE,
+			      PAGE_SIZE, PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_root;
 	}
 
-	res = map_range(kroot, (void *)BOCHS_DISPLAY_BASE_ADDRESS,
-			(void *)BOCHS_DISPLAY_BASE_ADDRESS, DISPLAY_BYTES,
-			PTE_R | PTE_W);
+	res = vpage_map_range(kroot, (void *)BOCHS_DISPLAY_BASE_ADDRESS,
+			      (void *)BOCHS_DISPLAY_BASE_ADDRESS, DISPLAY_BYTES,
+			      PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_root;
 	}
 
-	res = map_range(kroot, (void *)PLIC_MMIO_BASE, (void *)PLIC_MMIO_BASE,
-			PLIC_MMIO_SIZE, PTE_R | PTE_W);
+	res = vpage_map_range(kroot, (void *)PLIC_MMIO_BASE,
+			      (void *)PLIC_MMIO_BASE, PLIC_MMIO_SIZE,
+			      PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_root;
 	}
@@ -93,7 +94,7 @@ int map_uprocess(process_t *p)
 	int res;
 
 	// The whole code is identity mapped for now.
-	res = map_urange(root, _user_start, _user_start,
+	res = vpage_map_user_range(root, _user_start, _user_start,
 			 _user_end - _user_start, PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
 		return res;
@@ -103,7 +104,7 @@ int map_uprocess(process_t *p)
 	if (!stack) {
 		return -1;
 	}
-	res = map_upage(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
+	res = vpage_map_user(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_stack;
 	}
@@ -114,7 +115,7 @@ int map_uprocess(process_t *p)
 		res = -1;
 		goto err_free_stack;
 	}
-	res = map_page(root, (void *)TRAPFRAME, tframe, PTE_R | PTE_W);
+	res = vpage_map(root, (void *)TRAPFRAME, tframe, PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_tframe;
 	}
@@ -122,7 +123,7 @@ int map_uprocess(process_t *p)
 
 	// This is not U page because we will go back to user page
 	// in S mode before the sret returns to user mode.
-	res = map_range(root, (void *)TRAMPOLINE, _trampoline_start,
+	res = vpage_map_range(root, (void *)TRAMPOLINE, _trampoline_start,
 			_trampoline_end - _trampoline_start,
 			PTE_X | PTE_R | PTE_G);
 	if (res < 0) {

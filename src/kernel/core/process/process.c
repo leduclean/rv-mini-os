@@ -97,7 +97,7 @@ static inline void _process_clean_up(process_t *proc)
 	_remove_from_all_queues(proc);
 
 	if (proc->user && proc->root_ptable) {
-		tree_free(proc->root_ptable);
+		vpage_tree_free(proc->root_ptable);
 	}
 
 	free(proc);
@@ -339,7 +339,7 @@ process_t *process_spawn(void code(), const char *name, priority prior,
 	return p;
 
 err_free_ptable:
-	tree_free(p->root_ptable);
+	vpage_tree_free(p->root_ptable);
 	free(p);
 	p = NULL;
 
@@ -359,7 +359,7 @@ process_t *process_spawn_child(process_t *parent)
 	}
 
 	// Copy the tree
-	if (tree_copy(child->root_ptable, parent->root_ptable) < 0) {
+	if (vpage_tree_copy(child->root_ptable, parent->root_ptable) < 0) {
 		goto err_free_tree;
 	}
 
@@ -368,7 +368,7 @@ process_t *process_spawn_child(process_t *parent)
 	if (!tframe) {
 		goto err_free_tree;
 	}
-	if (map_page(child->root_ptable, (void *)TRAPFRAME, tframe,
+	if (vpage_map(child->root_ptable, (void *)TRAPFRAME, tframe,
 		     PTE_R | PTE_W) < 0) {
 		goto err_free_tframe;
 	}
@@ -394,7 +394,7 @@ process_t *process_spawn_child(process_t *parent)
 err_free_tframe:
 	page_put(tframe);
 err_free_tree:
-	tree_free(child->root_ptable);
+	vpage_tree_free(child->root_ptable);
 	free(child);
 	child = NULL;
 err_restore_irq:
