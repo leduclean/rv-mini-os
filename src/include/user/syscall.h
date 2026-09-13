@@ -39,7 +39,7 @@ int8_t wait_pid(int8_t pid);
 /**
  * @brief Dupplicate a process state making a copy of it execution
  *
- * @return The pid of the current process in the parent flow or 0 
+ * @return The pid of the child process in the parent flow or 0 
  * in the child flow.
  */
 int8_t fork();

@@ -1,6 +1,6 @@
 #include "syscall.h"
 #include "apps.h"
-#include "minilib/stdio.h"
+#include "minilib/stddef.h"
 
 #define SLEEP_TIME 2
 
@@ -27,4 +27,23 @@ __attribute__((section(".user_text"))) void fork_test()
 	// Read back through the stack. Each side must see its own value: if the
 	// page were still shared, both would sleep the same amount of time.
 	sleep(marker);
+}
+
+__attribute__((section(".user_text"))) void segfault_test()
+{
+	int8_t res;
+
+	res = fork();
+	if (res < 0) {
+		return exit(1);
+	}
+	if (res == 0) {
+		// This will trigger a segfault
+		uint32_t *marker = NULL;
+		*marker = 0;
+	} else {
+		wait_pid(res);
+		// Deferencing a NULL pointer should results in a page faults
+		sleep(2);
+	}
 }

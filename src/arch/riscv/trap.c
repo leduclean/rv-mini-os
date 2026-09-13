@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include "scheduler.h"
 #include "user_entry.h"
 #include "asm_defs.h"
 #include "mmap.h"
@@ -138,7 +139,8 @@ unsigned long usertrap()
 	process_t *p = get_active();
 	pt_regs_t *t = &p->tframe_pa->saved_regs;
 
-	uint64_t scause = t->scause;
+	unsigned long scause = t->scause;
+	unsigned long stval = csr_read(stval);
 	long irq_flag = scause & XCAUSE_IRQ_BIT;
 
 	if (irq_flag) {
@@ -153,20 +155,25 @@ unsigned long usertrap()
 						   t->a[2]);
 			break;
 		case STORE_PAGE_FAULT: {
-			unsigned long stval = csr_read(stval);
 			// TODO: drop once CoW is trusted, this fires per page.
 			printf("[Kernel/INFO]: CoW fault on 0x%lx (pid %d)\n",
 			       stval, p->pid);
-			if (vpage_handle_cow(p->root_ptable, (void *)stval) <
+			if (vpage_handle_cow(p->root_ptable, (void *)stval) ==
 			    0) {
-				panic("Can't Copy On Write the wanted address");
+				break;
 			}
+		}
+			__attribute__((fallthrough));
+		case LOAD_PAGE_FAULT:
+		case INSTRUCTION_PAGE_FAULT: {
+			printf("[Kernel]: SEGFAULT - va 0x%lx, epc 0x%lx, cause %ld (pid %d)\n",
+			       stval, t->sepc, scause, p->pid);
+			scheduler_terminate(-1);
 			break;
 		}
 
 		default: {
-			unsigned long stval = csr_read(stval);
-			_kernel_trap_panic(t->scause, t->sepc, stval);
+			_kernel_trap_panic(scause, t->sepc, stval);
 			break;
 		}
 		}

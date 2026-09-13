@@ -7,14 +7,16 @@
 //TODO: Use a syscall table instead of a large switch case.
 long syscall_dispatch(long n, long a, long b, long c)
 {
+	uint8_t pid = get_active_pid();
 	switch (n) {
 	case SYS_SLEEP:
-		printf("[Kernel/INFO]: Sleeping for %lu seconds \n", a);
+		printf("[Kernel/INFO]: Sleeping for %lu seconds (pid %d) \n", a,
+		       pid);
 		sys_sleep(a);
 		return 0;
 	case SYS_EXIT: {
-		uint8_t pid = get_active_pid();
-		printf("[Kernel/INFO]: Called EXIT for process %d \n", pid);
+		printf("[Kernel/INFO]: Called EXIT on process (pid %d) \n",
+		       pid);
 		scheduler_terminate(a);
 		return 0;
 	}
