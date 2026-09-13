@@ -33,7 +33,7 @@ static void _proc1()
 	       process_active()->pid);
 	for (int i = 0; i < 3; i++) {
 		printf("[proc1] running at t=%us — sleeping 5s...\n",
-		       seconds());
+		       time_seconds());
 		scheduler_sleep(5);
 	}
 	printf("[proc1] done, exiting\n");
@@ -44,7 +44,8 @@ static void _proc3()
 	printf("[proc3] spawned dynamically by proc2 (pid=%d, priority=LOW)\n",
 	       process_active()->pid);
 	for (;;) {
-		printf("[proc3] alive at t=%us — sleeping 4s\n", seconds());
+		printf("[proc3] alive at t=%us — sleeping 4s\n",
+		       time_seconds());
 		scheduler_sleep(4);
 	}
 }
@@ -55,7 +56,7 @@ static void _proc2()
 	       process_active()->pid);
 	for (int i = 0; i < 6; i++) {
 		printf("[proc2] iteration %d at t=%us — sleeping 6s\n", i,
-		       seconds());
+		       time_seconds());
 		if (i == 1) {
 			printf("[proc2] spawning proc3 dynamically...\n");
 			process_spawn(_proc3, "proc3", LOW, false);

@@ -318,7 +318,7 @@ void scheduler_wake_sleeping()
 {
 	irq_flags_t flags = irq_save();
 
-	uint32_t now = seconds();
+	uint32_t now = time_seconds();
 	clist_for_each(&sleeping_head, _wake_up_sleeping_cb, &now);
 
 	irq_restore(flags);

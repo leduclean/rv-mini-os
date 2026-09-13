@@ -35,12 +35,12 @@ static inline void _update_timer()
 	csr_write(stimecmp, time + DELAY);
 }
 
-inline uint32_t seconds()
+inline uint32_t time_seconds()
 {
 	return ticks / ITFREQ;
 }
 
-void init_timer()
+void time_init()
 {
 	_enable_sstc_extension();
 	_enable_s_timer();
@@ -51,14 +51,14 @@ void init_timer()
 	_update_timer();
 }
 
-void timer_irq_handler(void)
+void time_irq_handler(void)
 {
 	// Ack the timer
 	_update_timer();
 
 	// Treat the timer interupt
 	ticks++;
-	uint32_t s = seconds();
+	uint32_t s = time_seconds();
 
 	// We only display when seconds changes
 	if (s != prev) {

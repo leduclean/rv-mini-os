@@ -9,12 +9,12 @@
 /**
  * @brief Get the uptime.
  *
- * @return Number of secondes elapsed since init_timer().
+ * @return Number of secondes elapsed since time_init().
  */
-uint32_t seconds();
+uint32_t time_seconds();
 
 /** @brief Reset the tick counter and arm the timer comparator. */
-void init_timer();
+void time_init();
 
 /**
  * @brief Handler for the timer irq.
@@ -22,4 +22,4 @@ void init_timer();
  * @note Advances the clock, displays it, wakes the sleeping processes,
  * reschedules and rearms the timer.
  */
-void timer_irq_handler(void);
+void time_irq_handler(void);

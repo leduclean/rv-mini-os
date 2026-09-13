@@ -68,7 +68,7 @@ void start()
 	// Timer init.
 	// WARNING: this should always resides
 	// just before entering the kernel and S mode.
-	init_timer();
+	time_init();
 
 	enter_kernel(kernel_start);
 }

@@ -76,13 +76,13 @@ char *mon_nom(void)
 }
 
 /**
- * @brief Alias of seconds().
+ * @brief Alias of time_seconds().
  *
  * @return Number of secondes since boot.
  */
 uint32_t nbr_secondes(void)
 {
-	return seconds();
+	return time_seconds();
 }
 
 /**

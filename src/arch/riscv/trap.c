@@ -101,7 +101,7 @@ static inline void _handler_async_irq(unsigned long irq_cause)
 		external_irq_handler();
 		break;
 	case S_IRQ_TMR:
-		timer_irq_handler();
+		time_irq_handler();
 		break;
 	}
 }
