@@ -36,7 +36,7 @@ void kernel_start()
 	enable_s_irq();
 	printf("[INFO] S irq enabled\n");
 
-	enable_s_external();
+	plic_enable_s_external();
 
 	printf("[INFO] external irq enabled\n");
 	if (!process_spawn(segfault_test, "test", NORMAL, true)) {
@@ -58,7 +58,7 @@ void start()
 {
 	// Device init
 	console_init();
-	plic_uart_config();
+	plic_config_uart();
 	uart_init();
 	pmp_allow_all();
 

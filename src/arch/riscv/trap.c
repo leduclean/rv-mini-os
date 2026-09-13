@@ -98,7 +98,7 @@ static inline void _handler_async_irq(unsigned long irq_cause)
 {
 	switch (irq_cause) {
 	case S_IRQ_EXT:
-		external_irq_handler();
+		plic_handle_irq();
 		break;
 	case S_IRQ_TMR:
 		time_irq_handler();

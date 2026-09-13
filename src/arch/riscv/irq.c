@@ -4,12 +4,12 @@
 #include "time.h"
 #include "uart.h"
 
-void enable_s_external()
+void plic_enable_s_external()
 {
 	csr_set(sie, SIE_SEIE);
 }
 
-void disable_s_external()
+void plic_disable_s_external()
 {
 	csr_clear(sie, SIE_SEIE);
 }
@@ -49,7 +49,7 @@ static void _set_priority_treshold(uint32_t threshold)
 	MMIO32(PLIC_TARGET_S) = threshold;
 }
 
-void plic_uart_config()
+void plic_config_uart()
 {
 	/* Enable UART irq */
 	MMIO32(PLIC_ENABLE_S) |= PLIC_ENABLE_UART;
@@ -80,7 +80,7 @@ static void _complete_plic(uint32_t irq)
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
-void external_irq_handler()
+void plic_handle_irq()
 {
 	uint32_t irq = _claim_plic();
 	switch (irq) {
