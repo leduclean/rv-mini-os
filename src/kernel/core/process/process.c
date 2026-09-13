@@ -30,11 +30,11 @@ typedef struct {
 	clist_node_t head; ///< Head sentinel of the living processes clist.
 } ptable_t;
 
+/** @brief The one process table. */
 static ptable_t proc_table;
-const clist_node_t *get_proc_table_clist()
-{
-	return &proc_table.head;
-}
+
+/** @brief Currently running process. */
+static process_t *active = NULL;
 
 /** @brief Init the process table. */
 static void _init_proc_table()
@@ -42,23 +42,6 @@ static void _init_proc_table()
 	clist_init_node(&proc_table.head);
 	proc_table.next_pid = 0;
 	proc_table.active_process = 0;
-}
-
-/** @brief Currently running process. */
-static process_t *active = NULL;
-
-process_t *process_active()
-{
-	return active;
-}
-
-void process_switch_active(process_t *next)
-{
-	if (active->state == RUNNING)
-		active->state = READY;
-
-	next->state = RUNNING;
-	active = next;
 }
 
 /**
@@ -82,29 +65,6 @@ static void _clear_from_blocking_queues(process_t *proc)
 	irq_restore(state);
 }
 
-// State handling
-void process_sleep(process_t *proc, uint32_t delay)
-{
-	proc->state = SLEEPING;
-	proc->wake_up_time = delay + seconds();
-}
-
-void process_block(process_t *proc)
-{
-	proc->state = BLOCKED;
-}
-
-void process_wake(process_t *proc)
-{
-	irq_flags_t state = irq_save();
-	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
-		// Remove it from sleeping and blocked queue if remaining
-		_clear_from_blocking_queues(proc);
-		proc->state = RUNNING;
-	}
-	irq_restore(state);
-}
-
 /**
  * @brief Remove a process from all the queues it could be in.
  *
@@ -123,6 +83,7 @@ static inline void _remove_from_all_queues(process_t *proc)
 	if (clist_is_in_list(&proc->wait_node))
 		clist_remove(&proc->wait_node);
 }
+
 /**
  * @brief Clean a process up, removing it from all queues and from memory.
  *
@@ -172,28 +133,6 @@ static inline void _process_zombify(process_t *proc, int exit_code)
 	irq_restore(state);
 }
 
-void process_terminate(process_t *proc, int exit_code)
-{
-	process_t *parent = proc->parent;
-	if (parent) {
-		_process_zombify(proc, exit_code);
-	} else {
-		_process_clean_up(proc);
-	}
-}
-
-void process_reap(process_t *proc)
-{
-	if (proc->state != ZOMBIE) {
-		return;
-	}
-	_process_clean_up(proc);
-}
-
-uint8_t priority_higher(priority prior, priority other)
-{
-	return prior < other;
-}
 /**
  * @brief Reset all the nodes and the wait queues of a process.
  *
@@ -291,6 +230,88 @@ static void _kproc_launcher()
 	scheduler_terminate(0);
 }
 
+static inline void _fork_return()
+{
+	process_t *p = process_active();
+	get_trap_return_va()(p->tframe_pa->saved_regs.satp);
+}
+
+/** @brief Create the idle process and make it active. */
+static void _init_idle()
+{
+	process_t *init_proc = spawn_process(idle, "idle", IDLE, false);
+	if (!init_proc) {
+		//TODO: handle error
+		return;
+	}
+	active = init_proc;
+	active->state = RUNNING;
+}
+
+process_t *process_active()
+{
+	return active;
+}
+
+void process_switch_active(process_t *next)
+{
+	if (active->state == RUNNING)
+		active->state = READY;
+
+	next->state = RUNNING;
+	active = next;
+}
+
+const clist_node_t *get_proc_table_clist()
+{
+	return &proc_table.head;
+}
+
+uint8_t priority_higher(priority prior, priority other)
+{
+	return prior < other;
+}
+
+void process_sleep(process_t *proc, uint32_t delay)
+{
+	proc->state = SLEEPING;
+	proc->wake_up_time = delay + seconds();
+}
+
+void process_block(process_t *proc)
+{
+	proc->state = BLOCKED;
+}
+
+void process_wake(process_t *proc)
+{
+	irq_flags_t state = irq_save();
+	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
+		// Remove it from sleeping and blocked queue if remaining
+		_clear_from_blocking_queues(proc);
+		proc->state = RUNNING;
+	}
+	irq_restore(state);
+}
+
+void process_terminate(process_t *proc, int exit_code)
+{
+	process_t *parent = proc->parent;
+	if (parent) {
+		_process_zombify(proc, exit_code);
+	} else {
+		_process_clean_up(proc);
+	}
+}
+
+void process_reap(process_t *proc)
+{
+	if (proc->state != ZOMBIE) {
+		return;
+	}
+	_process_clean_up(proc);
+}
+
 process_t *spawn_process(void code(), const char *name, priority prior,
 			 bool user)
 {
@@ -325,12 +346,6 @@ err_free_ptable:
 err_restore_irq:
 	irq_restore(state);
 	return p;
-}
-
-static inline void _fork_return()
-{
-	process_t *p = process_active();
-	get_trap_return_va()(p->tframe_pa->saved_regs.satp);
 }
 
 process_t *spawn_child(process_t *parent)
@@ -401,18 +416,6 @@ int8_t spawn_foreground(void code(), const char *name, priority prior,
 	sys_wait_pid(child->pid);
 	return pid;
 };
-
-/** @brief Create the idle process and make it active. */
-static void _init_idle()
-{
-	process_t *init_proc = spawn_process(idle, "idle", IDLE, false);
-	if (!init_proc) {
-		//TODO: handle error
-		return;
-	}
-	active = init_proc;
-	active->state = RUNNING;
-}
 
 void init_proc()
 {
