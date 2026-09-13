@@ -9,7 +9,7 @@
 
 void _panic(const char *msg, const char *file, int line)
 {
-	disable_s_irq();
+	irq_disable_s();
 
 	printf("\n[PANIC] %s:%d: %s\n", file, line, msg);
 

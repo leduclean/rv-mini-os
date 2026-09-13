@@ -33,7 +33,7 @@ void kernel_start()
 	process_init();
 	printf("[INFO] init proc \n");
 
-	enable_s_irq();
+	irq_enable_s();
 	printf("[INFO] S irq enabled\n");
 
 	plic_enable_s_external();

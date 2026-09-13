@@ -16,25 +16,25 @@ inline static void hlt()
 }
 
 /** @brief Enable the interrupts at the machine level. */
-inline static void enable_m_irq()
+inline static void irq_enable_m()
 {
 	csr_set(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Disable the interrupts at the machine level. */
-inline static void disable_m_irq()
+inline static void irq_disable_m()
 {
 	csr_clear(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Enable the interrupts at the supervisor level. */
-inline static void enable_s_irq()
+inline static void irq_enable_s()
 {
 	csr_set(sstatus, SSTATUS_SIE);
 }
 
 /** @brief Disable the interrupts at the supervisor level. */
-inline static void disable_s_irq()
+inline static void irq_disable_s()
 {
 	csr_clear(sstatus, SSTATUS_SIE);
 }
@@ -63,7 +63,7 @@ static inline irq_flags_t irq_save()
 {
 	irq_flags_t flags = csr_read(sstatus);
 	if (flags & SSTATUS_SIE) {
-		disable_s_irq();
+		irq_disable_s();
 	}
 	return flags;
 }
@@ -77,5 +77,5 @@ inline static void irq_restore(irq_flags_t flags)
 {
 	// Interupt were enabled so we restore them
 	if (flags & SSTATUS_SIE)
-		enable_s_irq();
+		irq_enable_s();
 }

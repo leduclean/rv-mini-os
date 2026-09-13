@@ -224,7 +224,7 @@ static void _kproc_launcher()
 	//NOTE: We force this because there is no guarantee,
 	// after a kprocess spawn to have irq enable.
 	// (ctx switch does not preserve the sstatus)
-	enable_s_irq();
+	irq_enable_s();
 	process_t *p = process_active();
 	p->code();
 	scheduler_terminate(0);
