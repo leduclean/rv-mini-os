@@ -17,6 +17,15 @@ typedef struct page {
 	clist_node_t node; //< Clist node for free list.
 } page_t;
 
+static clist_node_t free_pages;
+static inline void _push_free(void *page)
+{
+	page_t *p = page;
+	clist_init_node(&p->node);
+	// LIFO
+	clist_push_front(&free_pages, &p->node);
+}
+
 /**
  * @brief Ref Counter for shared page free
  *
@@ -26,24 +35,16 @@ typedef struct page {
  */
 uint8_t page_rc[RAM_PAGE_COUNT] = { 0 };
 
-uint8_t page_get_rc(const void *page)
+uint8_t page_get_ref_count(const void *page)
 {
 	return page_rc[RAM_RELATIVE_PAGE_NUMBER(page)];
 }
 
 void page_get(const void *page)
 {
+	irq_flags_t state = irq_save();
 	page_rc[RAM_RELATIVE_PAGE_NUMBER(page)]++;
-}
-
-static clist_node_t free_pages;
-
-static inline void _push_free(void *page)
-{
-	page_t *p = page;
-	clist_init_node(&p->node);
-	// LIFO
-	clist_push_front(&free_pages, &p->node);
+	irq_restore(state);
 }
 
 void pages_init()
@@ -59,22 +60,29 @@ void pages_init()
 
 void *page_alloc()
 {
+	irq_flags_t state = irq_save();
+
 	void *addr = clist_pop_front(&free_pages);
 	if (!addr) {
-		return NULL;
+		goto err_restore_irq;
 	}
+
 	memset(addr, 0, PAGE_SIZE);
 	page_get(addr);
 
+err_restore_irq:
+	irq_restore(state);
 	return addr;
 }
 
 void page_put(void *page)
 {
-	if (page_get_rc(page) == 0) {
+	irq_flags_t state = irq_save();
+	if (page_get_ref_count(page) == 0) {
 		panic("page_put() on a page nobody holds: double free");
 	}
 	if (--page_rc[RAM_RELATIVE_PAGE_NUMBER(page)] == 0) {
 		_push_free(page);
 	}
+	irq_restore(state);
 }
