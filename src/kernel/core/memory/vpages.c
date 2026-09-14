@@ -212,6 +212,8 @@ static inline void unset_cow(pte_t *leaf)
 	return;
 }
 
+//TODO: This function could transform using the SUM bit
+// in sstatus to fast copy instead of going to the tree.
 static inline void *_get_pa_from_va(pte_t *root, void *va,
 				    unsigned long needed_flags)
 {
