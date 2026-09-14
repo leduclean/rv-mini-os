@@ -40,7 +40,7 @@ void kernel_start()
 
 	printf("[INFO] external irq enabled\n");
 
-	if (!process_spawn(write_test, "write_test", NORMAL, true)) {
+	if (!process_spawn(stream_test, "write_test", NORMAL, true)) {
 		printf("[FAILURE]: failed to spawn test");
 	}
 

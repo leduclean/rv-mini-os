@@ -58,3 +58,8 @@ ssize_t write(int fd, const char *buf, size_t count)
 {
 	return _syscall3(SYS_WRITE, fd, (unsigned long)buf, count);
 }
+
+ssize_t read(int fd, char *buf, size_t count)
+{
+	return _syscall3(SYS_READ, fd, (unsigned long)buf, count);
+}

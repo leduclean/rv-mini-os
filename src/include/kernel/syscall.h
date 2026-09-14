@@ -27,3 +27,4 @@ int8_t sys_get_pid();
 int8_t sys_fork();
 
 ssize_t sys_write(int fd, const char *buf, size_t count);
+ssize_t sys_read(int fd, char *buf, size_t count);

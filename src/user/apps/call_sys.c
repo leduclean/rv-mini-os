@@ -58,3 +58,37 @@ void write_test()
 		return exit(1);
 	}
 }
+
+void read_test()
+{
+	int8_t res;
+	char ubuf[10];
+
+	res = read(1, ubuf, 10);
+	if (res < 0) {
+		return exit(1);
+	}
+
+	res = write(1, ubuf, 10);
+	if (res < 0) {
+		return exit(1);
+	}
+}
+
+void stream_test()
+{
+	int8_t res;
+	char ubuf[1];
+
+	for (;;) {
+		res = read(1, ubuf, 1);
+		if (res < 0) {
+			return exit(1);
+		}
+
+		res = write(1, ubuf, 1);
+		if (res < 0) {
+			return exit(1);
+		}
+	}
+}
