@@ -25,7 +25,8 @@ int8_t cmd_register_builtin(const char *name, void (*fn)())
 	return 0;
 }
 
-int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior)
+int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior,
+			 bool user)
 {
 	if (!name || !fn || registry.size >= MAX_CMDS)
 		return -1;
@@ -35,6 +36,7 @@ int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior)
 	tab[size].type = CMD_PROG;
 	tab[size].cmd.prog.fn = fn;
 	tab[size].cmd.prog.prior = prior;
+	tab[size].cmd.prog.user = user;
 	registry.size++;
 	return 0;
 }
