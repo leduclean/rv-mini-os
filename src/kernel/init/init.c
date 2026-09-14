@@ -39,12 +39,11 @@ void kernel_start()
 	plic_enable_s_external();
 
 	printf("[INFO] external irq enabled\n");
-	if (!process_spawn(segfault_test, "test", NORMAL, true)) {
+
+	if (!process_spawn(write_test, "write_test", NORMAL, true)) {
 		printf("[FAILURE]: failed to spawn test");
 	}
 
-	// process_spawn(shell, "shell", NORMAL, false);
-	// printf("[INFO]: spawned shell");
 	process_idle();
 }
 

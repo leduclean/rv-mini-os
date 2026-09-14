@@ -14,3 +14,8 @@ void fork_test();
  * @brief Test the segfault handling.
  */
 void segfault_test();
+
+/**
+ * @brief Test the write syscall.
+ */
+void write_test();

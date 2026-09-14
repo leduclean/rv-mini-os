@@ -2,8 +2,10 @@
 
 enum {
 	SYS_SLEEP = 0,
-	SYS_EXIT = 1,
-	SYS_WAIT = 2,
-	SYS_GETPID = 3,
-	SYS_FORK = 4,
+	SYS_EXIT,
+	SYS_WAIT,
+	SYS_GETPID,
+	SYS_FORK,
+	SYS_READ,
+	SYS_WRITE,
 };

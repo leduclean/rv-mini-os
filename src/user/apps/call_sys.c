@@ -47,3 +47,14 @@ void segfault_test()
 		sleep(2);
 	}
 }
+
+void write_test()
+{
+	int8_t res;
+	char ubuf[23] = "[TEST] write success \n";
+
+	res = write(1, ubuf, 23);
+	if (res < 0) {
+		return exit(1);
+	}
+}
