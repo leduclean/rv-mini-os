@@ -17,7 +17,6 @@
 #include <kernel/process.h>
 #include <kernel/shell.h>
 #include <kernel/time.h>
-#include <user/apps.h>
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start()
