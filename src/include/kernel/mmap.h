@@ -5,7 +5,6 @@
  */
 
 #include <kernel/process.h>
-#pragma once
 
 #include <stddef.h>
 
