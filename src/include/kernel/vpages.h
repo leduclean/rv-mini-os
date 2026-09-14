@@ -39,7 +39,7 @@ typedef uint32_t ppn_t;
 int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags);
 
 static inline int vpage_map_user(pte_t *root, const void *va, void *pa,
-			    unsigned long flags)
+				 unsigned long flags)
 {
 	return vpage_map(root, va, pa, PTE_U | flags);
 }
@@ -57,7 +57,7 @@ static inline int vpage_map_user(pte_t *root, const void *va, void *pa,
  * @param flags Memory access flags.
  */
 int vpage_map_range(pte_t *root, void *va, void *pa, size_t size,
-	      unsigned long flags);
+		    unsigned long flags);
 
 static inline int vpage_map_user_range(pte_t *root, void *va, void *pa,
 				       size_t size, unsigned long flags)
@@ -85,3 +85,14 @@ void vpage_tree_free(pte_t *root);
 int vpage_tree_copy(pte_t *dst, pte_t *src);
 
 int vpage_handle_cow(pte_t *root, void *va);
+
+/**
+ * @brief Copy @count byte from a virtual address to a destination.
+ *
+ * @param root The root page directory of emitted va.
+ * @param dst The destination of the copy.
+ * @param va The virtual address emitted by the process.
+ * @param count The number of byte to copy.
+ * @return 0 on SUCCESS else error code <0.
+ */
+int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);

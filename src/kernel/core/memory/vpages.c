@@ -5,6 +5,7 @@
 #include "mmap.h"
 #include "pages.h"
 #include "minilib/stdint.h"
+#include "minilib/string.h"
 
 /* Sv39 indirection levels */
 #define LEVELS 3
@@ -211,6 +212,29 @@ static inline void unset_cow(pte_t *leaf)
 	return;
 }
 
+static inline void *_get_pa_from_va(pte_t *root, const void *va)
+{
+	pte_t leaf = *walk_leaf(root, va);
+	if (!leaf) {
+		return NULL;
+	}
+
+	unsigned long *page = _get_next_lvl_pte(leaf);
+	return (char *)page + ((unsigned long)va & OFFSET_MASK);
+}
+
+int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
+{
+	void *pa = _get_pa_from_va(root, va);
+	if (!pa) {
+		return -1;
+	}
+
+	memcpy(dst, pa, count);
+
+	return 0;
+}
+
 int vpage_handle_cow(pte_t *root, void *va)
 {
 	int res;
@@ -238,7 +262,7 @@ int vpage_handle_cow(pte_t *root, void *va)
 	unset_cow(leaf);
 
 	res = vpage_map(root, (void *)((unsigned long)va & ~OFFSET_MASK),
-		       new_page, get_flags(*leaf));
+			new_page, get_flags(*leaf));
 	if (res < 0) {
 		goto err_free_page;
 	}
@@ -283,7 +307,7 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 				}
 
 				res = vpage_map(dst, (void *)child_va, page,
-					       get_flags(src[i]));
+						get_flags(src[i]));
 				if (res < 0) {
 					return res;
 				}
