@@ -1,6 +1,7 @@
+#include <stdint.h>
+
 #include "process.h"
 #include "scheduler.h"
-#include <stdint.h>
 #include "trap.h"
 
 uint8_t sys_get_pid()

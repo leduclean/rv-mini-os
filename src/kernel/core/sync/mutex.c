@@ -1,11 +1,14 @@
 #include "mutex.h"
+
+#include <stdint.h>
+
 #include <clist.h>
 #include <container.h>
+#include <string.h>
+
 #include "cpu.h"
 #include "process.h"
 #include "scheduler.h"
-#include <stdint.h>
-#include <string.h>
 
 void mutex_init(mutex_t *m)
 {

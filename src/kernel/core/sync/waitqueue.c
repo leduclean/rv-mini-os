@@ -1,10 +1,13 @@
 #include "waitqueue.h"
-#include <clist.h>
-#include <container.h>
-#include "process.h"
+
 #include <stddef.h>
 #include <stdint.h>
+
+#include <clist.h>
+#include <container.h>
 #include <string.h>
+
+#include "process.h"
 
 // Helpers for the waiting queue
 void wq_init(wait_queue_t *wq)

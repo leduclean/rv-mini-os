@@ -21,8 +21,9 @@
  * memccpy()
  */
 
-#include <string.h>
 #include <stddef.h>
+
+#include <string.h>
 
 void *memccpy(void *dst, const void *src, int c, size_t n)
 {
@@ -43,6 +44,7 @@ void *memccpy(void *dst, const void *src, int c, size_t n)
  */
 
 #include <stddef.h>
+
 #include <string.h>
 
 void *memchr(const void *s, int c, size_t n)
@@ -62,6 +64,7 @@ void *memchr(const void *s, int c, size_t n)
  */
 
 #include <stddef.h>
+
 #include <string.h>
 
 void *memrchr(const void *s, int c, size_t n)
@@ -193,6 +196,7 @@ void *memset(void *dst, int c, size_t n)
  */
 
 #include <stddef.h>
+
 #include <string.h>
 
 size_t __strxspn(const char *s, const char *map, int parity)

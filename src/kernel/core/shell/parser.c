@@ -1,8 +1,11 @@
 #include "parser.h"
-#include "console.h"
+
 #include <stddef.h>
+
 #include <stdio.h>
 #include <string.h>
+
+#include "console.h"
 #include "scheduler.h"
 #include "uart.h"
 

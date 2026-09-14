@@ -1,6 +1,9 @@
 #include "cmd_registry.h"
+
 #include <stddef.h>
+
 #include <string.h>
+
 #include "process.h"
 
 #define MAX_CMDS 64

@@ -1,9 +1,11 @@
-#include "cmd_registry.h"
-#include "console.h"
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
 #include <stdio.h>
-#include <stdbool.h>
+
+#include "cmd_registry.h"
+#include "console.h"
 #include "parser.h"
 #include "process.h"
 #include "programs.h"

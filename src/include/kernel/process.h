@@ -4,11 +4,13 @@
  */
 
 #pragma once
-#include <clist.h>
-#include "trap.h"
-#include "waitqueue.h"
-#include "vpages.h"
 #include <stdbool.h>
+
+#include <clist.h>
+
+#include "trap.h"
+#include "vpages.h"
+#include "waitqueue.h"
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
@@ -46,7 +48,8 @@ typedef struct process {
 	uint64_t kstack[KSTACK_SIZE]; ///< Process stack.
 	pte_t *root_ptable; ///< Process Root Page table.
 	bool user; ///< User mode Process flag (fixed at creation).
-	tframe_t *tframe_pa; //< The User trap frame used to save the user context.
+	tframe_t *
+		tframe_pa; //< The User trap frame used to save the user context.
 	void *ustack_pa; ///< Process ustack physical page.
 
 	clist_node_t proc_node; ///< Process table node.
@@ -166,7 +169,7 @@ process_t *process_spawn(void code(), const char *name, priority prior,
  * @return Pid of the child, -1 if the spawn failed.
  */
 int8_t process_spawn_foreground(void code(), const char *name, priority prior,
-			bool user);
+				bool user);
 
 /**
  * @brief Duplicate a process state making a copy of it execution state.

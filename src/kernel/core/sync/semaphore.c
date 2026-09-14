@@ -1,10 +1,13 @@
 #include "semaphore.h"
+
+#include <stdint.h>
+
 #include <clist.h>
 #include <container.h>
+
 #include "cpu.h"
 #include "process.h"
 #include "scheduler.h"
-#include <stdint.h>
 #include "waitqueue.h"
 
 /** @brief Counting semaphore and the processes waiting on it. */

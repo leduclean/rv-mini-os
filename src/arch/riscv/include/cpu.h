@@ -5,9 +5,10 @@
 
 #pragma once
 
+#include <stdio.h>
+
 #include "csr.h"
 #include "platform.h"
-#include <stdio.h>
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
 inline static void hlt()

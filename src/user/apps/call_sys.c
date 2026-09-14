@@ -1,6 +1,7 @@
-#include "syscall.h"
-#include "apps.h"
 #include <stddef.h>
+
+#include "apps.h"
+#include "syscall.h"
 
 #define SLEEP_TIME 2
 

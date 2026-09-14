@@ -1,24 +1,30 @@
 #include "process.h"
+
 #include <clist.h>
+
 #include "kernel_config.h"
 #include "mmap.h"
-#include "syscall.h"
 #include "pages.h"
 #include "scheduler.h"
+#include "syscall.h"
 #include "time.h"
 #include "trap.h"
-#include "waitqueue.h"
 #include "vpages.h"
+#include "waitqueue.h"
 
 #if TEST_CONFIG
-#include "mocks/kernel_mocks.h"
 #include <stddef.h>
+
 #include <string.h>
+
+#include "mocks/kernel_mocks.h"
 #else
-#include "cpu.h"
 #include <stddef.h>
+
 #include <string.h>
 #include <tinyalloc.h>
+
+#include "cpu.h"
 #endif
 
 #define MAX_PROC 32
@@ -325,8 +331,8 @@ process_t *process_spawn(void code(), const char *name, priority prior,
 		p->ctx.ra = (uintptr_t)code;
 	} else {
 		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = user ? (uintptr_t)trap_enter_user_mode :
-				   (uintptr_t)_kproc_launcher;
+		p->ctx.ra = user ? (uintptr_t)trap_enter_user_mode
+				 : (uintptr_t)_kproc_launcher;
 		p->code = code;
 	}
 
@@ -352,8 +358,8 @@ process_t *process_spawn_child(process_t *parent)
 {
 	irq_flags_t state = irq_save();
 
-	process_t *child =
-		_alloc_squeletton(parent->name, parent->priority, true, parent);
+	process_t *child = _alloc_squeletton(parent->name, parent->priority,
+					     true, parent);
 	if (!child || !parent->user) {
 		goto err_restore_irq;
 	}
@@ -369,7 +375,7 @@ process_t *process_spawn_child(process_t *parent)
 		goto err_free_tree;
 	}
 	if (vpage_map(child->root_ptable, (void *)TRAPFRAME, tframe,
-		     PTE_R | PTE_W) < 0) {
+		      PTE_R | PTE_W) < 0) {
 		goto err_free_tframe;
 	}
 	child->tframe_pa = tframe;
@@ -403,7 +409,7 @@ err_restore_irq:
 }
 
 int8_t process_spawn_foreground(void code(), const char *name, priority prior,
-			bool user)
+				bool user)
 {
 	process_t *child = process_spawn(code, name, prior, user);
 	if (!child) {

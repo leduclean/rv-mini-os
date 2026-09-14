@@ -3,9 +3,10 @@
  * @brief Kernel panic: report the call site, then stop the machine.
  */
 
+#include <stdio.h>
+
 #include "cpu.h"
 #include "process.h"
-#include <stdio.h>
 
 void _panic(const char *msg, const char *file, int line)
 {

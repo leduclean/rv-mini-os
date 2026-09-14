@@ -1,12 +1,14 @@
 #include "mmap.h"
-#include "pages.h"
+
+#include <stdio.h>
+
+#include "asm_defs.h"
 #include "csr.h"
+#include "ldsym.h"
+#include "pages.h"
 #include "platform.h"
 #include "process.h"
 #include "vpages.h"
-#include "asm_defs.h"
-#include <stdio.h>
-#include "ldsym.h"
 
 static pte_t *kroot;
 
@@ -96,7 +98,8 @@ int mmap_uprocess(process_t *p)
 
 	// The whole code is identity mapped for now.
 	res = vpage_map_user_range(root, _user_start, _user_start,
-			 _user_end - _user_start, PTE_X | PTE_R | PTE_G);
+				   _user_end - _user_start,
+				   PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
 		return res;
 	}
@@ -125,8 +128,8 @@ int mmap_uprocess(process_t *p)
 	// This is not U page because we will go back to user page
 	// in S mode before the sret returns to user mode.
 	res = vpage_map_range(root, (void *)TRAMPOLINE, _trampoline_start,
-			_trampoline_end - _trampoline_start,
-			PTE_X | PTE_R | PTE_G);
+			      _trampoline_end - _trampoline_start,
+			      PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
 		goto err_free_tframe;
 	}

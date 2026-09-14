@@ -1,7 +1,10 @@
 #include "console.h"
-#include <font.h>
+
 #include <stdint.h>
+
+#include <font.h>
 #include <string.h>
+
 #include "mmio.h"
 #include "uart.h"
 
@@ -65,8 +68,8 @@ static int _config_pcie()
  */
 static int _config_screen()
 {
-	uintptr_t dispi_base =
-		BOCHS_CONFIG_BASE_ADDRESS + BOCHS_CONFIG_DISPI_ADDRESS;
+	uintptr_t dispi_base = BOCHS_CONFIG_BASE_ADDRESS +
+			       BOCHS_CONFIG_DISPI_ADDRESS;
 	// type id verification (12 MSB comparison)
 	if ((MMIO16(dispi_base) & 0xFFF0) != VBE_DISPI_ID0) {
 		return -1; // Error wrong screen device type
@@ -131,7 +134,7 @@ static int _pixel(uint32_t x, uint32_t y, uint32_t color)
  * @return 0 on success, -1 if the char is out of range.
  */
 static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
-	       uint32_t bg_color)
+		       uint32_t bg_color)
 {
 	// Pixel conversion
 	row *= 8;
@@ -149,7 +152,7 @@ static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 					return -1;
 			} else {
 				if (_pixel(col + c_off, row + row_off,
-					  bg_color) != 0)
+					   bg_color) != 0)
 					return -1;
 			}
 		}

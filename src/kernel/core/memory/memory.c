@@ -1,4 +1,5 @@
 #include "memory.h"
+
 #include "csr.h"
 
 void pmp_allow_all()

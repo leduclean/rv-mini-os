@@ -1,9 +1,12 @@
 #include "pages.h"
-#include "asm_defs.h"
-#include <clist.h>
-#include "cpu.h"
+
 #include <stddef.h>
+
+#include <clist.h>
 #include <stdio.h>
+
+#include "asm_defs.h"
+#include "cpu.h"
 
 /**
  * @typedef page

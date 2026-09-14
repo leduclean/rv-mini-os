@@ -23,7 +23,8 @@
 /** @brief Node of a clist, embedded in the owning structure. */
 typedef struct clist_node {
 	struct clist_node *next; ///< Next node, the sentinel itself if last.
-	struct clist_node *prev; ///< Previous node, the sentinel itself if first.
+	struct clist_node
+		*prev; ///< Previous node, the sentinel itself if first.
 	uint8_t in_list; ///< 1 if the node is in a clist, 0 otherwise.
 } clist_node_t;
 
