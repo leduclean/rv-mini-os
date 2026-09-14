@@ -44,8 +44,8 @@
 #define TRUE ((unsigned char)1)
 #include <stdarg.h>
 
-#include <doprnt.h>
-#include <string.h> /* strlen */
+#include <lib/doprnt.h>
+#include <lib/string.h> /* strlen */
 
 /*
  *  Common code for printf et al.

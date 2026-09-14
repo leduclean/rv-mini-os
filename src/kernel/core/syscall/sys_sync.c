@@ -6,12 +6,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <clist.h>
-#include <container.h>
+#include <lib/clist.h>
+#include <lib/container.h>
 
-#include "cpu.h"
-#include "process.h"
-#include "scheduler.h"
+#include <asm/cpu.h>
+
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
 
 int8_t sys_wait()
 {

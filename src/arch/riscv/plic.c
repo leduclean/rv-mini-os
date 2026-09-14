@@ -1,8 +1,9 @@
-#include "csr.h"
-#include "mmio.h"
-#include "platform.h"
-#include "time.h"
-#include "uart.h"
+#include <asm/csr.h>
+#include <asm/mmio.h>
+#include <asm/platform.h>
+#include <asm/uart.h>
+
+#include <kernel/time.h>
 
 void plic_enable_s_external()
 {

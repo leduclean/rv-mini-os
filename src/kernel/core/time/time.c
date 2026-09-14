@@ -1,11 +1,11 @@
-#include "time.h"
+#include <lib/stdio.h>
 
-#include <stdio.h>
+#include <asm/console.h>
+#include <asm/csr.h>
+#include <asm/platform.h>
 
-#include "console.h"
-#include "csr.h"
-#include "platform.h"
-#include "scheduler.h"
+#include <kernel/scheduler.h>
+#include <kernel/time.h>
 
 /** @brief Irq frequency, for a 1/20 s period. */
 #define ITFREQ 20

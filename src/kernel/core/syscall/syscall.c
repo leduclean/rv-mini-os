@@ -1,10 +1,9 @@
-#include "syscall.h"
+#include <lib/stdio.h>
 
-#include <stdio.h>
-
-#include "process.h"
-#include "scheduler.h"
-#include "syscall_id.h"
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/syscall.h>
+#include <user/syscall_id.h>
 
 //TODO: Use a syscall table instead of a large switch case.
 long syscall_dispatch(long n, long a, long b, long c)

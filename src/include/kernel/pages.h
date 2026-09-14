@@ -6,9 +6,9 @@
 #pragma once
 #include <stdint.h>
 
-#include <string.h>
+#include <lib/string.h>
 
-#include "asm_defs.h"
+#include <asm/asm_defs.h>
 
 // Defined in the linker script (address only, never read the value)
 extern char _heap_start[], _heap_end[];

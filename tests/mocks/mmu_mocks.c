@@ -1,5 +1,5 @@
 #include "mmu_mocks.h"
-#include "vpages.h"
+#include <kernel/vpages.h>
 #include "kernel_mocks.h"
 
 static inline unsigned long _get_pte_ppn(pte_t pte)

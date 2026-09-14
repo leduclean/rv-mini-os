@@ -1,4 +1,4 @@
-#include  "asm_defs.h"
+#include <asm/asm_defs.h>
 
 /*
  * Trap entry from user mode.

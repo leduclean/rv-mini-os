@@ -1,13 +1,13 @@
-#include "parser.h"
-
 #include <stddef.h>
 
-#include <stdio.h>
-#include <string.h>
+#include <lib/stdio.h>
+#include <lib/string.h>
 
-#include "console.h"
-#include "scheduler.h"
-#include "uart.h"
+#include <asm/console.h>
+#include <asm/uart.h>
+
+#include <kernel/parser.h>
+#include <kernel/scheduler.h>
 
 /**
  * @brief Buffer flush.

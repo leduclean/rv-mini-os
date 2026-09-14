@@ -3,7 +3,7 @@
  * @brief Unit testing for the clist using Unity Fixture.
  */
 
-#include "clist.h"
+#include <lib/clist.h>
 #include "unity/unity_fixture.h"
 #include <stdint.h>
 #include <stdlib.h>

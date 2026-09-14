@@ -1,10 +1,9 @@
-#include "cmd_registry.h"
-
 #include <stddef.h>
 
-#include <string.h>
+#include <lib/string.h>
 
-#include "process.h"
+#include <kernel/cmd_registry.h>
+#include <kernel/process.h>
 
 #define MAX_CMDS 64
 /** @brief Fixed size table of the registered commands. */

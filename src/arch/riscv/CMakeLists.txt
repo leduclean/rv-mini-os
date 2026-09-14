@@ -16,10 +16,8 @@ add_library(arch_riscv OBJECT
 )
 
 target_include_directories(arch_riscv PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/include  # RISCV headers
-    ${CMAKE_SOURCE_DIR}/include/lib
-    ${CMAKE_SOURCE_DIR}/include/kernel
-    ${CMAKE_SOURCE_DIR}/include/user
+    ${CMAKE_CURRENT_SOURCE_DIR}/include  # <asm/...>
+    ${CMAKE_SOURCE_DIR}/include
 )
 
 set_target_properties(arch_riscv PROPERTIES

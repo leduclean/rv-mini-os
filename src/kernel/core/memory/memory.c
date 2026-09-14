@@ -1,6 +1,6 @@
-#include "memory.h"
+#include <asm/csr.h>
 
-#include "csr.h"
+#include <kernel/memory.h>
 
 void pmp_allow_all()
 {

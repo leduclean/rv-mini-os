@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "process.h"
+#include <kernel/process.h>
 
 /**
  * @brief Rotate the highest priority ready queue and switch to its head.

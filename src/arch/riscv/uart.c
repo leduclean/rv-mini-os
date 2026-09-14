@@ -1,13 +1,13 @@
-#include "uart.h"
-
 #include <stdint.h>
 
-#include <stdio.h>
+#include <lib/stdio.h>
 
-#include "mmio.h"
-#include "platform.h"
-#include "scheduler.h"
-#include "waitqueue.h"
+#include <asm/mmio.h>
+#include <asm/platform.h>
+#include <asm/uart.h>
+
+#include <kernel/scheduler.h>
+#include <kernel/waitqueue.h>
 
 #define UART_RX_BUFFER_SIZE 128
 

@@ -46,7 +46,7 @@
 
 #include <stdarg.h>
 
-#include <doprnt.h>
+#include <lib/doprnt.h>
 
 /*
  * This is the function called by printf to send its output to the screen. You

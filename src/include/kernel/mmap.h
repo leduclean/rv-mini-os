@@ -4,7 +4,7 @@
  * @brief This file give the interface for the sv39 virtual paging.
  */
 
-#include "process.h"
+#include <kernel/process.h>
 #pragma once
 
 #include <stddef.h>

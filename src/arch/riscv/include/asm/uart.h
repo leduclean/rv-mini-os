@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "waitqueue.h"
+#include <kernel/waitqueue.h>
 
 /**
  * @brief Init the uart to send and receive chars.

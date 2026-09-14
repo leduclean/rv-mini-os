@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <types.h>
+#include <lib/types.h>
 
 /**
  * @brief Dispatch the call to the correct kernel routine.

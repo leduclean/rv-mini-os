@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <types.h>
+#include <lib/types.h>
 
 /**
  * @brief Sleep syscall used to make a process sleep.
