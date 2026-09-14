@@ -55,3 +55,14 @@ int8_t fork();
  * @return The number of byte written on success, -1 on error.
  */
 ssize_t write(int fd, const char *buf, size_t count);
+
+/**
+ * @brief Read up to count @count bytes from the buffer at @buf 
+ * to the file referred by @fd.
+ *
+ * @param fd The file descriptor idx.
+ * @param buf The buffer to read into.
+ * @param count The max number of bytes to read.
+ * @return The number of byte readed on success, -1 on error.
+ */
+ssize_t read(int fd, char *buf, size_t count);

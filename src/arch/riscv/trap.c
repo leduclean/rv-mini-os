@@ -149,7 +149,6 @@ unsigned long usertrap()
 	} else {
 		switch (scause) {
 		case ECALL_UMODE:
-			printf("[Kernel/INFO]: Trap call from U mode \n");
 			t->sepc += 4;
 			t->a[0] = syscall_dispatch(t->a[7], t->a[0], t->a[1],
 						   t->a[2]);

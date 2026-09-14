@@ -139,6 +139,7 @@ static void _uart_fill_rx_buff()
 	}
 }
 
+//TODO: Maybe it should take a size_t arg to specify how much we want to read
 int uart_read(char *c)
 {
 	if (!_buffer_empty(&rx_buffer)) {

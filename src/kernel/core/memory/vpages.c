@@ -235,6 +235,18 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 	return 0;
 }
 
+int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
+{
+	void *pa = _get_pa_from_va(root, va);
+	if (!pa) {
+		return -1;
+	}
+
+	memcpy(pa, src, count);
+
+	return 0;
+}
+
 int vpage_handle_cow(pte_t *root, void *va)
 {
 	int res;

@@ -96,3 +96,14 @@ int vpage_handle_cow(pte_t *root, void *va);
  * @return 0 on SUCCESS else error code <0.
  */
 int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
+
+/**
+ * @brief Copy @count byte from a physical address to a virtual address.
+ *
+ * @param root The root page directory of emitted va.
+ * @param va The virtual address emitted by the process to copy on.
+ * @param src The src buf to copy from.
+ * @param count The number of byte to copy.
+ * @return 0 on SUCCESS else error code <0.
+ */
+int vpage_copyout(pte_t *root, void *va, const void *src, size_t count);
