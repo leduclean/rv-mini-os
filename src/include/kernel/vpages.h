@@ -95,7 +95,7 @@ int vpage_handle_cow(pte_t *root, void *va);
  * @param count The number of byte to copy.
  * @return 0 on SUCCESS else error code <0.
  */
-int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
+int vpage_copyin(pte_t *root, void *dst, void *va, size_t count);
 
 /**
  * @brief Copy @count byte from a physical address to a virtual address.
