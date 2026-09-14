@@ -6,8 +6,9 @@
 #pragma once
 #include <stdint.h>
 
-#include "asm_defs.h"
-#include "ldsym.h"
+#include <asm/asm_defs.h>
+
+#include <kernel/ldsym.h>
 
 // Forward declaration
 typedef struct process process_t;

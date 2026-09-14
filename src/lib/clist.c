@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include <clist.h>
+#include <lib/clist.h>
 
 void clist_init_node(clist_node_t *node)
 {

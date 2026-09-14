@@ -6,11 +6,12 @@
 #pragma once
 #include <stdbool.h>
 
-#include <clist.h>
+#include <lib/clist.h>
 
-#include "trap.h"
-#include "vpages.h"
-#include "waitqueue.h"
+#include <asm/trap.h>
+
+#include <kernel/vpages.h>
+#include <kernel/waitqueue.h>
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.

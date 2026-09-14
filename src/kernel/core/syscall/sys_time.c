@@ -1,4 +1,4 @@
-#include "scheduler.h"
+#include <kernel/scheduler.h>
 
 void sys_sleep(uint32_t s)
 {

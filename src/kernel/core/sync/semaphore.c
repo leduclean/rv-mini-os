@@ -1,14 +1,14 @@
-#include "semaphore.h"
-
 #include <stdint.h>
 
-#include <clist.h>
-#include <container.h>
+#include <lib/clist.h>
+#include <lib/container.h>
 
-#include "cpu.h"
-#include "process.h"
-#include "scheduler.h"
-#include "waitqueue.h"
+#include <asm/cpu.h>
+
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/semaphore.h>
+#include <kernel/waitqueue.h>
 
 /** @brief Counting semaphore and the processes waiting on it. */
 struct semaphore {

@@ -1,4 +1,4 @@
-#include <tinyalloc.h>
+#include <lib/tinyalloc.h>
 
 #ifdef TA_DEBUG
 extern void print_s(char *);

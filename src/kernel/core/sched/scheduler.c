@@ -1,16 +1,16 @@
-#include "scheduler.h"
-
 #include <stddef.h>
 
-#include <clist.h>
-#include <container.h>
-#include <stdio.h>
+#include <lib/clist.h>
+#include <lib/container.h>
+#include <lib/stdio.h>
 
-#include "cpu.h"
-#include "mmap.h"
-#include "process.h"
-#include "time.h"
-#include "waitqueue.h"
+#include <asm/cpu.h>
+
+#include <kernel/mmap.h>
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/time.h>
+#include <kernel/waitqueue.h>
 
 extern void ctx_sw(ctx_t *old_ctx, ctx_t *new_ctx);
 

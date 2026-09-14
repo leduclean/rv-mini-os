@@ -4,9 +4,9 @@
  */
 
 #pragma once
-#include <clist.h>
+#include <lib/clist.h>
 
-#include "kernel_config.h"
+#include <kernel/kernel_config.h>
 
 #if TEST_CONFIG
 #include <stdint.h>

@@ -1,9 +1,9 @@
 #pragma once
 #ifdef UNIT_TEST
 
-#include "clist.h"
-#include "process.h"
-#include "waitqueue.h"
+#include <lib/clist.h>
+#include <kernel/process.h>
+#include <kernel/waitqueue.h>
 
 // Mocked functions
 typedef unsigned long irq_flags_t;

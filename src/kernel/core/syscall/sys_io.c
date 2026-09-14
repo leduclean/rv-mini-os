@@ -1,14 +1,15 @@
 #include <stddef.h>
 
-#include <types.h>
+#include <lib/types.h>
 
-#include "console.h"
-#include "cpu.h"
-#include "process.h"
-#include "scheduler.h"
-#include "syscall.h"
-#include "uart.h"
-#include "vpages.h"
+#include <asm/console.h>
+#include <asm/cpu.h>
+#include <asm/uart.h>
+
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/syscall.h>
+#include <kernel/vpages.h>
 
 #define CONSOLE_FD 1 /* Console file descriptor number */
 

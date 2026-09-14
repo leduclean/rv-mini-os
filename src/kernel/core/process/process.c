@@ -1,30 +1,30 @@
-#include "process.h"
+#include <lib/clist.h>
 
-#include <clist.h>
+#include <asm/trap.h>
 
-#include "kernel_config.h"
-#include "mmap.h"
-#include "pages.h"
-#include "scheduler.h"
-#include "syscall.h"
-#include "time.h"
-#include "trap.h"
-#include "vpages.h"
-#include "waitqueue.h"
+#include <kernel/kernel_config.h>
+#include <kernel/mmap.h>
+#include <kernel/pages.h>
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/syscall.h>
+#include <kernel/time.h>
+#include <kernel/vpages.h>
+#include <kernel/waitqueue.h>
 
 #if TEST_CONFIG
 #include <stddef.h>
 
-#include <string.h>
+#include <lib/string.h>
 
 #include "mocks/kernel_mocks.h"
 #else
 #include <stddef.h>
 
-#include <string.h>
-#include <tinyalloc.h>
+#include <lib/string.h>
+#include <lib/tinyalloc.h>
 
-#include "cpu.h"
+#include <asm/cpu.h>
 #endif
 
 #define MAX_PROC 32

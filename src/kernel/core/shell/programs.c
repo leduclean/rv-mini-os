@@ -1,18 +1,17 @@
-#include "programs.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 
-#include <clist.h>
-#include <container.h>
-#include <stdio.h>
+#include <lib/clist.h>
+#include <lib/container.h>
+#include <lib/stdio.h>
 
-#include "apps.h"
-#include "cmd_registry.h"
-#include "mutex.h"
-#include "process.h"
-#include "scheduler.h"
-#include "time.h"
+#include <kernel/cmd_registry.h>
+#include <kernel/mutex.h>
+#include <kernel/process.h>
+#include <kernel/programs.h>
+#include <kernel/scheduler.h>
+#include <kernel/time.h>
+#include <user/apps.h>
 
 #define MAX_CMDS 64
 

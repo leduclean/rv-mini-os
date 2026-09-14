@@ -1,14 +1,14 @@
-#include "vpages.h"
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include <string.h>
+#include <lib/string.h>
 
-#include "asm_defs.h"
-#include "mmap.h"
-#include "pages.h"
+#include <asm/asm_defs.h>
+
+#include <kernel/mmap.h>
+#include <kernel/pages.h>
+#include <kernel/vpages.h>
 
 /* Sv39 indirection levels */
 #define LEVELS 3

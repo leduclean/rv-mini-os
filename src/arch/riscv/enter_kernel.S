@@ -1,4 +1,4 @@
-#include  "platform.h"
+#include <asm/platform.h>
 .text
 .globl enter_kernel, delegate_traps
 

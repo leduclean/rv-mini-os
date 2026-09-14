@@ -1,21 +1,21 @@
-#include "trap.h"
-
 #include <stddef.h>
 
-#include <stdio.h>
+#include <lib/stdio.h>
 
-#include "asm_defs.h"
-#include "cpu.h"
-#include "csr.h"
-#include "mmap.h"
-#include "platform.h"
-#include "plic.h"
-#include "process.h"
-#include "scheduler.h"
-#include "syscall.h"
-#include "time.h"
-#include "user_entry.h"
-#include "vpages.h"
+#include <asm/asm_defs.h>
+#include <asm/cpu.h>
+#include <asm/csr.h>
+#include <asm/platform.h>
+#include <asm/plic.h>
+#include <asm/trap.h>
+
+#include <kernel/mmap.h>
+#include <kernel/process.h>
+#include <kernel/scheduler.h>
+#include <kernel/syscall.h>
+#include <kernel/time.h>
+#include <kernel/vpages.h>
+#include <user/user_entry.h>
 
 static inline unsigned long _get_user_sstatus()
 {

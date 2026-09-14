@@ -5,7 +5,7 @@
 
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
-#include "platform.h"
+#include <asm/platform.h>
 
 #define MAX_COLS (DISPLAY_WIDTH / 8) ///< Screen width, in chars.
 #define MAX_ROWS (DISPLAY_HEIGHT / 8) ///< Screen height, in chars.

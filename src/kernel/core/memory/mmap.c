@@ -1,14 +1,14 @@
-#include "mmap.h"
+#include <lib/stdio.h>
 
-#include <stdio.h>
+#include <asm/asm_defs.h>
+#include <asm/csr.h>
+#include <asm/platform.h>
 
-#include "asm_defs.h"
-#include "csr.h"
-#include "ldsym.h"
-#include "pages.h"
-#include "platform.h"
-#include "process.h"
-#include "vpages.h"
+#include <kernel/ldsym.h>
+#include <kernel/mmap.h>
+#include <kernel/pages.h>
+#include <kernel/process.h>
+#include <kernel/vpages.h>
 
 static pte_t *kroot;
 

@@ -25,10 +25,14 @@ IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: '^<(stdint|stddef|stdbool|stdarg|limits|float|iso646|stdalign|stdnoreturn|stdatomic)\.h>$'
     Priority: 1
-  - Regex: '^<'
+  - Regex: '^<lib/'
     Priority: 2
-  - Regex: '^"'
+  - Regex: '^<asm/'
     Priority: 3
+  - Regex: '^<'
+    Priority: 4
+  - Regex: '^"'
+    Priority: 5
 ReflowComments: false
 BreakStringLiterals: false
 PenaltyBreakAssignment: 100

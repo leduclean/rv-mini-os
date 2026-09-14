@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "process.h"
+#include <kernel/process.h>
 
 /** @brief Kind of a registered command. */
 typedef enum { CMD_BUILTIN, CMD_PROG } exec_type;

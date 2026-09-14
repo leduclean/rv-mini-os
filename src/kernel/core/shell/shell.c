@@ -2,13 +2,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <stdio.h>
+#include <lib/stdio.h>
 
-#include "cmd_registry.h"
-#include "console.h"
-#include "parser.h"
-#include "process.h"
-#include "programs.h"
+#include <asm/console.h>
+
+#include <kernel/cmd_registry.h>
+#include <kernel/parser.h>
+#include <kernel/process.h>
+#include <kernel/programs.h>
 
 /** @brief Builtin shell command listing all the launchable programs. */
 static void _builtin_help()

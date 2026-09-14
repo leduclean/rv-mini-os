@@ -28,8 +28,8 @@ add_executable(tests
 )
 
 target_include_directories(tests PRIVATE
-    ${OS_ROOT}/include/lib
-    ${OS_ROOT}/include/kernel
+    ${OS_ROOT}/include
+    ${OS_ROOT}/arch/riscv/include
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
