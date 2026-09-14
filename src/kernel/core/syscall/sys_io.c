@@ -13,18 +13,19 @@
 #include <kernel/vpages.h>
 
 #define CONSOLE_FD 1 /* Console file descriptor number */
+#define SYS_BUFFER_SIZE (1 << 10)
 
-ssize_t sys_write(int fd, const char *ubuf, size_t count)
+ssize_t sys_write(int fd, char *ubuf, size_t count)
 {
 	if (fd != CONSOLE_FD) {
 		panic("We do not handle other file descriptor than the screen for now");
 	}
 
-	if (count > MAX_COLS) {
+	if (count > SYS_BUFFER_SIZE) {
 		return -1;
 	}
 
-	char kbuf[count];
+	char kbuf[SYS_BUFFER_SIZE];
 	pte_t *root = process_active()->root_ptable;
 
 	// The ubuf is something pointing to a virtual address of the process.
@@ -45,11 +46,11 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 		panic("We do not handle other file descriptor than the screen for now");
 	}
 
-	if (count > MAX_COLS) {
+	if (count > SYS_BUFFER_SIZE) {
 		return -1;
 	}
 
-	char kbuf[count];
+	char kbuf[SYS_BUFFER_SIZE];
 	pte_t *root = process_active()->root_ptable;
 	ssize_t readed = 0;
 
@@ -57,6 +58,7 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 		while (uart_read(&kbuf[i]) == -1) {
 			scheduler_block_on(uart_get_wait_queue());
 		}
+		readed++;
 	}
 
 	// The ubuf is something pointing to a virtual address of the process.

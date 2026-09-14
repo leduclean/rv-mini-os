@@ -35,7 +35,7 @@ long syscall_dispatch(long n, long a, long b, long c)
 	case SYS_FORK:
 		return sys_fork();
 	case SYS_WRITE:
-		return sys_write(a, (const char *)b, c);
+		return sys_write(a, (char *)b, c);
 	case SYS_READ:
 		return sys_read(a, (char *)b, c);
 	default:
