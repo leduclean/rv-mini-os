@@ -2,7 +2,7 @@ OUTPUT_ARCH( "riscv" )
 
 MEMORY
 {
-    ram (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 128M
+    ram (wxa) : ORIGIN = 0x80000000, LENGTH = 128M
 }
 
 SECTIONS {

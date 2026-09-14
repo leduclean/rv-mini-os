@@ -20,7 +20,7 @@ set_target_properties(kernel.bin PROPERTIES
 
 target_link_options(kernel.bin PRIVATE
     -T${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.lds
-    -nostdlib -static -lgcc
+    -nostdlib -static
     -Wl,--nmagic
     -Wl,--gc-sections
     -e entry -g

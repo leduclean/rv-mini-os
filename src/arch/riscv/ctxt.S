@@ -1,4 +1,4 @@
-  .section .text,
+  .section .text,"ax",@progbits
   .globl ctx_sw
 
 

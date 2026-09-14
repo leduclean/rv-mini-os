@@ -1,7 +1,7 @@
     .equ STACK_SIZE,   4096
 
     .section .text.init,"ax",@progbits
-    .globl entry,init_vga,console_putbytes,__console_putbytes__
+    .globl entry,init_vga
 
 entry:
     # Mise en place d'un pointeur de pile pour pouvoir appeler
