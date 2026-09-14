@@ -33,5 +33,6 @@ typedef __SIZE_TYPE__ size_t;
 #endif
 
 typedef __PTRDIFF_TYPE__ ptrdiff_t;
+typedef __PTRDIFF_TYPE__ ssize_t;
 
 #endif /* __PTRDIFF_TYPE__ */
