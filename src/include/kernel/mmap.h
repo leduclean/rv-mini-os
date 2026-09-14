@@ -4,9 +4,9 @@
  * @brief This file give the interface for the sv39 virtual paging.
  */
 
-#include <kernel/process.h>
-
 #include <stddef.h>
+
+#include <kernel/process.h>
 
 extern char _trampoline_start[], _trampoline_end[];
 

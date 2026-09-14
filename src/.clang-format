@@ -29,10 +29,12 @@ IncludeCategories:
     Priority: 2
   - Regex: '^<asm/'
     Priority: 3
-  - Regex: '^<'
+  - Regex: '^<drivers/'
     Priority: 4
-  - Regex: '^"'
+  - Regex: '^<'
     Priority: 5
+  - Regex: '^"'
+    Priority: 6
 ReflowComments: false
 BreakStringLiterals: false
 PenaltyBreakAssignment: 100

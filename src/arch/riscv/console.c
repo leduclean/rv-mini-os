@@ -3,9 +3,10 @@
 #include <lib/font.h>
 #include <lib/string.h>
 
-#include <asm/console.h>
 #include <asm/mmio.h>
-#include <asm/uart.h>
+
+#include <drivers/console.h>
+#include <drivers/uart.h>
 
 #define DISPI16(base_addr, reg_idx) MMIO16(base_addr + (reg_idx << 1))
 /** @brief Device command bits: memory io, memory access, screen reach. */

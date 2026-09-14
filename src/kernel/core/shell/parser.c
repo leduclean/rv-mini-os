@@ -3,8 +3,8 @@
 #include <lib/stdio.h>
 #include <lib/string.h>
 
-#include <asm/console.h>
-#include <asm/uart.h>
+#include <drivers/console.h>
+#include <drivers/uart.h>
 
 #include <kernel/parser.h>
 #include <kernel/scheduler.h>

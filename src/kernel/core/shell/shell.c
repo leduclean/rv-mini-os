@@ -4,7 +4,7 @@
 
 #include <lib/stdio.h>
 
-#include <asm/console.h>
+#include <drivers/console.h>
 
 #include <kernel/cmd_registry.h>
 #include <kernel/parser.h>

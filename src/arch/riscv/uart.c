@@ -4,7 +4,8 @@
 
 #include <asm/mmio.h>
 #include <asm/platform.h>
-#include <asm/uart.h>
+
+#include <drivers/uart.h>
 
 #include <kernel/scheduler.h>
 #include <kernel/waitqueue.h>

@@ -4,11 +4,12 @@
 #include <lib/stdio.h>
 #include <lib/tinyalloc.h>
 
-#include <asm/console.h>
 #include <asm/cpu.h>
-#include <asm/plic.h>
 #include <asm/trap.h>
-#include <asm/uart.h>
+
+#include <drivers/console.h>
+#include <drivers/plic.h>
+#include <drivers/uart.h>
 
 #include <kernel/memory.h>
 #include <kernel/mmap.h>

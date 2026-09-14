@@ -1,7 +1,8 @@
 #include <asm/csr.h>
 #include <asm/mmio.h>
 #include <asm/platform.h>
-#include <asm/uart.h>
+
+#include <drivers/uart.h>
 
 #include <kernel/time.h>
 

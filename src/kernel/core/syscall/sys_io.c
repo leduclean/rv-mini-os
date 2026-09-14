@@ -2,9 +2,10 @@
 
 #include <lib/types.h>
 
-#include <asm/console.h>
 #include <asm/cpu.h>
-#include <asm/uart.h>
+
+#include <drivers/console.h>
+#include <drivers/uart.h>
 
 #include <kernel/process.h>
 #include <kernel/scheduler.h>

@@ -1,8 +1,9 @@
 #include <lib/stdio.h>
 
-#include <asm/console.h>
 #include <asm/csr.h>
 #include <asm/platform.h>
+
+#include <drivers/console.h>
 
 #include <kernel/scheduler.h>
 #include <kernel/time.h>

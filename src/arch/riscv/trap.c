@@ -6,8 +6,9 @@
 #include <asm/cpu.h>
 #include <asm/csr.h>
 #include <asm/platform.h>
-#include <asm/plic.h>
 #include <asm/trap.h>
+
+#include <drivers/plic.h>
 
 #include <kernel/mmap.h>
 #include <kernel/process.h>
