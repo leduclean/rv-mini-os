@@ -4,15 +4,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+
 #include <lib/clist.h>
-
-#include <kernel/kernel_config.h>
-
-#if TEST_CONFIG
-#include <stdint.h>
-#else
-#include <stdint.h>
-#endif
 
 /** @brief Forward declaration of the process control block. */
 typedef struct process process_t;

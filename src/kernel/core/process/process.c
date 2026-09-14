@@ -1,8 +1,12 @@
-#include <lib/clist.h>
+#include <stddef.h>
 
+#include <lib/clist.h>
+#include <lib/string.h>
+#include <lib/tinyalloc.h>
+
+#include <asm/cpu.h>
 #include <asm/trap.h>
 
-#include <kernel/kernel_config.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/process.h>
@@ -11,21 +15,6 @@
 #include <kernel/time.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
-
-#if TEST_CONFIG
-#include <stddef.h>
-
-#include <lib/string.h>
-
-#include "mocks/kernel_mocks.h"
-#else
-#include <stddef.h>
-
-#include <lib/string.h>
-#include <lib/tinyalloc.h>
-
-#include <asm/cpu.h>
-#endif
 
 #define MAX_PROC 32
 
