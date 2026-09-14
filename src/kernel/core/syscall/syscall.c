@@ -33,6 +33,8 @@ long syscall_dispatch(long n, long a, long b, long c)
 		return sys_get_pid();
 	case SYS_FORK:
 		return sys_fork();
+	case SYS_WRITE:
+		return sys_write(a, (char *)b, c);
 	default:
 		return -1;
 	}

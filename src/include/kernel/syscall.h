@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include "minilib/types.h"
 #include "minilib/stdint.h"
 
 /**
@@ -24,3 +25,5 @@ int8_t sys_wait_pid(int8_t pid);
 void sys_exit(int8_t exit_code);
 int8_t sys_get_pid();
 int8_t sys_fork();
+
+ssize_t sys_write(int fd, const char *buf, size_t count);

@@ -1,5 +1,6 @@
 #pragma once
 #include "minilib/stdint.h"
+#include "minilib/types.h"
 
 /**
  * @brief Sleep syscall used to make a process sleep.
@@ -43,3 +44,14 @@ int8_t wait_pid(int8_t pid);
  * in the child flow.
  */
 int8_t fork();
+
+/**
+ * @brief Writes up to count @count bytes from the buffer at @buf 
+ * to the file referred by @fd.
+ *
+ * @param fd The file descriptor idx.
+ * @param buf The buffer to write from.
+ * @param count The number of bytes to write.
+ * @return The number of byte written on success, -1 on error.
+ */
+ssize_t write(int fd, const char *buf, size_t count);

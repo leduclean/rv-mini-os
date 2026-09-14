@@ -19,6 +19,11 @@ static inline long _syscall2(unsigned long n, unsigned long a, unsigned long b)
 {
 	return usyscall(n, a, b, 0, 0, 0, 0);
 }
+static inline long _syscall3(unsigned long n, unsigned long a, unsigned long b,
+			     unsigned long c)
+{
+	return usyscall(n, a, b, c, 0, 0, 0);
+}
 
 void sleep(uint32_t sec)
 {
@@ -47,4 +52,9 @@ uint8_t getpid()
 int8_t fork()
 {
 	return _syscall0(SYS_FORK);
+}
+
+ssize_t write(int fd, const char *buf, size_t count)
+{
+	return _syscall3(SYS_WRITE, fd, (unsigned long)buf, count);
 }
