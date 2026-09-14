@@ -18,10 +18,6 @@ static inline long _syscall1(long n, long a)
 	return usyscall(n, a, 0, 0, 0, 0, 0);
 }
 
-static inline long _syscall2(unsigned long n, unsigned long a, unsigned long b)
-{
-	return usyscall(n, a, b, 0, 0, 0, 0);
-}
 static inline long _syscall3(unsigned long n, unsigned long a, unsigned long b,
 			     unsigned long c)
 {
