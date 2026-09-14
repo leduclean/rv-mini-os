@@ -1,7 +1,9 @@
 #include "time.h"
+
+#include <stdio.h>
+
 #include "console.h"
 #include "csr.h"
-#include <stdio.h>
 #include "platform.h"
 #include "scheduler.h"
 

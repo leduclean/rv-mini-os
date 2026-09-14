@@ -1,9 +1,12 @@
 #include "scheduler.h"
+
+#include <stddef.h>
+
 #include <clist.h>
 #include <container.h>
-#include "cpu.h"
-#include <stddef.h>
 #include <stdio.h>
+
+#include "cpu.h"
 #include "mmap.h"
 #include "process.h"
 #include "time.h"

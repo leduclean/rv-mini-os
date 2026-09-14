@@ -42,8 +42,9 @@
 
 #define FALSE ((unsigned char)0)
 #define TRUE ((unsigned char)1)
-#include <doprnt.h>
 #include <stdarg.h>
+
+#include <doprnt.h>
 #include <string.h> /* strlen */
 
 /*
@@ -498,7 +499,7 @@ char *putc_arg; /* argument for putc */
 			base = radix;
 			goto print_unsigned;
 
-print_signed:
+		print_signed:
 			n = va_arg(args, long);
 			if (n >= 0) {
 				u = n;
@@ -509,76 +510,77 @@ print_signed:
 			}
 			goto print_num;
 
-print_unsigned:
+		print_unsigned:
 			u = va_arg(args, unsigned long);
 			goto print_num;
 
-print_num: {
-	char buf[MAXBUF]; /* build number here */
-	register char *p = &buf[MAXBUF - 1];
-	static char digits[] = "0123456789abcdef";
-	char *prefix = 0;
+		print_num: {
+			char buf[MAXBUF]; /* build number here */
+			register char *p = &buf[MAXBUF - 1];
+			static char digits[] = "0123456789abcdef";
+			char *prefix = 0;
 
-	if (truncate)
-		u = (long)((int)(u));
+			if (truncate)
+				u = (long)((int)(u));
 
-	if (u != 0 && altfmt) {
-		if (base == 8)
-			prefix = "0";
-		else if (base == 16)
-			prefix = "0x";
-	}
+			if (u != 0 && altfmt) {
+				if (base == 8)
+					prefix = "0";
+				else if (base == 16)
+					prefix = "0x";
+			}
 
-	do {
-		*p-- = digits[u % base];
-		u /= base;
-		prec--;
-	} while (u != 0);
+			do {
+				*p-- = digits[u % base];
+				u /= base;
+				prec--;
+			} while (u != 0);
 
-	length -= (&buf[MAXBUF - 1] - p);
-	if (sign_char)
-		length--;
-	if (prefix)
-		length -= strlen(prefix);
+			length -= (&buf[MAXBUF - 1] - p);
+			if (sign_char)
+				length--;
+			if (prefix)
+				length -= strlen(prefix);
 
-	if (prec > 0)
-		length -= prec;
-	if (padc == ' ' && !ladjust) {
-		/* blank padding goes before prefix */
-		while (--length >= 0)
-			(*putc)(putc_arg, ' ');
-	}
-	if (sign_char)
-		(*putc)(putc_arg, sign_char);
-	if (prefix)
-		while (*prefix)
-			(*putc)(putc_arg, *prefix++);
+			if (prec > 0)
+				length -= prec;
+			if (padc == ' ' && !ladjust) {
+				/* blank padding goes before prefix */
+				while (--length >= 0)
+					(*putc)(putc_arg, ' ');
+			}
+			if (sign_char)
+				(*putc)(putc_arg, sign_char);
+			if (prefix)
+				while (*prefix)
+					(*putc)(putc_arg, *prefix++);
 
-	while (--prec >= 0)
-		(*putc)(putc_arg, '0');
+			while (--prec >= 0)
+				(*putc)(putc_arg, '0');
 
-	if (padc == '0') {
-		/* zero padding goes after sign and prefix */
-		while (--length >= 0)
-			(*putc)(putc_arg, '0');
-	}
-	while (++p != &buf[MAXBUF])
-		(*putc)(putc_arg, *p);
+			if (padc == '0') {
+				/* zero padding goes after sign and prefix */
+				while (--length >= 0)
+					(*putc)(putc_arg, '0');
+			}
+			while (++p != &buf[MAXBUF])
+				(*putc)(putc_arg, *p);
 
 #ifdef DOPRNT_FLOATS
-	if (ladjust) {
-		while (--length >= 0)
-			(*putc)(putc_arg, float_hack ? '0' : ' ');
-	}
-	float_hack = 0;
+			if (ladjust) {
+				while (--length >= 0)
+					(*putc)(putc_arg,
+						float_hack ? '0' : ' ');
+			}
+			float_hack = 0;
 #else
-	if (ladjust) {
-		while (--length >= 0)
-			(*putc)(putc_arg, ' ');
-	}
+			if (ladjust) {
+				while (--length >= 0)
+					(*putc)(putc_arg, ' ');
+			}
 #endif
-	break;
-}
+			break;
+		}
 
 		case '\0':
 			fmt--;

@@ -5,8 +5,9 @@
 
 #pragma once
 #include <stddef.h>
-#include <types.h>
 #include <stdint.h>
+
+#include <types.h>
 
 /**
  * @brief Dispatch the call to the correct kernel routine.

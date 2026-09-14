@@ -1,10 +1,12 @@
+#include <stddef.h>
+
+#include <types.h>
+
 #include "console.h"
 #include "cpu.h"
 #include "process.h"
 #include "scheduler.h"
 #include "syscall.h"
-#include <stddef.h>
-#include <types.h>
 #include "uart.h"
 #include "vpages.h"
 

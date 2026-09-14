@@ -1,19 +1,21 @@
+#include <stdbool.h>
+#include <stddef.h>
+
+#include <stdio.h>
+#include <tinyalloc.h>
+
+#include "apps.h"
 #include "console.h"
 #include "cpu.h"
-#include "plic.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdbool.h>
+#include "memory.h"
 #include "mmap.h"
 #include "pages.h"
-#include "shell.h"
+#include "plic.h"
 #include "process.h"
-#include "apps.h"
+#include "shell.h"
 #include "time.h"
-#include <tinyalloc.h>
 #include "trap.h"
 #include "uart.h"
-#include "memory.h"
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start()

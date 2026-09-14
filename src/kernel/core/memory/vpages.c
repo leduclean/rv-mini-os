@@ -1,11 +1,14 @@
 #include "vpages.h"
-#include "asm_defs.h"
-#include <stddef.h>
+
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include <string.h>
+
+#include "asm_defs.h"
 #include "mmap.h"
 #include "pages.h"
-#include <stdint.h>
-#include <string.h>
 
 /* Sv39 indirection levels */
 #define LEVELS 3
@@ -307,9 +310,9 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 		if (!(pte & PTE_V))
 			continue;
 
-		unsigned long child_va =
-			va |
-			((unsigned long)i << (PAGE_SHIFT + VA_VPN_BITS * lvl));
+		unsigned long child_va = va |
+					 ((unsigned long)i
+					  << (PAGE_SHIFT + VA_VPN_BITS * lvl));
 
 		int res;
 		if (_is_a_next_lvl_ptr(pte)) {

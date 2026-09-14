@@ -4,9 +4,10 @@
  */
 
 #pragma once
+#include <stdint.h>
+
 #include "asm_defs.h"
 #include "ldsym.h"
-#include <stdint.h>
 
 // Forward declaration
 typedef struct process process_t;

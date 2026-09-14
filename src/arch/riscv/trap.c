@@ -1,17 +1,20 @@
-#include "cpu.h"
-#include "scheduler.h"
-#include "user_entry.h"
+#include "trap.h"
+
+#include <stddef.h>
+
+#include <stdio.h>
+
 #include "asm_defs.h"
+#include "cpu.h"
+#include "csr.h"
 #include "mmap.h"
 #include "platform.h"
-#include "trap.h"
+#include "plic.h"
 #include "process.h"
+#include "scheduler.h"
 #include "syscall.h"
 #include "time.h"
-#include "plic.h"
-#include <stddef.h>
-#include <stdio.h>
-#include "csr.h"
+#include "user_entry.h"
 #include "vpages.h"
 
 static inline unsigned long _get_user_sstatus()
