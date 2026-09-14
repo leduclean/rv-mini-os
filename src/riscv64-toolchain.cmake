@@ -7,4 +7,5 @@ set(CMAKE_ASM_COMPILER riscv64-elf-gcc)
 
 set(CMAKE_C_FLAGS   "-std=c17 -march=rv64ima_zicsr -mabi=lp64 -mcmodel=medany -Wall -Wextra -O0 -ggdb3 -ffunction-sections -fdata-sections -ffreestanding")
 set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "-nostdlib -static -lgcc -Wl,--nmagic -Wl,--gc-sections -g")
+
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)

@@ -5,6 +5,6 @@
 .gdbinit
 *.out
 *.cache
-build/
+build*/
 .python-version
 compile_commands.json
