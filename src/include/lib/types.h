@@ -22,17 +22,11 @@
 #ifndef __RISCV64_TYPES_H__
 #define __RISCV64_TYPES_H__
 
-#ifndef __SIZE_TYPE__
-#error __SIZE_TYPE__ not defined
-#endif
-
-typedef __SIZE_TYPE__ size_t;
-
-#ifndef __PTRDIFF_TYPE__
-#error __PTRDIFF_TYPE__ not defined
-#endif
-
-typedef __PTRDIFF_TYPE__ ptrdiff_t;
+/*
+ * size_t and ptrdiff_t come from the compiler's freestanding <stddef.h>.
+ * ssize_t is POSIX, so GCC does not provide it: it is the signed counterpart
+ * of size_t, which __PTRDIFF_TYPE__ gives us on every sane target.
+ */
 typedef __PTRDIFF_TYPE__ ssize_t;
 
-#endif /* __PTRDIFF_TYPE__ */
+#endif /* __RISCV64_TYPES_H__ */

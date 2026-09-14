@@ -5,7 +5,7 @@
 #include "process.h"
 #include "vpages.h"
 #include "asm_defs.h"
-#include "minilib/stdio.h"
+#include <stdio.h>
 #include "ldsym.h"
 
 static pte_t *kroot;

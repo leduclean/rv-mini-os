@@ -3,13 +3,13 @@
  * @brief Parent side synchronisation syscalls.
  */
 
-#include "clist.h"
-#include "container.h"
+#include <clist.h>
+#include <container.h>
 #include "cpu.h"
 #include "process.h"
 #include "scheduler.h"
-#include "minilib/stddef.h"
-#include "minilib/stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 
 int8_t sys_wait()
 {

@@ -2,8 +2,8 @@
 #include "mmio.h"
 #include "platform.h"
 #include "scheduler.h"
-#include "minilib/stdint.h"
-#include "minilib/stdio.h"
+#include <stdint.h>
+#include <stdio.h>
 #include "waitqueue.h"
 
 #define UART_RX_BUFFER_SIZE 128

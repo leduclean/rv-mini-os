@@ -1,11 +1,11 @@
 #include "programs.h"
 #include "apps.h"
-#include "clist.h"
+#include <clist.h>
 #include "cmd_registry.h"
-#include "container.h"
-#include "minilib/stddef.h"
-#include "minilib/stdio.h"
-#include "minilib/stdbool.h"
+#include <container.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include "mutex.h"
 #include "process.h"
 #include "scheduler.h"

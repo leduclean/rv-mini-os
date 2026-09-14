@@ -6,7 +6,7 @@
 #pragma once
 #include "asm_defs.h"
 #include "ldsym.h"
-#include "minilib/stdint.h"
+#include <stdint.h>
 
 // Forward declaration
 typedef struct process process_t;

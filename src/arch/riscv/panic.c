@@ -5,7 +5,7 @@
 
 #include "cpu.h"
 #include "process.h"
-#include "minilib/stdio.h"
+#include <stdio.h>
 
 void _panic(const char *msg, const char *file, int line)
 {

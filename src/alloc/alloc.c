@@ -3,7 +3,7 @@
 #include "lib/container.h"
 #include "lib/minilib/stddef.h"
 #include "lib/minilib/stdint.h"
-#include "minilib/string.h"
+#include <string.h>
 
 #define HEAPSIZE 64 * 1024
 #define MIN_BLOCK_SIZE 32

@@ -3,8 +3,8 @@
 #include "process.h"
 #include "scheduler.h"
 #include "syscall.h"
-#include "minilib/stddef.h"
-#include "minilib/types.h"
+#include <stddef.h>
+#include <types.h>
 #include "uart.h"
 #include "vpages.h"
 

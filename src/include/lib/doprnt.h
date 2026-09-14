@@ -17,7 +17,7 @@
 
 #ifndef __DOPRNT_H_INCLUDED__
 #define __DOPRNT_H_INCLUDED__
-#include "stdarg.h"
+#include <stdarg.h>
 void _doprnt(const char *fmt, va_list args,
 	     int radix, /* default radix - for '%r' */
 	     void (*putc)(), /* character output */

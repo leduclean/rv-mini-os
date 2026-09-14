@@ -1,5 +1,5 @@
-#include "clist.h"
-#include "minilib/stdint.h"
+#include <clist.h>
+#include <stdint.h>
 
 void clist_init_node(clist_node_t *node)
 {

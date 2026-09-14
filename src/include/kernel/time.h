@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "minilib/stdint.h"
+#include <stdint.h>
 
 /**
  * @brief Get the uptime.

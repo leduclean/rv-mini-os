@@ -5,8 +5,8 @@
 
 #pragma once
 #include "asm_defs.h"
-#include "minilib/stdint.h"
-#include "minilib/string.h"
+#include <stdint.h>
+#include <string.h>
 
 // Defined in the linker script (address only, never read the value)
 extern char _heap_start[], _heap_end[];

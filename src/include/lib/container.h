@@ -4,7 +4,7 @@
  */
 
 #pragma once
-#include "minilib/stddef.h"
+#include <stddef.h>
 
 /**
  * @brief Get the structure owning an embedded member.
@@ -14,4 +14,4 @@
  * @param MEMBER Name of the member inside @p TYPE.
  */
 #define container_of(PTR, TYPE, MEMBER) \
-	((TYPE *)((char *)(PTR) - offset_of(TYPE, MEMBER)))
+	((TYPE *)((char *)(PTR) - offsetof(TYPE, MEMBER)))

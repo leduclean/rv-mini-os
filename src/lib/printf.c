@@ -44,8 +44,8 @@
  * the rights to redistribute these changes.
  */
 
-#include "minilib/doprnt.h"
-#include "minilib/stdarg.h"
+#include <doprnt.h>
+#include <stdarg.h>
 
 /*
  * This is the function called by printf to send its output to the screen. You

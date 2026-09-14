@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "minilib/stddef.h"
+#include <stddef.h>
 #define MAX_ARGS 4 ///< Maximum number of arguments of a shell command.
 
 /** @brief A tokenized shell command line. */

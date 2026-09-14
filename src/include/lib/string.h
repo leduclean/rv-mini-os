@@ -13,7 +13,7 @@
 
 #define __alias(x) __attribute__((weak, alias(x)))
 
-#include "minilib/stddef.h"
+#include <stddef.h>
 
 __extern void *memccpy(void *, const void *, int, size_t);
 __extern void *memchr(const void *, int, size_t);

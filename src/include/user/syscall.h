@@ -1,6 +1,7 @@
 #pragma once
-#include "minilib/stdint.h"
-#include "minilib/types.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <types.h>
 
 /**
  * @brief Sleep syscall used to make a process sleep.

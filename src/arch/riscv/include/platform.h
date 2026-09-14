@@ -2,7 +2,7 @@
 #define __PLATFORM_H__
 
 #if __ASSEMBLER__ == 0
-#include "minilib/stdint.h"
+#include <stdint.h>
 #endif
 
 // Video memory base address
