@@ -4,8 +4,9 @@
  */
 
 #pragma once
-#include "minilib/types.h"
-#include "minilib/stdint.h"
+#include <stddef.h>
+#include <types.h>
+#include <stdint.h>
 
 /**
  * @brief Dispatch the call to the correct kernel routine.

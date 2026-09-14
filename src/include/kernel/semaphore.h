@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "minilib/stdint.h"
+#include <stdint.h>
 
 /** @brief Counting semaphore, opaque to its users. */
 typedef struct semaphore semaphore_t;

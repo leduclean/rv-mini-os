@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include "minilib/stddef.h"
-#include "minilib/stdint.h"
-#include "minilib/stdbool.h"
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 /* CR begin */
 void free(void *ptr);

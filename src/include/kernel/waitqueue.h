@@ -4,13 +4,13 @@
  */
 
 #pragma once
-#include "clist.h"
+#include <clist.h>
 #include "kernel_config.h"
 
 #if TEST_CONFIG
 #include <stdint.h>
 #else
-#include "minilib/stdint.h"
+#include <stdint.h>
 #endif
 
 /** @brief Forward declaration of the process control block. */

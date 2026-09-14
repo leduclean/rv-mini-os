@@ -1,6 +1,6 @@
 #include "syscall.h"
 #include "apps.h"
-#include "minilib/stddef.h"
+#include <stddef.h>
 
 #define SLEEP_TIME 2
 

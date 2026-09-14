@@ -16,8 +16,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #else
-#include "minilib/stddef.h"
-#include "minilib/stdint.h"
+#include <stddef.h>
+#include <stdint.h>
 #endif
 
 /** @brief Node of a clist, embedded in the owning structure. */

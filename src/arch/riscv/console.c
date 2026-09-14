@@ -1,7 +1,7 @@
 #include "console.h"
-#include "font.h"
-#include "minilib/stdint.h"
-#include "minilib/string.h"
+#include <font.h>
+#include <stdint.h>
+#include <string.h>
 #include "mmio.h"
 #include "uart.h"
 

@@ -1,7 +1,7 @@
 #include "time.h"
 #include "console.h"
 #include "csr.h"
-#include "minilib/stdio.h"
+#include <stdio.h>
 #include "platform.h"
 #include "scheduler.h"
 

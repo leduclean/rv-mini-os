@@ -7,7 +7,7 @@
 #include "process.h"
 #pragma once
 
-#include "minilib/stddef.h"
+#include <stddef.h>
 
 extern char _trampoline_start[], _trampoline_end[];
 

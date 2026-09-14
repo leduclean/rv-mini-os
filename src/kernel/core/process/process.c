@@ -1,5 +1,5 @@
 #include "process.h"
-#include "clist.h"
+#include <clist.h>
 #include "kernel_config.h"
 #include "mmap.h"
 #include "syscall.h"
@@ -12,13 +12,13 @@
 
 #if TEST_CONFIG
 #include "mocks/kernel_mocks.h"
-#include "minilib/stddef.h"
+#include <stddef.h>
 #include <string.h>
 #else
 #include "cpu.h"
-#include "minilib/stddef.h"
-#include "minilib/string.h"
-#include "tinyalloc.h"
+#include <stddef.h>
+#include <string.h>
+#include <tinyalloc.h>
 #endif
 
 #define MAX_PROC 32

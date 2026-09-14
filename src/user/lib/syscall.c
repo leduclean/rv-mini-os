@@ -1,6 +1,7 @@
 #include "syscall.h"
 #include "syscall_id.h"
-#include "minilib/types.h"
+#include <stddef.h>
+#include <types.h>
 
 extern unsigned long usyscall(unsigned long n, unsigned long a, unsigned long b,
 			      unsigned long c, unsigned long d, unsigned long e,

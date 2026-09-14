@@ -7,7 +7,7 @@
 
 #include "csr.h"
 #include "platform.h"
-#include "minilib/stdio.h"
+#include <stdio.h>
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
 inline static void hlt()

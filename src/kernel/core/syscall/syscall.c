@@ -2,7 +2,7 @@
 #include "process.h"
 #include "scheduler.h"
 #include "syscall_id.h"
-#include "minilib/stdio.h"
+#include <stdio.h>
 
 //TODO: Use a syscall table instead of a large switch case.
 long syscall_dispatch(long n, long a, long b, long c)

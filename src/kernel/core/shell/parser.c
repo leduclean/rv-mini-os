@@ -1,8 +1,8 @@
 #include "parser.h"
 #include "console.h"
-#include "minilib/stddef.h"
-#include "minilib/stdio.h"
-#include "minilib/string.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
 #include "scheduler.h"
 #include "uart.h"
 

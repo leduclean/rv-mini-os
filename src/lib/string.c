@@ -21,8 +21,8 @@
  * memccpy()
  */
 
-#include "minilib/string.h"
-#include "minilib/stddef.h"
+#include <string.h>
+#include <stddef.h>
 
 void *memccpy(void *dst, const void *src, int c, size_t n)
 {
@@ -42,8 +42,8 @@ void *memccpy(void *dst, const void *src, int c, size_t n)
  * memchr.c
  */
 
-#include "minilib/stddef.h"
-#include "minilib/string.h"
+#include <stddef.h>
+#include <string.h>
 
 void *memchr(const void *s, int c, size_t n)
 {
@@ -61,8 +61,8 @@ void *memchr(const void *s, int c, size_t n)
  * memrchr.c
  */
 
-#include "minilib/stddef.h"
-#include "minilib/string.h"
+#include <stddef.h>
+#include <string.h>
 
 void *memrchr(const void *s, int c, size_t n)
 {
@@ -80,7 +80,7 @@ void *memrchr(const void *s, int c, size_t n)
  * memcmp.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 int memcmp(const void *s1, const void *s2, size_t n)
 {
@@ -99,7 +99,7 @@ int memcmp(const void *s1, const void *s2, size_t n)
  * memcpy.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 void *memcpy(void *dst, const void *src, size_t n)
 {
@@ -127,7 +127,7 @@ void *memcpy(void *dst, const void *src, size_t n)
  * memmove.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 void *memmove(void *dst, const void *src, size_t n)
 {
@@ -163,7 +163,7 @@ void *memmove(void *dst, const void *src, size_t n)
  * memset.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 void *memset(void *dst, int c, size_t n)
 {
@@ -192,8 +192,8 @@ void *memset(void *dst, int c, size_t n)
  * strpbrk
  */
 
-#include "minilib/stddef.h"
-#include "minilib/string.h"
+#include <stddef.h>
+#include <string.h>
 
 size_t __strxspn(const char *s, const char *map, int parity)
 {
@@ -225,7 +225,7 @@ size_t __strxspn(const char *s, const char *map, int parity)
  * http://www-igm.univ-mlv.fr/~lecroq/string/
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 void *memmem(const void *haystack, size_t n, const void *needle, size_t m)
 {
@@ -273,7 +273,7 @@ void *memmem(const void *haystack, size_t n, const void *needle, size_t m)
  * This really could be done faster...
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 void memswap(void *m1, void *m2, size_t n)
 {
@@ -294,7 +294,7 @@ void memswap(void *m1, void *m2, size_t n)
  * strcat.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strcat(char *dst, const char *src)
 {
@@ -305,7 +305,7 @@ char *strcat(char *dst, const char *src)
  * strchr.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strchr(const char *s, int c)
 {
@@ -322,7 +322,7 @@ char *strchr(const char *s, int c)
  * strrchr.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strrchr(const char *s, int c)
 {
@@ -341,7 +341,7 @@ char *strrchr(const char *s, int c)
  * strcmp.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 int strcmp(const char *s1, const char *s2)
 {
@@ -364,7 +364,7 @@ int strcmp(const char *s1, const char *s2)
  * strcpy()
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strcpy(char *dst, const char *src)
 {
@@ -390,7 +390,7 @@ size_t strcspn(const char *s, const char *reject)
  * strlen()
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 size_t strlen(const char *s)
 {
@@ -403,7 +403,7 @@ size_t strlen(const char *s)
  * strnlen()
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 size_t strnlen(const char *s, size_t maxlen)
 {
@@ -421,7 +421,7 @@ size_t strnlen(const char *s, size_t maxlen)
  * strncat.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strncat(char *dst, const char *src, size_t n)
 {
@@ -442,7 +442,7 @@ char *strncat(char *dst, const char *src, size_t n)
  * strlcat.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 size_t strlcat(char *dst, const char *src, size_t size)
 {
@@ -472,7 +472,7 @@ size_t strlcat(char *dst, const char *src, size_t size)
  * strncmp.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 int strncmp(const char *s1, const char *s2, size_t n)
 {
@@ -493,7 +493,7 @@ int strncmp(const char *s1, const char *s2, size_t n)
  * strncpy.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strncpy(char *dst, const char *src, size_t n)
 {
@@ -527,7 +527,7 @@ char *strpbrk(const char *s, const char *accept)
  * strsep.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strsep(char **stringp, const char *delim)
 {
@@ -556,7 +556,7 @@ size_t strspn(const char *s, const char *accept)
  * strstr.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strstr(const char *haystack, const char *needle)
 {
@@ -567,7 +567,7 @@ char *strstr(const char *haystack, const char *needle)
  * strtok.c
  */
 
-#include "minilib/string.h"
+#include <string.h>
 
 char *strtok(char *s, const char *delim)
 {

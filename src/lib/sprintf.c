@@ -39,8 +39,8 @@
  * the rights to redistribute these changes.
  */
 
-#include "minilib/doprnt.h"
-#include "minilib/stdarg.h"
+#include <doprnt.h>
+#include <stdarg.h>
 
 #define SPRINTF_UNLIMITED (unsigned int)(-1)
 struct sprintf_state {

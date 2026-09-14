@@ -42,9 +42,9 @@
 
 #define FALSE ((unsigned char)0)
 #define TRUE ((unsigned char)1)
-#include "minilib/doprnt.h"
-#include "minilib/stdarg.h"
-#include "minilib/string.h" /* strlen */
+#include <doprnt.h>
+#include <stdarg.h>
+#include <string.h> /* strlen */
 
 /*
  *  Common code for printf et al.

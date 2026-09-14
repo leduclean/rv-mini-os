@@ -5,7 +5,7 @@
 
 #pragma once
 #include "process.h"
-#include "minilib/stdint.h"
+#include <stdint.h>
 
 /** @brief Mutex, with its owner and the processes waiting for it. */
 typedef struct mutex {
