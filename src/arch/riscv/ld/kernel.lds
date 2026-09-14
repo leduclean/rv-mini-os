@@ -10,23 +10,30 @@ SECTIONS {
 
     . = 0x80000000;
     .text : {
-        *(.text.init) *(.text) *(.text.*)
+        *(.text.init)
+
+        /* All the user code should go to the user_text region */
+        *(EXCLUDE_FILE(*user.dir/*) .text)
+        *(EXCLUDE_FILE(*user.dir/*) .text.*)
     } > ram
 
     . = ALIGN(4096);
     _etext = .;
 
-    /* Section Utilisateur */
+    /* User section, user code can only access to those 
+     * symbols */
     .user_text ALIGN(4096) : {
         _user_start = . ;
         *(.user_text.init)
         *(.user_text)
         *(.user_text.*)
+        *user.dir/*(.text .text.*)
+        *user.dir/*(.rodata .rodata.*)
     } > ram
     . = ALIGN(4096);
     _user_end = .;
 
-    /* Section Trampoline */
+    /* Trampoline shared section*/
     .trampoline ALIGN(4096) : {
         _trampoline_start = . ;
         KEEP(*(.trampoline))
@@ -34,7 +41,7 @@ SECTIONS {
     . = ALIGN(4096);
     _trampoline_end = .;
 
-    /* Section Données */
+    /* Data section */
     .data ALIGN(4096) : {
         *(.sdata) *(.sdata.*)
         *(.fini)
@@ -45,7 +52,7 @@ SECTIONS {
         _edata = .;
     } > ram
 
-    /* Section BSS */
+    /* BSS section */
     .bss : {
         . = ALIGN(8);
         __bss_start = .;

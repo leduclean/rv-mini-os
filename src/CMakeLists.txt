@@ -15,6 +15,9 @@ add_executable(kernel.bin
     $<TARGET_OBJECTS:user>
 )
 
+set_target_properties(kernel.bin PROPERTIES
+    LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.lds)
+
 target_link_options(kernel.bin PRIVATE
     -T${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.lds
     -nostdlib -static -lgcc

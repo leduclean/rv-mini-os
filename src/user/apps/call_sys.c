@@ -4,12 +4,12 @@
 
 #define SLEEP_TIME 2
 
-__attribute__((section(".user_text"))) void sleep_call()
+void sleep_call()
 {
 	sleep(SLEEP_TIME);
 }
 
-__attribute__((section(".user_text"))) void fork_test()
+void fork_test()
 {
 	// volatile: the compiler must really store it on the user stack, which
 	// is the page fork() just marked copy on write.
@@ -29,7 +29,7 @@ __attribute__((section(".user_text"))) void fork_test()
 	sleep(marker);
 }
 
-__attribute__((section(".user_text"))) void segfault_test()
+void segfault_test()
 {
 	int8_t res;
 
