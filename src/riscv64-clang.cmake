@@ -19,9 +19,7 @@ set(CMAKE_C_FLAGS "\
 -fno-stack-protector -fno-omit-frame-pointer \
 -fno-asynchronous-unwind-tables -fno-unwind-tables \
 -funsigned-char -ffunction-sections -fdata-sections \
--Wall -Wextra -Wundef -Wvla -Wframe-larger-than=2048 \
--Werror=implicit-function-declaration -Werror=implicit-int \
--Werror=return-type -Werror=strict-prototypes \
+-Wall -Wextra -Wundef -Wvla -Wframe-larger-than=2048 -Werror \
 -O0 -ggdb3")
 set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS}")
 
