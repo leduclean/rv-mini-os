@@ -1,3 +1,8 @@
+/**
+ * @file
+ * @brief This file declare basic user progs that test the behaviour of each syscall.
+ */
+
 #include <stddef.h>
 
 #include <user/apps.h>
