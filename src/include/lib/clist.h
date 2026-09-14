@@ -12,13 +12,8 @@
 
 #pragma once
 
-#if TEST_CONFIG
 #include <stddef.h>
 #include <stdint.h>
-#else
-#include <stddef.h>
-#include <stdint.h>
-#endif
 
 /** @brief Node of a clist, embedded in the owning structure. */
 typedef struct clist_node {

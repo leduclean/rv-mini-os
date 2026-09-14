@@ -6,12 +6,12 @@
 
 #include <kernel/time.h>
 
-void plic_enable_s_external()
+void plic_enable_s_external(void)
 {
 	csr_set(sie, SIE_SEIE);
 }
 
-void plic_disable_s_external()
+void plic_disable_s_external(void)
 {
 	csr_clear(sie, SIE_SEIE);
 }
@@ -51,7 +51,7 @@ static void _set_priority_treshold(uint32_t threshold)
 	MMIO32(PLIC_TARGET_S) = threshold;
 }
 
-void plic_config_uart()
+void plic_config_uart(void)
 {
 	/* Enable UART irq */
 	MMIO32(PLIC_ENABLE_S) |= PLIC_ENABLE_UART;
@@ -66,7 +66,7 @@ void plic_config_uart()
  *
  * @return Plic source id of the pending interrupt.
  */
-static uint32_t _claim_plic()
+static uint32_t _claim_plic(void)
 {
 	return MMIO32(PLIC_IRQ_CLAIM_S);
 }
@@ -82,7 +82,7 @@ static void _complete_plic(uint32_t irq)
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
-void plic_handle_irq()
+void plic_handle_irq(void)
 {
 	uint32_t irq = _claim_plic();
 	switch (irq) {

@@ -11,7 +11,18 @@ set(CMAKE_C_COMPILER_TARGET   ${RISCV_TARGET})
 set(CMAKE_CXX_COMPILER_TARGET ${RISCV_TARGET})
 set(CMAKE_ASM_COMPILER_TARGET ${RISCV_TARGET})
 
-set(CMAKE_C_FLAGS   "-std=c17 -march=rv64ima_zicsr -mabi=lp64 -mcmodel=medany -Wall -Wextra -O0 -ggdb3 -ffunction-sections -fdata-sections -ffreestanding")
+set(CMAKE_C_FLAGS "\
+-std=c17 -march=rv64ima_zicsr -mabi=lp64 -mcmodel=medany \
+-mno-relax -mno-save-restore \
+-ffreestanding -fno-pie -fno-common -fno-builtin \
+-fno-strict-aliasing -fno-strict-overflow -fno-delete-null-pointer-checks \
+-fno-stack-protector -fno-omit-frame-pointer \
+-fno-asynchronous-unwind-tables -fno-unwind-tables \
+-funsigned-char -ffunction-sections -fdata-sections \
+-Wall -Wextra -Wundef -Wvla -Wframe-larger-than=2048 \
+-Werror=implicit-function-declaration -Werror=implicit-int \
+-Werror=return-type -Werror=strict-prototypes \
+-O0 -ggdb3")
 set(CMAKE_ASM_FLAGS "${CMAKE_C_FLAGS}")
 
 set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld")

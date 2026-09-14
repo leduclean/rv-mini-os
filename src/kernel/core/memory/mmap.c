@@ -21,18 +21,18 @@ unsigned long mmap_satp(void *pt)
 	return ((SATP_SV39_MODE << SATP_MODE_SHIFT) | PAGE_NUMBER(pt));
 }
 
-unsigned long mmap_kernel_satp()
+unsigned long mmap_kernel_satp(void)
 {
 	return mmap_satp(kroot);
 }
 
-void mmap_switch_to_kernel()
+void mmap_switch_to_kernel(void)
 {
 	csr_write(satp, mmap_kernel_satp());
 	mmap_update_tlb();
 }
 
-int mmap_kernel()
+int mmap_kernel(void)
 {
 	int res;
 	kroot = page_alloc();

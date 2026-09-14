@@ -71,7 +71,7 @@ int vsprintf(char *s, const char *fmt, va_list args)
 	state.len = 0;
 	state.buf = s;
 
-	_doprnt(fmt, args, 0, (void (*)())savechar, (char *)&state);
+	_doprnt(fmt, args, 0, savechar, (char *)&state);
 	*(state.buf) = '\0';
 
 	return state.len;
@@ -84,7 +84,7 @@ int vsnprintf(char *s, long unsigned int size, const char *fmt, va_list args)
 	state.len = 0;
 	state.buf = s;
 
-	_doprnt(fmt, args, 0, (void (*)())savechar, (char *)&state);
+	_doprnt(fmt, args, 0, savechar, (char *)&state);
 	*(state.buf) = '\0';
 
 	return state.len;

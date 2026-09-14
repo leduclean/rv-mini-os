@@ -37,7 +37,7 @@ void exit(int code)
 	_syscall1(SYS_EXIT, code);
 }
 
-int8_t wait()
+int8_t wait(void)
 {
 	return _syscall0(SYS_WAIT);
 }
@@ -47,12 +47,12 @@ int8_t wait_pid(int8_t pid)
 	return _syscall1(SYS_WAIT, pid);
 }
 
-uint8_t getpid()
+uint8_t getpid(void)
 {
 	return _syscall0(SYS_GETPID);
 }
 
-int8_t fork()
+int8_t fork(void)
 {
 	return _syscall0(SYS_FORK);
 }

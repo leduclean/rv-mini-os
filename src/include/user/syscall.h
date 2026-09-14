@@ -27,7 +27,7 @@ void exit(int code);
  *
  * @return Pid of the reaped child.
  */
-int8_t wait();
+int8_t wait(void);
 
 /**
  * @brief Wait for the terminaison of a specific child, then reap it.
@@ -45,7 +45,7 @@ int8_t wait_pid(int8_t pid);
  * @return The pid of the child process in the parent flow or 0 
  * in the child flow.
  */
-int8_t fork();
+int8_t fork(void);
 
 /**
  * @brief Writes up to count @count bytes from the buffer at @buf 

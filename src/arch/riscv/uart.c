@@ -19,12 +19,12 @@
  */
 static wait_queue_t uart_wait_queue;
 
-static inline void _uart_init_queue()
+static inline void _uart_init_queue(void)
 {
 	wq_init(&uart_wait_queue);
 }
 
-wait_queue_t *uart_get_wait_queue()
+wait_queue_t *uart_get_wait_queue(void)
 {
 	return &uart_wait_queue;
 }
@@ -66,20 +66,20 @@ static inline char _buffer_get(uart_ring_buffer_t *b)
 	return 0;
 }
 
-static inline void _uart_enable_fifo()
+static inline void _uart_enable_fifo(void)
 {
 	// Enable fifo waiting list
 	MMIO8(UART_BASE + UART_FCR) = UART_FCR_EWL;
 }
 
-static inline void _uart_config_lcr()
+static inline void _uart_config_lcr(void)
 {
 	// 8 bits transmition/reception config
 	MMIO8(UART_BASE + UART_LCR) |= UART_LCR_8BIT |
 				       UART_LCR_PODD; // bits 0, 1, 3
 }
 
-static void _uart_set_baud()
+static void _uart_set_baud(void)
 {
 	uint16_t rate = (UART_CLOCK_FREQ / (16 * UART_BAUD_RATE));
 	uintptr_t lcr_addr = UART_BASE + UART_LCR;
@@ -96,12 +96,12 @@ static void _uart_set_baud()
 }
 
 /** @brief Enable the RX interupt. */
-static inline void _uart_enable_rxirq()
+static inline void _uart_enable_rxirq(void)
 {
 	MMIO8(UART_BASE + UART_IER) |= UART_RXEN;
 }
 
-void uart_init()
+void uart_init(void)
 {
 	_uart_init_queue();
 	_uart_set_baud();
@@ -120,7 +120,7 @@ void uart_putchar(char c)
  *
  * @return The received character.
  */
-static char _uart_getchar()
+static char _uart_getchar(void)
 {
 	return MMIO8(UART_BASE + UART_RBR);
 };
@@ -130,13 +130,13 @@ static char _uart_getchar()
  *
  * @return 1 if a character can be read, 0 otherwise.
  */
-static inline uint8_t _uart_rx_data_ready()
+static inline uint8_t _uart_rx_data_ready(void)
 {
 	return MMIO8(UART_BASE + UART_LSR) & 1;
 }
 
 /** @brief Fill the rx ring buffer while rx contains data. */
-static void _uart_fill_rx_buff()
+static void _uart_fill_rx_buff(void)
 {
 	while (_uart_rx_data_ready()) {
 		_buffer_put(&rx_buffer, _uart_getchar());
@@ -153,7 +153,7 @@ int uart_read(char *c)
 	return -1;
 }
 
-void uart_irq_handler()
+void uart_irq_handler(void)
 {
 	_uart_fill_rx_buff();
 	scheduler_wake_waiting_queue(&uart_wait_queue);

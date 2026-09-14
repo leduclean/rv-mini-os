@@ -36,7 +36,7 @@ static inline uintptr_t _make_device_addr(uint32_t bus, uint32_t dev,
  *
  * @return 0 on success, -1 if no display device was found.
  */
-static int _config_pcie()
+static int _config_pcie(void)
 {
 	int found = -1;
 	uintptr_t device_addr;
@@ -66,7 +66,7 @@ static int _config_pcie()
  *
  * @return 0 on success, -1 if the device has a wrong type id.
  */
-static int _config_screen()
+static int _config_screen(void)
 {
 	uintptr_t dispi_base = BOCHS_CONFIG_BASE_ADDRESS +
 			       BOCHS_CONFIG_DISPI_ADDRESS;
@@ -92,7 +92,7 @@ static int _config_screen()
 	return 0;
 };
 
-int console_init()
+int console_init(void)
 {
 	if (_config_pcie() != 0)
 		return -1;
@@ -178,18 +178,18 @@ static void _draw_line(uint32_t row, uint32_t col, uint32_t color)
 	}
 };
 
-static inline void _draw_cursor()
+static inline void _draw_cursor(void)
 {
 	_draw_line(cursor_row * 8 + 7, cursor_col * 8, TEXT_COLOR);
 }
 
-static inline void _undraw_cursor()
+static inline void _undraw_cursor(void)
 {
 	_draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
 
 /** @brief Move the screen display to an upper line. */
-static void _scroll()
+static void _scroll(void)
 {
 	// each caractere line has a width of 8 pixel
 	static uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
@@ -232,7 +232,7 @@ static int _set_cursor(int row, int col)
 }
 
 /** @brief Move the cursor one char forward, wrapping to the next line. */
-static void _advance_cursor()
+static void _advance_cursor(void)
 {
 	if (cursor_col + 1 < MAX_COLS) {
 		_set_cursor(cursor_row, cursor_col + 1);
@@ -254,7 +254,7 @@ static void _put_char(char c)
 }
 
 /** @brief Remove all the chars on the screen and reset the cursor. */
-static void _clear_screen()
+static void _clear_screen(void)
 {
 	for (int y = 0; y < DISPLAY_HEIGHT; y++) {
 		for (int x = 0; x < DISPLAY_WIDTH; x++) {
@@ -266,7 +266,7 @@ static void _clear_screen()
 
 // Control char handling helpers
 
-static inline void _tab()
+static inline void _tab(void)
 {
 	int distance = (-cursor_col) & 7;
 	if (distance + cursor_col >= MAX_COLS) {
@@ -276,18 +276,18 @@ static inline void _tab()
 	}
 }
 
-static inline void _backspace()
+static inline void _backspace(void)
 {
 	if (cursor_col > 0) {
 		_set_cursor(cursor_row, cursor_col - 1);
 	}
 }
 
-static inline void _newline()
+static inline void _newline(void)
 {
 	_set_cursor(cursor_row + 1, 0);
 }
-static inline void _carriage_return()
+static inline void _carriage_return(void)
 {
 	_set_cursor(cursor_row, 0);
 }

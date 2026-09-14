@@ -50,7 +50,7 @@ void page_get(const void *page)
 	irq_restore(state);
 }
 
-void page_init()
+void page_init(void)
 {
 	clist_init_node(&free_pages);
 	page_t *p;
@@ -61,7 +61,7 @@ void page_init()
 	}
 }
 
-void *page_alloc()
+void *page_alloc(void)
 {
 	irq_flags_t state = irq_save();
 

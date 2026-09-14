@@ -14,7 +14,7 @@ typedef struct {
 
 static exec_table registry;
 
-int8_t cmd_register_builtin(const char *name, void (*fn)())
+int8_t cmd_register_builtin(const char *name, void (*fn)(void))
 {
 	if (!name || !fn || registry.size >= MAX_CMDS)
 		return -1;
@@ -27,7 +27,7 @@ int8_t cmd_register_builtin(const char *name, void (*fn)())
 	return 0;
 }
 
-int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior,
+int8_t cmd_register_prog(const char *name, void (*fn)(void), priority prior,
 			 bool user)
 {
 	if (!name || !fn || registry.size >= MAX_CMDS)
@@ -63,7 +63,7 @@ const cmd_desc_t *cmd_nth(uint8_t idx)
 	return &registry.tab[idx];
 }
 
-uint8_t cmd_count()
+uint8_t cmd_count(void)
 {
 	return registry.size;
 }

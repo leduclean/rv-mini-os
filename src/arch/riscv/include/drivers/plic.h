@@ -6,10 +6,10 @@
 #pragma once
 
 /** @brief Enable the supervisor external irq. */
-void plic_enable_s_external();
+void plic_enable_s_external(void);
 
 /** @brief Disable the supervisor external irq. */
-void plic_disable_s_external();
+void plic_disable_s_external(void);
 
 /**
  * @brief Config the plic for the uart irq.
@@ -17,7 +17,7 @@ void plic_disable_s_external();
  * @note Enables the uart source, gives it the priority 3 and drops the
  * threshold to 0 so every non-zero priority interrupt is permitted.
  */
-void plic_config_uart();
+void plic_config_uart(void);
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
-void plic_handle_irq();
+void plic_handle_irq(void);

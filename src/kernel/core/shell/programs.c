@@ -143,7 +143,7 @@ static int _pretty_print_process(clist_node_t *node, void *args)
 }
 
 /** @brief Print the process table. */
-static void ps()
+static void ps(void)
 {
 	printf("%-5s %-5s %-10s %-7s\n", "PID", "PPID", "CMD", "STATE");
 	clist_for_each(process_table_clist(), _pretty_print_process, NULL);
@@ -154,7 +154,7 @@ static void ps()
 #define REGISTER_USER_APP(func) cmd_register_prog(#func, func, NORMAL, true)
 #define REGISTER_BUILT_IN(func) cmd_register_builtin(#func, func)
 
-void programs_init()
+void programs_init(void)
 {
 	REGISTER_USER_APP(sleep_call);
 	REGISTER_USER_APP(fork_test);

@@ -16,34 +16,34 @@
 static uint32_t ticks;
 static uint32_t prev;
 
-static inline void _enable_sstc_extension()
+static inline void _enable_sstc_extension(void)
 {
 	csr_set(menvcfg, MENVCFG_STCE);
 }
 
-static inline void _enable_stimecmp()
+static inline void _enable_stimecmp(void)
 {
 	csr_set(mcounteren, MCOUNTEREN_TM);
 }
 
-static inline void _enable_s_timer()
+static inline void _enable_s_timer(void)
 {
 	csr_set(sie, SIE_STIE);
 }
 
 /** @brief Arm the supervisor timer comparator for the next tick. */
-static inline void _update_timer()
+static inline void _update_timer(void)
 {
 	unsigned long time = csr_read(time);
 	csr_write(stimecmp, time + DELAY);
 }
 
-inline uint32_t time_seconds()
+inline uint32_t time_seconds(void)
 {
 	return ticks / ITFREQ;
 }
 
-void time_init()
+void time_init(void)
 {
 	_enable_sstc_extension();
 	_enable_s_timer();

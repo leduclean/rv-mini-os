@@ -2,7 +2,7 @@
 
 #include <kernel/memory.h>
 
-void pmp_allow_all()
+void pmp_allow_all(void)
 {
 	//NOTE: We use the whole memory for the process to enter user mode
 	csr_write(pmpaddr0, ~0UL);

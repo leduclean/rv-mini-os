@@ -14,7 +14,7 @@
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 
-int8_t sys_wait()
+int8_t sys_wait(void)
 {
 	irq_flags_t flags = irq_save();
 

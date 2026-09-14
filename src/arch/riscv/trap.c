@@ -18,7 +18,7 @@
 #include <kernel/vpages.h>
 #include <user/user_entry.h>
 
-static inline unsigned long _get_user_sstatus()
+static inline unsigned long _get_user_sstatus(void)
 {
 	unsigned long val = csr_read(sstatus);
 
@@ -39,12 +39,12 @@ static inline unsigned long _get_user_sstatus()
  * @param entry Trap vector written in the mtvec register.
  *
  */
-static inline void _init_mtvec(void (*entry)())
+static inline void _init_mtvec(void (*entry)(void))
 {
 	csr_write(mtvec, entry);
 }
 
-static inline void _init_stvec(void (*entry)())
+static inline void _init_stvec(void (*entry)(void))
 {
 	csr_write(stvec, entry);
 }
@@ -73,7 +73,7 @@ static inline void _panic_print(unsigned long cause, unsigned long pc,
 /**
  * @brief Machine level trap panic.
  */
-static inline void _machine_trap_panic()
+static inline void _machine_trap_panic(void)
 {
 	unsigned long mtval = csr_read(mtval);
 	unsigned long mepc = csr_read(mepc);
@@ -113,7 +113,7 @@ static inline void _handler_async_irq(unsigned long irq_cause)
 /**
  * @brief Asm entry point called when trapping from kernel mode.
  */
-void kerneltrap()
+void kerneltrap(void)
 {
 	unsigned long scause = csr_read(scause);
 	volatile unsigned long sstatus = csr_read(sstatus);
@@ -138,7 +138,7 @@ void kerneltrap()
 /**
  * @brief Asm entry point called when trapping from user mode.
  */
-unsigned long usertrap()
+unsigned long usertrap(void)
 {
 	process_t *p = process_active();
 	pt_regs_t *t = &p->tframe_pa->saved_regs;
@@ -184,16 +184,16 @@ unsigned long usertrap()
 	return t->satp;
 }
 
-extern void kernelvec();
+extern void kernelvec(void);
 
-void trap_init()
+void trap_init(void)
 {
 	_init_mtvec(_machine_trap_panic);
 	// Kernel vec when starting the OS
 	_init_stvec(kernelvec);
 }
 
-void trap_enter_user_mode()
+void trap_enter_user_mode(void)
 {
 	process_t *p = process_active();
 	tframe_t *t = p->tframe_pa;

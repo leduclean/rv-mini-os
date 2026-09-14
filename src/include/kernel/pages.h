@@ -38,12 +38,12 @@ extern char _heap_start[], _heap_end[];
 /**
  * @brief Init the paging allocator. 
  */
-void page_init();
+void page_init(void);
 
 /**
  * @brief Allocate the first free page.
  */
-void *page_alloc();
+void *page_alloc(void);
 
 /**
  * @brief Drop a reference on @page, releasing it once nobody holds it.

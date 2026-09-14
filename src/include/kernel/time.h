@@ -11,10 +11,10 @@
  *
  * @return Number of secondes elapsed since time_init().
  */
-uint32_t time_seconds();
+uint32_t time_seconds(void);
 
 /** @brief Reset the tick counter and arm the timer comparator. */
-void time_init();
+void time_init(void);
 
 /**
  * @brief Handler for the timer irq.

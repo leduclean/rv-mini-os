@@ -11,7 +11,7 @@ typedef enum { CMD_BUILTIN, CMD_PROG } exec_type;
 
 /** @brief A program, spawned in its own process when invoked. */
 typedef struct {
-	void (*fn)(); ///< Entry point of the program.
+	void (*fn)(void); ///< Entry point of the program.
 	priority prior; ///< Priority the program is spawned with.
 	bool user; ///< Either the program spawned is a user program or not.
 } prog_t;
@@ -22,7 +22,7 @@ typedef struct {
 	exec_type type; ///< Kind of the command, selecting the union member.
 	/** @brief Command payload, selected by @p type. */
 	union {
-		void (*builtin)(); ///< Function called for a CMD_BUILTIN.
+		void (*builtin)(void); ///< Function called for a CMD_BUILTIN.
 		prog_t prog; ///< Program spawned for a CMD_PROG.
 	} cmd;
 } cmd_desc_t;
@@ -37,7 +37,7 @@ typedef struct {
  * @param fn Function to call.
  * @return 0 on success, -1 on invalid arguments or a full registry.
  */
-int8_t cmd_register_builtin(const char *name, void (*fn)());
+int8_t cmd_register_builtin(const char *name, void (*fn)(void));
 
 /**
  * @brief Register a program, spawned in its own process when invoked.
@@ -47,7 +47,7 @@ int8_t cmd_register_builtin(const char *name, void (*fn)());
  * @param prior Priority the program is spawned with.
  * @return 0 on success, -1 on invalid arguments or a full registry.
  */
-int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior,
+int8_t cmd_register_prog(const char *name, void (*fn)(void), priority prior,
 			 bool user);
 
 /**
@@ -71,4 +71,4 @@ const cmd_desc_t *cmd_nth(uint8_t idx);
  *
  * @return Size of the registry.
  */
-uint8_t cmd_count();
+uint8_t cmd_count(void);

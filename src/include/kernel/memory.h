@@ -15,4 +15,4 @@
  * @brief Stub memory management waiting for the supervisor and paging policy
  * TODO: Remove me when supervisor and paging are supported.
  */
-void pmp_allow_all();
+void pmp_allow_all(void);

@@ -32,7 +32,7 @@ static ptable_t proc_table;
 static process_t *active = NULL;
 
 /** @brief Init the process table. */
-static void _init_proc_table()
+static void _init_proc_table(void)
 {
 	clist_init_node(&proc_table.head);
 	proc_table.next_pid = 0;
@@ -214,7 +214,7 @@ static void _activate_process(process_t *p)
 /**
  * @brief Kernel privilege proessus entry point.
  */
-static void _kproc_launcher()
+static void _kproc_launcher(void)
 {
 	//NOTE: We force this because there is no guarantee,
 	// after a kprocess spawn to have irq enable.
@@ -225,14 +225,14 @@ static void _kproc_launcher()
 	scheduler_terminate(0);
 }
 
-static inline void _fork_return()
+static inline void _fork_return(void)
 {
 	process_t *p = process_active();
 	trap_return_va()(p->tframe_pa->saved_regs.satp);
 }
 
 /** @brief Create the idle process and make it active. */
-static void _init_idle()
+static void _init_idle(void)
 {
 	process_t *p = process_spawn(process_idle, "idle", IDLE, false);
 	if (!p) {
@@ -243,7 +243,7 @@ static void _init_idle()
 	active->state = RUNNING;
 }
 
-process_t *process_active()
+process_t *process_active(void)
 {
 	return active;
 }
@@ -257,7 +257,7 @@ void process_switch_active(process_t *next)
 	active = next;
 }
 
-const clist_node_t *process_table_clist()
+const clist_node_t *process_table_clist(void)
 {
 	return &proc_table.head;
 }
@@ -307,7 +307,7 @@ void process_reap(process_t *proc)
 	_process_clean_up(proc);
 }
 
-process_t *process_spawn(void code(), const char *name, priority prior,
+process_t *process_spawn(void code(void), const char *name, priority prior,
 			 bool user)
 {
 	irq_flags_t state = irq_save();
@@ -397,8 +397,8 @@ err_restore_irq:
 	return child;
 }
 
-int8_t process_spawn_foreground(void code(), const char *name, priority prior,
-				bool user)
+int8_t process_spawn_foreground(void code(void), const char *name,
+				priority prior, bool user)
 {
 	process_t *child = process_spawn(code, name, prior, user);
 	if (!child) {
@@ -412,14 +412,14 @@ int8_t process_spawn_foreground(void code(), const char *name, priority prior,
 	return pid;
 };
 
-void process_init()
+void process_init(void)
 {
 	_init_proc_table();
 	scheduler_init();
 	_init_idle();
 }
 
-void process_idle()
+void process_idle(void)
 {
 	for (;;) {
 		hlt();

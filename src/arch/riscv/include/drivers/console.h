@@ -28,7 +28,7 @@ void console_putbytes(const char *s, int len);
  *
  * @return 0 on success, -1 if the device was not found or has a wrong type.
  */
-int console_init();
+int console_init(void);
 
 /**
  * @brief Display a text on the top right corner of the screen.

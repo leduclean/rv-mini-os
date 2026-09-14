@@ -11,7 +11,7 @@
  *
  * @note Triggered by the timer irq.
  */
-void scheduler_rotate();
+void scheduler_rotate(void);
 
 /**
  * @brief Admit a process in its corresponding priority ready queue.
@@ -28,7 +28,7 @@ void scheduler_admit(process_t *proc);
 void scheduler_ready_process(process_t *proc);
 
 /** @brief Wake every sleeping process whose wake up time is reached. */
-void scheduler_wake_sleeping();
+void scheduler_wake_sleeping(void);
 
 /**
  * @brief Wake every process blocked on a wait queue.
@@ -71,7 +71,7 @@ void scheduler_block_on(wait_queue_t *wq);
 void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs);
 
 /** @brief Init the ready queues and the sleeping queue. */
-void scheduler_init();
+void scheduler_init(void);
 
 /**
  * @brief Set the active process to sleeping state.

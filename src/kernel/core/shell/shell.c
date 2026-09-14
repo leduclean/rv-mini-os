@@ -12,7 +12,7 @@
 #include <kernel/programs.h>
 
 /** @brief Builtin shell command listing all the launchable programs. */
-static void _builtin_help()
+static void _builtin_help(void)
 {
 	printf("Available commands: \n");
 	const cmd_desc_t *cmd = NULL;
@@ -31,7 +31,7 @@ static void _builtin_help()
 }
 
 /** @brief Register the shell builtins. */
-static inline void _init_builtins()
+static inline void _init_builtins(void)
 {
 	cmd_register_builtin("help", _builtin_help);
 }
@@ -78,7 +78,7 @@ static void _cmd_handler(shell_cmd_tokens_t *cmd)
 
 static char line_buffer[MAX_COLS];
 
-void shell_run()
+void shell_run(void)
 {
 	_init_builtins();
 	programs_init();

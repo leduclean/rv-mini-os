@@ -11,31 +11,31 @@
 #include <asm/platform.h>
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
-inline static void hlt()
+inline static void hlt(void)
 {
 	__asm__ __volatile__("wfi" ::: "memory");
 }
 
 /** @brief Enable the interrupts at the machine level. */
-inline static void irq_enable_m()
+inline static void irq_enable_m(void)
 {
 	csr_set(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Disable the interrupts at the machine level. */
-inline static void irq_disable_m()
+inline static void irq_disable_m(void)
 {
 	csr_clear(mstatus, MSTATUS_MIE);
 }
 
 /** @brief Enable the interrupts at the supervisor level. */
-inline static void irq_enable_s()
+inline static void irq_enable_s(void)
 {
 	csr_set(sstatus, SSTATUS_SIE);
 }
 
 /** @brief Disable the interrupts at the supervisor level. */
-inline static void irq_disable_s()
+inline static void irq_disable_s(void)
 {
 	csr_clear(sstatus, SSTATUS_SIE);
 }
@@ -60,7 +60,7 @@ typedef unsigned long irq_flags_t;
  *
  * @return Previous sstatus, to give back to irq_restore().
  */
-static inline irq_flags_t irq_save()
+static inline irq_flags_t irq_save(void)
 {
 	irq_flags_t flags = csr_read(sstatus);
 	if (flags & SSTATUS_SIE) {

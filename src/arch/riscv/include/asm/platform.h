@@ -1,10 +1,6 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-#if __ASSEMBLER__ == 0
-#include <stdint.h>
-#endif
-
 // Video memory base address
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
 #define BOCHS_CONFIG_BASE_ADDRESS 0x40000000
@@ -139,7 +135,9 @@
 #define UART_IIR_NO_INT 0x01 /* No interrupts pending */
 #define UART_IIR_ID 0x06 /* Mask for the interrupt ID */
 
-#if __ASSEMBLER__ == 0
+#ifndef __ASSEMBLER__
+#include <stdint.h>
+
 enum {
 	UART_RBR = 0x00, /* Receive Buffer Register */
 	UART_THR = 0x00, /* Transmit Hold Register */
@@ -195,10 +193,10 @@ enum {
 };
 
 void timer_set(uint32_t period, uint32_t start_value);
-void timer_wait();
+void timer_wait(void);
 void timer_set_and_wait(uint32_t period, uint32_t time);
 void led_set(uint32_t value);
-uint32_t push_button_get();
+uint32_t push_button_get(void);
 #endif
 
 #endif // __PLATFORM_H__

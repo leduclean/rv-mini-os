@@ -10,12 +10,12 @@
 
 #define SLEEP_TIME 2
 
-void sleep_call()
+void sleep_call(void)
 {
 	sleep(SLEEP_TIME);
 }
 
-void fork_test()
+void fork_test(void)
 {
 	// volatile: the compiler must really store it on the user stack, which
 	// is the page fork() just marked copy on write.
@@ -35,7 +35,7 @@ void fork_test()
 	sleep(marker);
 }
 
-void segfault_test()
+void segfault_test(void)
 {
 	int8_t res;
 
@@ -54,7 +54,7 @@ void segfault_test()
 	}
 }
 
-void write_test()
+void write_test(void)
 {
 	int8_t res;
 	char ubuf[23] = "[TEST] write success \n";
@@ -65,7 +65,7 @@ void write_test()
 	}
 }
 
-void read_test()
+void read_test(void)
 {
 	int8_t res;
 	char ubuf[10];
@@ -81,7 +81,7 @@ void read_test()
 	}
 }
 
-void stream_test()
+void stream_test(void)
 {
 	int8_t res;
 	char ubuf[1];

@@ -24,7 +24,7 @@ static priority highest_ready_tracking;
 static clist_node_t sleeping_head;
 
 /** @brief Init all the ready queues and the priority flag. */
-static void _init_ready_queues()
+static void _init_ready_queues(void)
 {
 	// Reset all the node of the ready queue
 	for (int i = 0; i < PRIORITY_COUNT; i++) {
@@ -36,7 +36,7 @@ static void _init_ready_queues()
 }
 
 /** @brief Init the sleeping queue. */
-static void _init_sleep_queue()
+static void _init_sleep_queue(void)
 {
 	clist_init_node(&sleeping_head);
 }
@@ -100,7 +100,7 @@ static inline clist_node_t *_pick_highest(void)
  * @note The scan is done incrementing the index, since the highest priority
  * is 0.
  */
-static void _refresh_highest_prio()
+static void _refresh_highest_prio(void)
 {
 	// Test the supposate highest prio
 	if (!clist_empty(&ready_queues[highest_ready_tracking])) {
@@ -169,7 +169,7 @@ static void _check_and_preempt(process_t *proc)
  * @note Called on a terminaison or on a sleep, it switches on the head of
  * the highest priority ready queue.
  */
-static void _switch_out_active()
+static void _switch_out_active(void)
 {
 	irq_flags_t flags = irq_save();
 
@@ -264,7 +264,7 @@ void scheduler_admit(process_t *proc)
 	irq_restore(flags);
 }
 
-void scheduler_rotate()
+void scheduler_rotate(void)
 {
 	irq_flags_t flags = irq_save();
 
@@ -317,7 +317,7 @@ void scheduler_sleep(uint32_t nbr_secs)
 	irq_restore(flags);
 }
 
-void scheduler_wake_sleeping()
+void scheduler_wake_sleeping(void)
 {
 	irq_flags_t flags = irq_save();
 
@@ -370,7 +370,7 @@ void scheduler_remove_sleeping(process_t *proc)
 	clist_remove(&proc->sleep_node);
 }
 
-void scheduler_init()
+void scheduler_init(void)
 {
 	_init_ready_queues();
 	_init_sleep_queue();

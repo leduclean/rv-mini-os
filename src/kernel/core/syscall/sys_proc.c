@@ -5,12 +5,12 @@
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 
-uint8_t sys_get_pid()
+uint8_t sys_get_pid(void)
 {
 	return process_active()->pid;
 }
 
-int8_t sys_fork()
+int8_t sys_fork(void)
 {
 	process_t *parent = process_active();
 	process_t *child = process_spawn_child(parent);

@@ -11,14 +11,14 @@
  *
  * @note Sets the baud rate, enables the fifo and the RX interrupt.
  */
-void uart_init();
+void uart_init(void);
 
 /**
  * @brief Get the queue of the processes blocked on a uart read.
  *
  * @return Pointer to the uart wait queue.
  */
-wait_queue_t *uart_get_wait_queue();
+wait_queue_t *uart_get_wait_queue(void);
 
 /**
  * @brief Write a character in the THR fifo buffer, to transmit it.
@@ -33,7 +33,7 @@ void uart_putchar(char);
  * @note Drains the received chars into the rx buffer, then wakes every
  * process blocked on a uart read.
  */
-void uart_irq_handler();
+void uart_irq_handler(void);
 
 /**
  * @brief Read a character from the rx buffer, without blocking.

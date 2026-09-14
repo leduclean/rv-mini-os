@@ -19,7 +19,7 @@
 #include <kernel/time.h>
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
-void kernel_start()
+void kernel_start(void)
 {
 	printf("[INFO] Kernel start \n");
 
@@ -50,13 +50,13 @@ void kernel_start()
 	process_idle();
 }
 
-extern void enter_kernel(void (*entry)());
-extern void delegate_traps();
+extern void enter_kernel(void (*entry)(void));
+extern void delegate_traps(void);
 
 /**
  * @brief Boot entry point in machine mode.
  */
-void start()
+void start(void)
 {
 	// Device init
 	console_init();
