@@ -63,12 +63,13 @@ static void _cmd_handler(shell_cmd_tokens_t *cmd)
 	if (cmd->background) {
 		process_spawn(matched->cmd.prog.fn, matched->name,
 			      matched->cmd.prog.prior,
-			      false); // background: no wait
+			      matched->cmd.prog.user); // background: no wait
 	} else {
 		process_spawn_foreground(
 			matched->cmd.prog.fn, matched->name,
 			matched->cmd.prog.prior,
-			false); // foreground: blocks until child terminates
+			matched->cmd.prog
+				.user); // foreground: blocks until child terminates
 	}
 }
 

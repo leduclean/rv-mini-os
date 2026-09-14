@@ -13,6 +13,7 @@ typedef enum { CMD_BUILTIN, CMD_PROG } exec_type;
 typedef struct {
 	void (*fn)(); ///< Entry point of the program.
 	priority prior; ///< Priority the program is spawned with.
+	bool user; ///< Either the program spawned is a user program or not.
 } prog_t;
 
 /** @brief A registered command: either a builtin or a spawnable program. */
@@ -25,6 +26,9 @@ typedef struct {
 		prog_t prog; ///< Program spawned for a CMD_PROG.
 	} cmd;
 } cmd_desc_t;
+
+#define REGISTER_USER_APP(func) cmd_register_prog(#func, func, NORMAL, true)
+#define REGISTER_BUILT_IN(func) cmd_register_builtin(#func, func)
 
 /**
  * @brief Register a builtin command, executed in the shell process.
@@ -43,7 +47,8 @@ int8_t cmd_register_builtin(const char *name, void (*fn)());
  * @param prior Priority the program is spawned with.
  * @return 0 on success, -1 on invalid arguments or a full registry.
  */
-int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior);
+int8_t cmd_register_prog(const char *name, void (*fn)(), priority prior,
+			 bool user);
 
 /**
  * @brief Look a command up in the registry.
