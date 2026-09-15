@@ -19,12 +19,16 @@ extern char _trampoline_start[], _trampoline_end[];
 int mmap_kernel(void);
 
 /**
- * @brief Map a user process page table.
+ * @brief Map a user process image into @p root.
+ *
+ * On failure @p p is left untouched: the caller still owns its previous image
+ * and only has to free @p root.
  *
  * @param p A pointer to the process to map.
+ * @param root Root page table to build the image into.
  * @return [TODO: error codes]
  */
-int mmap_uprocess(process_t *p);
+int mmap_uprocess(process_t *p, pte_t *root);
 
 /**
  * @brief Get the kernel satp. 

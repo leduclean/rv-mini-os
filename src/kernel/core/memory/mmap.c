@@ -85,17 +85,14 @@ err_free_root:
 	return res;
 }
 
-int mmap_uprocess(process_t *p)
+int mmap_uprocess(process_t *p, pte_t *root)
 {
 	printf("[INFO]: mapping user process %s \n", p->name);
-
 	if (!p->user) {
-		return 0;
+		return -1;
 	}
 
-	pte_t *root = p->root_ptable;
 	int res;
-
 	// The whole code is identity mapped for now.
 	res = vpage_map_user_range(root, _user_start, _user_start,
 				   _user_end - _user_start,
@@ -112,7 +109,6 @@ int mmap_uprocess(process_t *p)
 	if (res < 0) {
 		goto err_free_stack;
 	}
-	p->ustack_pa = stack;
 
 	void *tframe = page_alloc();
 	if (!tframe) {
@@ -123,7 +119,6 @@ int mmap_uprocess(process_t *p)
 	if (res < 0) {
 		goto err_free_tframe;
 	}
-	p->tframe_pa = tframe;
 
 	// This is not U page because we will go back to user page
 	// in S mode before the sret returns to user mode.
@@ -133,6 +128,10 @@ int mmap_uprocess(process_t *p)
 	if (res < 0) {
 		goto err_free_tframe;
 	}
+
+	// Commit here once nothing can fail
+	p->ustack_pa = stack;
+	p->tframe_pa = tframe;
 
 	printf("[INFO]: process %s mapped \n", p->name);
 	return 0;
