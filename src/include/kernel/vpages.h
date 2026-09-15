@@ -98,6 +98,17 @@ int vpage_handle_cow(pte_t *root, void *va);
 int vpage_copyin(pte_t *root, void *dst, void *va, size_t count);
 
 /**
+ * @brief Copy in a kernel destination buffer a user virtual address.
+ *
+ * @param root The root page directory of emitted va.
+ * @param dst The kernel buffer destination of the copy.
+ * @param va The virtual address emitted by a user process.
+ * @param max The max number of char to copy.
+ * @return 0 on SUCCESS else error code < 0.
+ */
+int vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
+
+/**
  * @brief Copy @count byte from a physical address to a virtual address.
  *
  * @param root The root page directory of emitted va.
