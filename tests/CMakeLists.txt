@@ -4,7 +4,6 @@ project(UnitTests C)
 set(OS_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 
 set(SRC_CLIST ${OS_ROOT}/lib/clist.c)
-set(SRC_PROCESS ${OS_ROOT}/kernel/core/process/process.c)
 
 set(UNITY_SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/unity/unity_fixture.c
@@ -21,15 +20,12 @@ file(GLOB_RECURSE TEST_SRC
 
 add_executable(tests
     ${SRC_CLIST}
-    ${SRC_PROCESS}
-    ${SRC_MOCKS}
     ${UNITY_SRC}
     ${TEST_SRC}
 )
 
 target_include_directories(tests PRIVATE
     ${OS_ROOT}/include
-    ${OS_ROOT}/arch/riscv/include
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

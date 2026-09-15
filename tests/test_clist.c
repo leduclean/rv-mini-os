@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define UNUSED(var) (void)node
+
 /* ------------------------- Helpers ------------------------- */
 
 static clist_node_t *create_list(void)
@@ -26,6 +28,7 @@ static clist_node_t *create_node(void)
 
 static int callback_cnt(clist_node_t *node, void *args)
 {
+	UNUSED(node);
 	uint8_t *cnt = (uint8_t *)args;
 	(*cnt)++;
 	return 0;
@@ -33,6 +36,7 @@ static int callback_cnt(clist_node_t *node, void *args)
 
 static int callback_fail_on_first(clist_node_t *node, void *args)
 {
+	UNUSED(node);
 	(void)args;
 	return -1;
 }
