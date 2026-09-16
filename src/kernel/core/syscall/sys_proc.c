@@ -13,7 +13,7 @@ uint8_t sys_get_pid(void)
 int8_t sys_fork(void)
 {
 	process_t *parent = process_active();
-	process_t *child = process_spawn_child(parent);
+	process_t *child = process_fork(parent);
 	if (!child) {
 		return -1;
 	}

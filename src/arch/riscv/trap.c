@@ -181,7 +181,10 @@ unsigned long usertrap(void)
 		}
 		}
 	}
-	return t->satp;
+
+	// Don't use t because a syscall may have change the
+	// physical address of the tframe.
+	return p->tframe_pa->saved_regs.satp;
 }
 
 extern void kernelvec(void);
@@ -193,24 +196,22 @@ void trap_init(void)
 	_init_stvec(kernelvec);
 }
 
-void trap_enter_user_mode(void)
+void trap_frame_init(process_t *p)
+{
+	*p->tframe_pa = (tframe_t){
+              .saved_regs = {
+                      .sp = USTACK,
+                      .a[0] = (unsigned long)p->code,
+                      .sepc = (unsigned long)user_entry_point,
+                      .sstatus = _get_user_sstatus(),
+                      .satp = mmap_satp(p->root_ptable),
+              },
+              .kstack = (unsigned long)&p->kstack[KSTACK_SIZE],
+              .ksatp = mmap_kernel_satp(),
+      };
+}
+void trap_return_to_user(void)
 {
 	process_t *p = process_active();
-	tframe_t *t = p->tframe_pa;
-
-	// Wanted initial user state
-	t->saved_regs.sp = USTACK;
-
-	// Set the starting function to the app code
-	t->saved_regs.a[0] = (unsigned long)p->code;
-	t->saved_regs.sepc = (unsigned long)user_entry_point;
-
-	t->saved_regs.sstatus = _get_user_sstatus();
-	t->saved_regs.satp = mmap_satp(p->root_ptable);
-
-	// Kernel state
-	t->ksatp = mmap_kernel_satp();
-	t->kstack = (unsigned long)&p->kstack[KSTACK_SIZE];
-
-	trap_return_va()(t->saved_regs.satp);
+	trap_return_va()(p->tframe_pa->saved_regs.satp);
 };

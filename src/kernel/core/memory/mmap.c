@@ -10,6 +10,8 @@
 #include <kernel/process.h>
 #include <kernel/vpages.h>
 
+#include "asm/trap.h"
+
 static pte_t *kroot;
 
 #define SATP_SV39_MODE 8UL
@@ -85,39 +87,62 @@ err_free_root:
 	return res;
 }
 
-int mmap_uprocess(process_t *p, pte_t *root)
+int mmap_uspace(process_t *p)
 {
-	printf("[INFO]: mapping user process %s \n", p->name);
+	int res;
 	if (!p->user) {
-		return -1;
+		res = -1;
+		goto out;
 	}
 
+	pte_t *root = page_alloc();
+	if (!root) {
+		res = -1;
+		goto out;
+	}
+
+	tframe_t *t = page_alloc();
+	if (!t) {
+		res = -1;
+		goto err_free_tree;
+	}
+
+	res = vpage_map(root, (void *)TRAPFRAME, t, PTE_R | PTE_W);
+	if (res < 0) {
+		// t failed to get mapped so no in the tree yet
+		goto err_free_tframe;
+	}
+
+	p->root_ptable = root;
+	p->tframe_pa = t;
+
+	return 0;
+
+err_free_tframe:
+	page_put(t);
+err_free_tree:
+	vpage_tree_free(root);
+out:
+	return res;
+}
+
+int mmap_uimage(process_t *p)
+{
 	int res;
+
+	res = mmap_uspace(p);
+	if (res < 0) {
+		return res;
+	}
+
+	pte_t *root = p->root_ptable;
+
 	// The whole code is identity mapped for now.
 	res = vpage_map_user_range(root, _user_start, _user_start,
 				   _user_end - _user_start,
 				   PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
-		return res;
-	}
-
-	void *stack = page_alloc();
-	if (!stack) {
-		return -1;
-	}
-	res = vpage_map_user(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
-	if (res < 0) {
-		goto err_free_stack;
-	}
-
-	void *tframe = page_alloc();
-	if (!tframe) {
-		res = -1;
-		goto err_free_stack;
-	}
-	res = vpage_map(root, (void *)TRAPFRAME, tframe, PTE_R | PTE_W);
-	if (res < 0) {
-		goto err_free_tframe;
+		goto err_free_tree;
 	}
 
 	// This is not U page because we will go back to user page
@@ -126,19 +151,28 @@ int mmap_uprocess(process_t *p, pte_t *root)
 			      _trampoline_end - _trampoline_start,
 			      PTE_X | PTE_R | PTE_G);
 	if (res < 0) {
-		goto err_free_tframe;
+		goto err_free_tree;
 	}
 
-	// Commit here once nothing can fail
-	p->ustack_pa = stack;
-	p->tframe_pa = tframe;
+	// Stack lives within the image so it's allocated
+	// during a image mapping.
+	void *stack = page_alloc();
+	if (!stack) {
+		res = -1;
+		goto err_free_tree;
+	}
 
-	printf("[INFO]: process %s mapped \n", p->name);
+	res = vpage_map_user(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
+	if (res < 0) {
+		page_put(stack);
+		goto err_free_tree;
+	}
+
 	return 0;
 
-err_free_tframe:
-	page_put(tframe);
-err_free_stack:
-	page_put(stack);
+err_free_tree:
+	vpage_tree_free(root);
+	p->root_ptable = NULL;
+	p->tframe_pa = NULL;
 	return res;
 }

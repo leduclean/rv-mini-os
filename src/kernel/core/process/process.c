@@ -144,19 +144,6 @@ static inline void _init_process_queues(process_t *proc)
 }
 
 /**
- * @brief Alloc and set the page of the root page table of a processsus.
- *
- * @param proc A pointer to the processus.
- * @return The allocated page on success, NULL on failure.
- */
-static pte_t *_alloc_root_ptable(process_t *proc)
-{
-	pte_t *root = page_alloc();
-	proc->root_ptable = root;
-	return root;
-}
-
-/**
  * @brief Alloc a process squeleton ie without activating it or setting context.
  * 
  * @param name Name of the proc. 
@@ -179,22 +166,14 @@ static inline process_t *_alloc_squeletton(const char *name, priority prior,
 
 	_init_process_queues(proc);
 
-	pte_t *ptable = _alloc_root_ptable(proc);
-	if (!ptable) {
-		goto err_free_proc;
-	}
-
 	strncpy(proc->name, name, sizeof(proc->name) - 1);
 	proc->user = user;
 	proc->priority = prior;
 	proc->parent = parent;
 	proc->pid = proc_table.next_pid++;
 	proc->state = NEW;
-	return proc;
 
-err_free_proc:
-	free(proc);
-	return NULL;
+	return proc;
 }
 
 /**
@@ -223,12 +202,6 @@ static void _kproc_launcher(void)
 	process_t *p = process_active();
 	p->code();
 	scheduler_terminate(0);
-}
-
-static inline void _fork_return(void)
-{
-	process_t *p = process_active();
-	trap_return_va()(p->tframe_pa->saved_regs.satp);
 }
 
 /** @brief Create the idle process and make it active. */
@@ -316,61 +289,59 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 		goto err_restore_irq;
 	}
 
+	p->code = code;
 	if (p->pid == 0) {
 		p->ctx.ra = (uintptr_t)code;
 	} else {
 		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = user ? (uintptr_t)trap_enter_user_mode
+		p->ctx.ra = user ? (uintptr_t)trap_return_to_user
 				 : (uintptr_t)_kproc_launcher;
-		p->code = code;
 	}
 
-	if (user && mmap_uprocess(p) != 0) {
-		goto err_free_ptable;
+	if (user) {
+		if (mmap_uimage(p) != 0) {
+			goto err_free_proc;
+		}
+		trap_frame_init(p);
 	}
 
 	_activate_process(p);
 	irq_restore(state);
 	return p;
 
-err_free_ptable:
-	vpage_tree_free(p->root_ptable);
+err_free_proc:
 	free(p);
 	p = NULL;
-
 err_restore_irq:
 	irq_restore(state);
 	return p;
 }
 
-process_t *process_spawn_child(process_t *parent)
+process_t *process_fork(process_t *parent)
 {
 	irq_flags_t state = irq_save();
 
+	if (!parent->user) {
+		panic("Only fork for user process is supported ");
+	}
+
 	process_t *child = _alloc_squeletton(parent->name, parent->priority,
-					     true, parent);
-	if (!child || !parent->user) {
+					     parent->user, parent);
+	if (!child) {
 		goto err_restore_irq;
 	}
 
-	// Copy the tree
-	if (vpage_tree_copy(child->root_ptable, parent->root_ptable) < 0) {
-		goto err_free_tree;
+	if (mmap_uspace(child) < 0) {
+		goto err_free_proc;
 	}
-
-	// Allocate a page for the trap frame
-	void *tframe = page_alloc();
-	if (!tframe) {
-		goto err_free_tree;
-	}
-	if (vpage_map(child->root_ptable, (void *)TRAPFRAME, tframe,
-		      PTE_R | PTE_W) < 0) {
-		goto err_free_tframe;
-	}
-	child->tframe_pa = tframe;
 
 	// Copy the trap frame of the parent
 	memcpy(child->tframe_pa, parent->tframe_pa, sizeof(*child->tframe_pa));
+
+	// Copy all the three except TRAPFRAME
+	if (vpage_tree_copy(child->root_ptable, parent->root_ptable) < 0) {
+		goto err_free_tree;
+	}
 
 	// Child returns 0 from fork()
 	// This is going to be restored from trap_return
@@ -379,17 +350,16 @@ process_t *process_spawn_child(process_t *parent)
 	child->tframe_pa->kstack = (unsigned long)&child->kstack[KSTACK_SIZE];
 
 	// On ctx switch on fork, we want this state
-	child->ctx.ra = (unsigned long)_fork_return;
+	child->ctx.ra = (unsigned long)trap_return_to_user;
 	child->ctx.sp = (unsigned long)&child->kstack[KSTACK_SIZE];
 
 	_activate_process(child);
 	irq_restore(state);
 	return child;
 
-err_free_tframe:
-	page_put(tframe);
 err_free_tree:
 	vpage_tree_free(child->root_ptable);
+err_free_proc:
 	free(child);
 	child = NULL;
 err_restore_irq:

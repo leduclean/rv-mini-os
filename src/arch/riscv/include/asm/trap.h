@@ -10,6 +10,8 @@
 
 #include <kernel/ldsym.h>
 
+#include "kernel/vpages.h"
+
 // Forward declaration
 typedef struct process process_t;
 
@@ -20,8 +22,7 @@ typedef struct process process_t;
  * @brief Registers of the interrupted context, saved on the trap frame.
  *
  * @note trampoline.S hardcodes these offsets, keep both in sync. The frame
- * is 32 slots so that its size keeps the stack pointer 16 bytes aligned.
- * gp and tp are not saved yet, they become mandatory once user code runs.
+ * is 32 slots so that its size keeps the stack pointer 16 bytes aligned. gp and tp are not saved yet, they become mandatory once user code runs.
  */
 typedef struct pt_regs {
 	uint64_t sp; ///< Stack pointer of the interrupted context.
@@ -60,11 +61,21 @@ _Static_assert(__builtin_offsetof(tframe_t, ksatp) == 34 * 8,
 	       "trampoline.S offsets stale");
 
 /**
+ * @brief Build the trap frame of a user process from scratch.
+ *
+ * @note @c p->code is the single source of truth for the entry point; a0 only
+ * carries a copy of it across to user mode.
+ *
+ * @param p A user process with its uspace mapped and its code set.
+ */
+void trap_frame_init(process_t *p);
+
+/**
  * @brief Entrypoint to the user mode from the kernel.
  *
  * @notes This function should be used only for user programs.
  */
-void trap_enter_user_mode(void);
+void trap_return_to_user(void);
 
 /**
  * @brief Inits trap entries of M and S privileges modes.

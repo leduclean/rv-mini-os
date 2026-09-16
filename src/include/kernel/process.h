@@ -42,7 +42,7 @@ typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 /** @brief Process control block. */
 typedef struct process {
 	uint8_t pid; ///< Process identifier.
-	void (*code)(void); ///< Process code to launch.
+	void (*code)(void); ///< Kernel proc entry, read by _kproc_launcher.
 	char name[MAXNAME]; ///< Process name, null terminated.
 	state state; ///< Current lifecycle state.
 	ctx_t ctx; ///< Registers saved on a context switch.
@@ -51,7 +51,6 @@ typedef struct process {
 	bool user; ///< User mode Process flag (fixed at creation).
 	tframe_t *
 		tframe_pa; //< The User trap frame used to save the user context.
-	void *ustack_pa; ///< Process ustack physical page.
 
 	clist_node_t proc_node; ///< Process table node.
 	clist_node_t ready_node; ///< Scheduler ready queue node.
@@ -169,12 +168,24 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
  * @param user User mode process flag.
  * @return Pid of the child, -1 if the spawn failed.
  */
-int8_t process_spawn_foreground(void code(void), const char *name, priority prior,
-				bool user);
+int8_t process_spawn_foreground(void code(void), const char *name,
+				priority prior, bool user);
 
 /**
  * @brief Duplicate a process state making a copy of it execution state.
  *
+ * @warning This function is syscall only, you can't call it from 
+ * a non user parent.
+ *
  * @return The child process or NULL if failed.
  */
-process_t *process_spawn_child(process_t *parent);
+process_t *process_fork(process_t *parent);
+
+/**
+ * @brief [TODO:description]
+ *
+ * @param p [TODO:parameter]
+ * @param code [TODO:parameter]
+ * @return [TODO:return]
+ */
+int process_exec(process_t *p, void code(void));

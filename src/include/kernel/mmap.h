@@ -19,16 +19,28 @@ extern char _trampoline_start[], _trampoline_end[];
 int mmap_kernel(void);
 
 /**
- * @brief Map a user process image into @p root.
+ * @brief Allocate and map what each user process owns (root pd and a trapframe).
  *
- * On failure @p p is left untouched: the caller still owns its previous image
- * and only has to free @p root.
+ * @note fork stops here. The tree owns the trapframe too:
+ * vpage_tree_free(p->root_ptable) frees everything.
  *
- * @param p A pointer to the process to map.
- * @param root Root page table to build the image into.
- * @return [TODO: error codes]
+ * @param p A pointer to the owner process.
+ * @return 0 if sucess, error code < 0 on failure.
  */
-int mmap_uprocess(process_t *p, pte_t *root);
+int mmap_uspace(process_t *p);
+
+/**
+ * @brief mmap_uspace, code, trampoline and stack. The no parent case.
+ *
+ * @note The tree owns the trapframe on sucess.
+ *
+ * @warning On failure nothing stays allocated, you don't need 
+ * to free the tree by yourself.
+ *
+ * @param p A pointer to the owner process.
+ * @return 0 if sucess, error code < 0 on failure.
+ */
+int mmap_uimage(process_t *p);
 
 /**
  * @brief Get the kernel satp. 
