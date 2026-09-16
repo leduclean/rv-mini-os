@@ -11,7 +11,8 @@
 /** @brief A tokenized shell command line. */
 typedef struct {
 	int argc; ///< Number of arguments in @p argv.
-	char *argv[MAX_ARGS]; ///< Arguments, pointing inside the parsed line.
+	const char *
+		argv[MAX_ARGS]; ///< Arguments, pointing inside the parsed line.
 	int background; ///< 1 if the line ended with an "&", 0 otherwise.
 } shell_cmd_tokens_t;
 
