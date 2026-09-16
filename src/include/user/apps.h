@@ -11,6 +11,16 @@ void sleep_call(void);
 void fork_test(void);
 
 /**
+ * @brief Exec app that test the exec of the sleep_call app.
+ */
+void exec_test(void);
+
+/**
+ * @brief Small workaround app with fork and exec syscalls.
+ */
+void fork_exec_test(void);
+
+/**
  * @brief Test the segfault handling.
  */
 void segfault_test(void);

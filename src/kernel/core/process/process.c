@@ -367,6 +367,38 @@ err_restore_irq:
 	return child;
 }
 
+int process_exec(process_t *p, void code(void))
+{
+	if (!p->user) {
+		panic("Process exec on non user is not supported");
+	}
+	// Save the state
+	irq_flags_t state = irq_save();
+	pte_t *old_ptable = p->root_ptable;
+	tframe_t *old_tframe = p->tframe_pa;
+
+	int res = 0;
+	res = mmap_uimage(p);
+	if (res < 0) {
+		goto err_restore_old_state;
+	}
+
+	p->code = code;
+	trap_frame_init(p);
+
+	// Once all has worked free all the old ressources.
+	vpage_tree_free(old_ptable);
+	irq_restore(state);
+
+	return res;
+
+err_restore_old_state:
+	p->root_ptable = old_ptable;
+	p->tframe_pa = old_tframe;
+	irq_restore(state);
+	return res;
+}
+
 int8_t process_spawn_foreground(void code(void), const char *name,
 				priority prior, bool user)
 {

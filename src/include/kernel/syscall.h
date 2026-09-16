@@ -27,6 +27,7 @@ int8_t sys_wait_pid(int8_t pid);
 void sys_exit(int8_t exit_code);
 int8_t sys_get_pid(void);
 int8_t sys_fork(void);
+int sys_exec(const char *path, const char *argv[]);
 
 ssize_t sys_write(int fd, char *buf, size_t count);
 ssize_t sys_read(int fd, char *buf, size_t count);

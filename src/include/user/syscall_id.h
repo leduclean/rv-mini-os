@@ -6,6 +6,7 @@ enum {
 	SYS_WAIT,
 	SYS_GETPID,
 	SYS_FORK,
+	SYS_EXEC,
 	SYS_READ,
 	SYS_WRITE,
 };

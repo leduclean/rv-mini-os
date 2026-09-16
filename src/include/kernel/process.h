@@ -182,10 +182,11 @@ int8_t process_spawn_foreground(void code(void), const char *name,
 process_t *process_fork(process_t *parent);
 
 /**
- * @brief [TODO:description]
+ * @brief Replaces a current running process image with a new code, new stack and a new
+ * memory map.
  *
- * @param p [TODO:parameter]
- * @param code [TODO:parameter]
- * @return [TODO:return]
+ * @param p A pointer to the process to replace.
+ * @param code The code to the newly executed program.
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
  */
 int process_exec(process_t *p, void code(void));

@@ -48,6 +48,14 @@ int8_t wait_pid(int8_t pid);
 int8_t fork(void);
 
 /**
+ * @brief Execute a process referred by @path, this cause 
+ * the currently run to be replaced with a new program.
+ *
+ * @return Does not returns on success, -1 on error.
+ */
+int exec(const char *path, char *const argv[]);
+
+/**
  * @brief Writes up to count @count bytes from the buffer at @buf 
  * to the file referred by @fd.
  *

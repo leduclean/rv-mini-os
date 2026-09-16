@@ -1,9 +1,13 @@
 #include <stdint.h>
 
+#include <asm/cpu.h>
 #include <asm/trap.h>
 
+#include <kernel/cmd_registry.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+
+#include "kernel/vpages.h"
 
 uint8_t sys_get_pid(void)
 {
@@ -19,6 +23,32 @@ int8_t sys_fork(void)
 	}
 
 	return child->pid;
+}
+
+int sys_exec(const char *path, char const *argv[])
+{
+	//TODO: handle argv
+	(void)argv;
+	process_t *p = process_active();
+
+	// Copy the virtual uaddres to a kernel buffer
+	char kpath[MAXNAME];
+	vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
+
+	// Look up in the process registry
+	const cmd_desc_t *matched = cmd_lookup(kpath);
+	if (!matched) {
+		printf("Unknown path entered. Please refer to `help`.\n");
+		return -1;
+	}
+
+	int res;
+	res = process_exec(p, matched->cmd.prog.fn);
+	if (res < 0) {
+		return res;
+	}
+
+	return 0;
 }
 
 void sys_exit(int8_t code)

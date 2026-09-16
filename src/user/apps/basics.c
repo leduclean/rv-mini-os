@@ -35,6 +35,41 @@ void fork_test(void)
 	sleep(marker);
 }
 
+void fork_exec_test(void)
+{
+	int8_t pid;
+	pid = fork();
+	if (pid < 0) {
+		return exit(1);
+	}
+	if (pid == 0) {
+		char func[15] = "sleep_call";
+		// Exec a child process
+		pid = exec(func, NULL);
+		if (pid < 0) {
+			return exit(1);
+		}
+	} else {
+		wait_pid(pid);
+		char ubuf[27] = "[TEST] fork exec success \n";
+
+		int res;
+		res = write(1, ubuf, 27);
+		if (res < 0) {
+			return exit(1);
+		}
+	}
+}
+
+void exec_test(void)
+{
+	int8_t res;
+	res = exec("sleep_call", NULL);
+	if (res < 0) {
+		return exit(1);
+	}
+}
+
 void segfault_test(void)
 {
 	int8_t res;

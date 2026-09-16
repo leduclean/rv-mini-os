@@ -5,6 +5,8 @@
 #include <kernel/syscall.h>
 #include <user/syscall_id.h>
 
+#include "asm/cpu.h"
+
 //TODO: Use a syscall table instead of a large switch case.
 long syscall_dispatch(long n, long a, long b, long c)
 {
@@ -34,11 +36,13 @@ long syscall_dispatch(long n, long a, long b, long c)
 		return sys_get_pid();
 	case SYS_FORK:
 		return sys_fork();
+	case SYS_EXEC:
+		return sys_exec((const char *)a, (const char **)b);
 	case SYS_WRITE:
 		return sys_write(a, (char *)b, c);
 	case SYS_READ:
 		return sys_read(a, (char *)b, c);
 	default:
-		return -1;
+		panic("Unsupported syscall");
 	}
 }

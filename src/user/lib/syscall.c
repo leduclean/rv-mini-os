@@ -13,9 +13,15 @@ static inline long _syscall0(long n)
 {
 	return usyscall(n, 0, 0, 0, 0, 0, 0);
 }
+
 static inline long _syscall1(long n, long a)
 {
 	return usyscall(n, a, 0, 0, 0, 0, 0);
+}
+
+static inline long _syscall2(long n, unsigned long a, unsigned long b)
+{
+	return usyscall(n, a, b, 0, 0, 0, 0);
 }
 
 static inline long _syscall3(unsigned long n, unsigned long a, unsigned long b,
@@ -51,6 +57,11 @@ uint8_t getpid(void)
 int8_t fork(void)
 {
 	return _syscall0(SYS_FORK);
+}
+
+int exec(const char *path, char *const argv[])
+{
+	return _syscall2(SYS_EXEC, (unsigned long)path, (unsigned long)argv);
 }
 
 ssize_t write(int fd, const char *buf, size_t count)

@@ -158,6 +158,8 @@ void programs_init(void)
 {
 	REGISTER_USER_APP(sleep_call);
 	REGISTER_USER_APP(fork_test);
+	REGISTER_USER_APP(exec_test);
+	REGISTER_USER_APP(fork_exec_test);
 	REGISTER_USER_APP(segfault_test);
 	REGISTER_USER_APP(write_test);
 	REGISTER_USER_APP(read_test);
