@@ -15,7 +15,7 @@
 #define CONSOLE_FD 1 /* Console file descriptor number */
 #define SYS_BUFFER_SIZE (1 << 10)
 
-ssize_t sys_write(int fd, char *ubuf, size_t count)
+ssize_t sys_write(int fd, const char *ubuf, size_t count)
 {
 	if (fd != CONSOLE_FD) {
 		panic("We do not handle other file descriptor than the screen for now");

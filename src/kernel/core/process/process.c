@@ -410,7 +410,7 @@ int8_t process_spawn_foreground(void code(void), const char *name,
 	// Wait for the child to terminate.
 	// FIX: It's weird that there is some
 	// syscall here.
-	sys_wait_pid(child->pid);
+	sys_waitpid(child->pid);
 	return pid;
 };
 

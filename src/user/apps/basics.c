@@ -50,7 +50,7 @@ void fork_exec_test(void)
 			return exit(1);
 		}
 	} else {
-		wait_pid(pid);
+		waitpid(pid);
 		char ubuf[27] = "[TEST] fork exec success \n";
 
 		int res;
@@ -83,7 +83,7 @@ void segfault_test(void)
 		uint32_t *marker = NULL;
 		*marker = 0;
 	} else {
-		wait_pid(res);
+		waitpid(res);
 		// Deferencing a NULL pointer should results in a page faults
 		sleep(2);
 	}

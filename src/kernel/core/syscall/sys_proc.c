@@ -6,10 +6,11 @@
 #include <kernel/cmd_registry.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+#include <kernel/syscall.h>
 
 #include "kernel/vpages.h"
 
-uint8_t sys_get_pid(void)
+uint8_t sys_getpid(void)
 {
 	return process_active()->pid;
 }
@@ -25,7 +26,7 @@ int8_t sys_fork(void)
 	return child->pid;
 }
 
-int sys_exec(const char *path, char const *argv[])
+int sys_exec(const char *path, char *const argv[])
 {
 	//TODO: handle argv
 	(void)argv;
@@ -51,7 +52,7 @@ int sys_exec(const char *path, char const *argv[])
 	return 0;
 }
 
-void sys_exit(int8_t code)
+void sys_exit(uint8_t code)
 {
 	scheduler_terminate(code);
 }

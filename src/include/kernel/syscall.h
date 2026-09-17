@@ -9,25 +9,18 @@
 
 #include <lib/types.h>
 
+#include <kernel/syscall_def.h>
+
+#define X_DEF_KERNEL(_enum, ret, name, args) ret sys_##name args;
+SYSCALLS(X_DEF_KERNEL)
+#undef X_DEF_KERNEL
+
 /**
  * @brief Dispatch the call to the correct kernel routine.
  *
- * @param n SYS number.
- * @param a First param for the routine.
- * @param b Second param for the routine.
- * @param c Third param for the routine.
+ * @param n The syscall number.
+ * @param a/b/c/d/e/f syscall args.
  */
-long syscall_dispatch(long n, long a, long b, long c);
-
-void sys_sleep(uint32_t s);
-
-int8_t sys_wait(void);
-int8_t sys_wait_pid(int8_t pid);
-
-void sys_exit(int8_t exit_code);
-int8_t sys_get_pid(void);
-int8_t sys_fork(void);
-int sys_exec(const char *path, const char *argv[]);
-
-ssize_t sys_write(int fd, char *buf, size_t count);
-ssize_t sys_read(int fd, char *buf, size_t count);
+long syscall_dispatch(unsigned long n, unsigned long a, unsigned long b,
+		      unsigned long c, unsigned long d, unsigned long e,
+		      unsigned long f);

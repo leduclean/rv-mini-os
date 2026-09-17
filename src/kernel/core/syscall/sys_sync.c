@@ -13,6 +13,7 @@
 
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+#include <kernel/syscall.h>
 
 int8_t sys_wait(void)
 {
@@ -34,7 +35,7 @@ int8_t sys_wait(void)
 	return pid;
 }
 
-int8_t sys_wait_pid(int8_t pid)
+int8_t sys_waitpid(int8_t pid)
 {
 	irq_flags_t flags = irq_save();
 

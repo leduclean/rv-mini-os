@@ -155,7 +155,8 @@ unsigned long usertrap(void)
 		case ECALL_UMODE:
 			t->sepc += 4;
 			t->a[0] = syscall_dispatch(t->a[7], t->a[0], t->a[1],
-						   t->a[2]);
+						   t->a[2], t->a[3], t->a[4],
+						   t->a[5]);
 			break;
 		case STORE_PAGE_FAULT: {
 			// TODO: drop once CoW is trusted, this fires per page.

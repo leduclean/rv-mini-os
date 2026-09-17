@@ -37,7 +37,7 @@ int8_t wait(void);
  * @param pid Pid of the child to wait for.
  * @return Pid of the reaped child.
  */
-int8_t wait_pid(int8_t pid);
+int8_t waitpid(int8_t pid);
 
 /**
  * @brief Dupplicate a process state making a copy of it execution

@@ -1,48 +1,29 @@
 #include <lib/stdio.h>
 
+#include <asm/cpu.h>
+
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
-#include <user/syscall_id.h>
+#include <kernel/syscall_def.h>
 
-#include "asm/cpu.h"
+typedef long (*syscall_fn)(unsigned long, unsigned long, unsigned long,
+			   unsigned long, unsigned long, unsigned long);
 
-//TODO: Use a syscall table instead of a large switch case.
-long syscall_dispatch(long n, long a, long b, long c)
+#define X_TAB_ENTRY(enum, ret, name, args) \
+	[SYS_##enum] = (syscall_fn)(void *)sys_##name,
+
+static const syscall_fn syscall_tab[SYS_NBR] = { SYSCALLS(X_TAB_ENTRY) };
+
+#undef X_TAB_ENTRY
+
+long syscall_dispatch(unsigned long n, unsigned long a, unsigned long b,
+		      unsigned long c, unsigned long d, unsigned long e,
+		      unsigned long f)
+
 {
-	uint8_t pid = process_active()->pid;
-	switch (n) {
-	case SYS_SLEEP:
-		printf("[Kernel/INFO]: Sleeping for %lu seconds (pid %d) \n", a,
-		       pid);
-		sys_sleep(a);
-		return 0;
-	case SYS_EXIT: {
-		printf("[Kernel/INFO]: Called EXIT on process (pid %d) \n",
-		       pid);
-		scheduler_terminate(a);
-		return 0;
-	}
-	case SYS_WAIT: {
-		uint8_t res;
-		if (a == 0) {
-			res = sys_wait();
-		} else {
-			res = sys_wait_pid(a);
-		}
-		return res;
-	}
-	case SYS_GETPID:
-		return sys_get_pid();
-	case SYS_FORK:
-		return sys_fork();
-	case SYS_EXEC:
-		return sys_exec((const char *)a, (const char **)b);
-	case SYS_WRITE:
-		return sys_write(a, (char *)b, c);
-	case SYS_READ:
-		return sys_read(a, (char *)b, c);
-	default:
+	if (n >= SYS_NBR) {
 		panic("Unsupported syscall");
 	}
+	return syscall_tab[n](a, b, c, d, e, f);
 }
