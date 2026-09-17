@@ -215,9 +215,7 @@ static inline void unset_cow(pte_t *leaf)
 	return;
 }
 
-//TODO: This function could transform using the SUM bit
-// in sstatus to fast copy instead of going to the tree.
-static inline void *_get_pa_from_va(pte_t *root, void *va,
+static inline void *_get_pa_from_va(pte_t *root, const void *va,
 				    unsigned long needed_flags)
 {
 	pte_t *leaf = walk_leaf(root, va);
@@ -238,7 +236,7 @@ static inline void *_get_pa_from_va(pte_t *root, void *va,
 	return (char *)page + ((unsigned long)va & OFFSET_MASK);
 }
 
-int vpage_copyin(pte_t *root, void *dst, void *va, size_t count)
+int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 {
 	void *pa = _get_pa_from_va(root, va, PTE_V | PTE_U | PTE_R);
 	if (!pa) {
@@ -286,7 +284,7 @@ int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
 	return 0;
 }
 
-int vpage_handle_cow(pte_t *root, void *va)
+int vpage_handle_cow(pte_t *root, const void *va)
 {
 	int res;
 

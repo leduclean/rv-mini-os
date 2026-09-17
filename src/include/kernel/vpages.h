@@ -84,7 +84,18 @@ void vpage_tree_free(pte_t *root);
  */
 int vpage_tree_copy(pte_t *dst, pte_t *src);
 
-int vpage_handle_cow(pte_t *root, void *va);
+/**
+ * @brief Handle a CoW access to a write page.
+ * 
+ * @note This function has side effects on the tree itselfs,
+ * copying a page to make it writable. But it does not affects 
+ * the content at va.
+ *
+ * @param root A pointer to the root page directory.
+ * @param va The virtual address of the CoW page.
+ * @return 0 on SUCCESS else error code < 0.
+ */
+int vpage_handle_cow(pte_t *root, const void *va);
 
 /**
  * @brief Copy @count byte from a virtual address to a destination.
@@ -95,7 +106,7 @@ int vpage_handle_cow(pte_t *root, void *va);
  * @param count The number of byte to copy.
  * @return 0 on SUCCESS else error code <0.
  */
-int vpage_copyin(pte_t *root, void *dst, void *va, size_t count);
+int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
 
 /**
  * @brief Copy in a kernel destination buffer a user virtual address.
