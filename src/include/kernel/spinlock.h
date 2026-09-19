@@ -2,7 +2,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef struct spinlock spinlock_t;
+#include "asm/cpu.h"
+
+typedef struct {
+	volatile unsigned int flag;
+} spinlock_t;
 
 /**
  * @brief Init a spinlock structure.
@@ -24,3 +28,29 @@ void spinlock_acquire(spinlock_t *s);
  * @param s A pointer to the spinlock.
  */
 void spinlock_release(spinlock_t *s);
+
+/**
+ * @brief Acquire a spinlock and save irq state.
+ *
+ * @param s A pointer to the spinlock.
+ * @return The saved irq flags.
+ */
+static inline irq_flags_t spinlock_acquire_irq_save(spinlock_t *s)
+{
+	irq_flags_t flags = irq_save();
+	spinlock_acquire(s);
+	return flags;
+}
+
+/**
+ * @brief Release a spinlock and restore irq state.
+ *
+ * @param s A pointer to the spinlock.
+ * @param flags The saved irq flags.
+ */
+static inline void spinlock_release_irq_restore(spinlock_t *s,
+						irq_flags_t flags)
+{
+	spinlock_release(s);
+	irq_restore(flags);
+}
