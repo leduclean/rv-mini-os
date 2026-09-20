@@ -16,6 +16,9 @@ typedef struct wait_queue {
 	clist_node_t head; ///< Head sentinel of the waiting nodes clist.
 } wait_queue_t;
 
+#define WAIT_QUEUE_INITIALIZER(name) \
+	{ .head = CLIST_NODE_INITIALIZER((name).head) }
+
 /**
  * @brief Init a wait queue.
  *

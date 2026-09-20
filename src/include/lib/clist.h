@@ -23,6 +23,13 @@ typedef struct clist_node {
 	uint8_t in_list; ///< 1 if the node is in a clist, 0 otherwise.
 } clist_node_t;
 
+#define CLIST_NODE_INITIALIZER(name) \
+	{                            \
+		.prev = &(name),     \
+		.next = &(name),     \
+		.in_list = 0,        \
+	}
+
 /**
  * @brief Comparison policy used to keep a clist sorted.
  *
