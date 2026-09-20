@@ -14,6 +14,16 @@
 
 #include "kernel/spinlock.h"
 
+/**
+ * @brief This counter is used to disable the scheduler preemption.
+ */
+static uint32_t preempt_count;
+
+/**
+ * @brief Flag indicated a delayed schedule operation.
+ */
+static bool need_resched;
+
 extern void ctx_sw(ctx_t *old_ctx, ctx_t *new_ctx);
 
 /** @brief Priority mapped ready queues. */
@@ -24,6 +34,16 @@ static priority highest_ready_tracking;
 
 /** @brief Processes sleeping on a timer, sorted by wake up date. */
 static clist_node_t sleeping_head;
+
+static inline bool _preempt_disabled(void)
+{
+	return preempt_count > 0;
+}
+
+static inline void _delay_schedule(void)
+{
+	need_resched = true;
+}
 
 /** @brief Init all the ready queues and the priority flag. */
 static void _init_ready_queues(void)
@@ -145,12 +165,13 @@ static void _do_ctx_switch(process_t *next)
 }
 
 /**
- * @brief Check if a priority preemption is needed and does it if needed.
+ * @brief Check if a priority preemption is needed and possible and does it if needed.
  *
  * @param proc Process that may preempt the active one.
  */
 static void _check_and_preempt(process_t *proc)
 {
+
 	process_t *current = process_active();
 
 	if (!current) {
@@ -160,8 +181,12 @@ static void _check_and_preempt(process_t *proc)
 	priority prior = proc->priority;
 	priority current_prior = current->priority;
 	if (priority_higher(prior, current_prior)) {
-		// Immediatly switch to this process
-		_do_ctx_switch(proc);
+		if (_preempt_disabled()) {
+			_delay_schedule();
+		} else {
+			// Immediatly switch to this process
+			_do_ctx_switch(proc);
+		}
 	}
 }
 
@@ -266,11 +291,6 @@ void scheduler_admit(process_t *proc)
 	irq_restore(flags);
 }
 
-/**
- * @brief This counter is used to disable the scheduler preemption.
- */
-extern uint32_t preempt_count;
-
 void scheduler_disable_preempt(void)
 {
 	preempt_count++;
@@ -279,6 +299,10 @@ void scheduler_disable_preempt(void)
 void scheduler_enable_preempt(void)
 {
 	preempt_count--;
+	if (preempt_count == 0 && need_resched) {
+		need_resched = false;
+		scheduler_rotate();
+	}
 }
 
 void scheduler_rotate(void)
@@ -352,13 +376,23 @@ void scheduler_wake_sleeping(void)
 void scheduler_block_on(wait_queue_t *wq)
 {
 	irq_flags_t flags = irq_save();
-	spinlock_lock(&wq->lock);
 
 	process_t *proc = process_active();
 	_move_to_wq(proc, wq);
 	_switch_out_active();
 
-	spinlock_unlokc(&wq->lock);
+	irq_restore(flags);
+}
+
+void scheduler_block_on_locked(wait_queue_t *wq, spinlock_t *s)
+{
+	irq_flags_t flags = irq_save();
+	process_t *proc = process_active();
+
+	_move_to_wq(proc, wq);
+	spinlock_unlock(s);
+	_switch_out_active();
+
 	irq_restore(flags);
 }
 

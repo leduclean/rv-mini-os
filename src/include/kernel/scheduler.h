@@ -8,6 +8,9 @@
 
 #include <kernel/process.h>
 
+#include "asm/cpu.h"
+#include "kernel/spinlock.h"
+
 /**
  * @brief Use this function before @scheduler_enable_preempt for a no switch section.
  * @warning @scheduler_enable_preempt should always be called after this function.
@@ -74,6 +77,18 @@ uint8_t scheduler_is_sleeping(process_t *proc);
  * @param wq Wait queue to block on.
  */
 void scheduler_block_on(wait_queue_t *wq);
+
+/**
+ * @brief Block the active process on a wait queue guarded by a 
+ * lock.
+ *
+ * @param wq Wait queue to block on.
+ * @param s The associated lock of the queue.
+ *
+ * @warning @s MUST be locked by @spinlock_lock or @spinlock_lock_irq_save before calling this.
+ * @note This function will handle the release of the lock.
+ */
+void scheduler_block_on_locked(wait_queue_t *wq, spinlock_t *s);
 
 /**
  * @brief Block the active process on a wait queue, with a timeout.

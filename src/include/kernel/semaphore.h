@@ -7,8 +7,16 @@
 
 #include <stdint.h>
 
-/** @brief Counting semaphore, opaque to its users. */
-typedef struct semaphore semaphore_t;
+#include <kernel/spinlock.h>
+#include <kernel/waitqueue.h>
+
+//TODO: provide static initializer.
+/** @brief Counting semaphore and the processes waiting on it. */
+typedef struct semaphore {
+	int count; ///< Number of available ressources.
+	wait_queue_t waiting; ///< Processes blocked waiting for a ressource.
+	spinlock_t lock;
+} semaphore_t;
 
 /**
  * @brief Init a semaphore.
@@ -19,11 +27,11 @@ typedef struct semaphore semaphore_t;
 void sem_init(semaphore_t *sem, int val);
 
 /**
- * @brief Release a ressource and wake the first waiting process, if any.
+ * @brief Post a ressource and wake the first waiting process, if any.
  *
  * @param sem Semaphore to release.
  */
-void sem_release(semaphore_t *sem);
+void sem_post(semaphore_t *sem);
 
 /**
  * @brief Take a ressource without blocking.
@@ -31,11 +39,11 @@ void sem_release(semaphore_t *sem);
  * @param sem Semaphore to take.
  * @return 0 if a ressource was taken, -1 if none was available.
  */
-int8_t sem_try_take(semaphore_t *sem);
+int sem_try_take(semaphore_t *sem);
 
 /**
- * @brief Take a ressource, blocking until one is available.
+ * @brief Wait for a ressource, blocking until one is available.
  *
  * @param sem Semaphore to take.
  */
-void sem_take(semaphore_t *sem);
+void sem_wait(semaphore_t *sem);

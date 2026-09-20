@@ -8,60 +8,63 @@
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 #include <kernel/semaphore.h>
+#include <kernel/spinlock.h>
 #include <kernel/waitqueue.h>
-
-/** @brief Counting semaphore and the processes waiting on it. */
-struct semaphore {
-	int count; ///< Number of available ressources.
-	wait_queue_t waiting; ///< Processes blocked waiting for a ressource.
-};
 
 void sem_init(semaphore_t *sem, int val)
 {
-	irq_flags_t flags = irq_save();
+	spinlock_init(&sem->lock);
 	wq_init(&sem->waiting);
 	sem->count = val;
-
-	irq_restore(flags);
 }
 
-int8_t sem_try_take(semaphore_t *sem)
+static int _sem_try_take_unlocked(semaphore_t *sem)
 {
-	// Semaphore op are atomics so we disable interupts
-	irq_flags_t flags = irq_save();
 	if (sem->count <= 0) {
-		irq_restore(flags);
 		return -1;
 	}
 	sem->count--;
-	irq_restore(flags);
 	return 0;
 }
 
-void sem_take(semaphore_t *sem)
+int sem_try_take(semaphore_t *sem)
 {
-	// Semaphore op are atomics so we disable interupts
-	irq_flags_t flags = irq_save();
-	if (sem_try_take(sem) == -1) {
-		scheduler_block_on(&sem->waiting);
-	}
-	irq_restore(flags);
+	int res;
+	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
+
+	res = _sem_try_take_unlocked(sem);
+
+	spinlock_unlock_irq_restore(&sem->lock, flags);
+	return res;
 }
 
-void sem_release(semaphore_t *sem)
+void sem_wait(semaphore_t *sem)
 {
-	// Semaphore op are atomics so we disable interupts
-	irq_flags_t flags = irq_save();
+	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
 
-	// Release a ressource
-	sem->count++;
+	if (_sem_try_take_unlocked(sem) < 0) {
+		scheduler_block_on_locked(&sem->waiting, &sem->lock);
+		irq_restore(flags);
+		return;
+	}
 
-	// Check in the waiting list if one
-	// is waiting and wake him up if necessary.
+	spinlock_unlock_irq_restore(&sem->lock, flags);
+}
+
+void sem_post(semaphore_t *sem)
+{
+	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
+
 	if (!wq_is_empty(&sem->waiting)) {
+		// Directly give the ressource to a waiting thread
+		// without posting thre ressource
 		clist_node_t *node = wq_pop_head(&sem->waiting);
 		process_t *proc = container_of(node, process_t, wait_node);
 		scheduler_ready_process(proc);
+	} else {
+		// Post a ressource
+		sem->count++;
 	}
-	irq_restore(flags);
+
+	spinlock_unlock_irq_restore(&sem->lock, flags);
 }
