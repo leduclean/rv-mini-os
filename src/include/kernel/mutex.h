@@ -9,7 +9,6 @@
 #include <kernel/process.h>
 #include <kernel/spinlock.h>
 
-//TODO: There should be a static init.
 /** @brief Mutex, with its owner and the processes waiting for it. */
 typedef struct mutex {
 	uint8_t locked; ///< 1 if the mutex is held, 0 otherwise.
@@ -17,6 +16,12 @@ typedef struct mutex {
 	wait_queue_t wq; ///< Processes blocked waiting for the mutex.
 	spinlock_t lock; ///< Mutex internal structure lock.
 } mutex_t;
+
+#define MUTEX_INITIALIZER(name)                   \
+	{ .locked = 0,                             \
+	  .owner = NULL,                           \
+	  .wq = WAIT_QUEUE_INITIALIZER((name).wq), \
+	  .lock = SPINLOCK_UNLOCKED }
 
 /**
  * @brief Init a mutex in the unlocked state.

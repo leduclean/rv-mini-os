@@ -11,7 +11,7 @@ typedef struct {
 	atomic_uint flag;
 } spinlock_t;
 
-#define SPINLOCK_INIT { .flag = 0 }
+#define SPINLOCK_UNLOCKED { .flag = 0 }
 
 /**
  * @brief Init a spinlock structure.

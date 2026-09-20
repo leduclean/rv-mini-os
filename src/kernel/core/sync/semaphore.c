@@ -14,7 +14,7 @@
 void sem_init(semaphore_t *sem, int val)
 {
 	spinlock_init(&sem->lock);
-	wq_init(&sem->waiting);
+	wq_init(&sem->wq);
 	sem->count = val;
 }
 
@@ -43,7 +43,7 @@ void sem_wait(semaphore_t *sem)
 	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
 
 	if (_sem_try_take_unlocked(sem) < 0) {
-		scheduler_block_on_locked(&sem->waiting, &sem->lock);
+		scheduler_block_on_locked(&sem->wq, &sem->lock);
 		irq_restore(flags);
 		return;
 	}
@@ -55,10 +55,10 @@ void sem_post(semaphore_t *sem)
 {
 	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
 
-	if (!wq_is_empty(&sem->waiting)) {
+	if (!wq_is_empty(&sem->wq)) {
 		// Directly give the ressource to a waiting thread
 		// without posting thre ressource
-		clist_node_t *node = wq_pop_head(&sem->waiting);
+		clist_node_t *node = wq_pop_head(&sem->wq);
 		process_t *proc = container_of(node, process_t, wait_node);
 		scheduler_ready_process(proc);
 	} else {

@@ -10,13 +10,18 @@
 #include <kernel/spinlock.h>
 #include <kernel/waitqueue.h>
 
-//TODO: provide static initializer.
 /** @brief Counting semaphore and the processes waiting on it. */
 typedef struct semaphore {
 	int count; ///< Number of available ressources.
-	wait_queue_t waiting; ///< Processes blocked waiting for a ressource.
-	spinlock_t lock;
+	wait_queue_t wq; ///< Processes blocked waiting for a ressource.
+	spinlock_t
+		lock; ///< Lock protecting the inner structure of the semaphore.
 } semaphore_t;
+
+#define SEMAPHORE_INITIALIZER(name, val)           \
+	{ .count = (val),                          \
+	  .wq = WAIT_QUEUE_INITIALIZER((name).wq), \
+	  .lock = SPINLOCK_UNLOCKED }
 
 /**
  * @brief Init a semaphore.
