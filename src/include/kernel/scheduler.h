@@ -4,8 +4,21 @@
  */
 
 #pragma once
+#include <stdint.h>
+
 #include <kernel/process.h>
 
+/**
+ * @brief Use this function before @scheduler_enable_preempt for a no switch section.
+ * @warning @scheduler_enable_preempt should always be called after this function.
+ */
+void scheduler_disable_preempt(void);
+
+/**
+ * @brief Use this function after @scheduler_disable_preempt for a no switch section.
+ * @warning @scheduler_disable_preempt should always be called before this function.
+ */
+void scheduler_enable_preempt(void);
 /**
  * @brief Rotate the highest priority ready queue and switch to its head.
  *

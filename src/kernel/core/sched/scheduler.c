@@ -12,6 +12,8 @@
 #include <kernel/time.h>
 #include <kernel/waitqueue.h>
 
+#include "kernel/spinlock.h"
+
 extern void ctx_sw(ctx_t *old_ctx, ctx_t *new_ctx);
 
 /** @brief Priority mapped ready queues. */
@@ -264,8 +266,28 @@ void scheduler_admit(process_t *proc)
 	irq_restore(flags);
 }
 
+/**
+ * @brief This counter is used to disable the scheduler preemption.
+ */
+extern uint32_t preempt_count;
+
+void scheduler_disable_preempt(void)
+{
+	preempt_count++;
+}
+
+void scheduler_enable_preempt(void)
+{
+	preempt_count--;
+}
+
 void scheduler_rotate(void)
 {
+	if (preempt_count > 0) {
+		// Preempt disable -> skip
+		return;
+	}
+
 	irq_flags_t flags = irq_save();
 
 	process_t *next = _rotate_ready_queue(_pick_highest());
@@ -330,11 +352,13 @@ void scheduler_wake_sleeping(void)
 void scheduler_block_on(wait_queue_t *wq)
 {
 	irq_flags_t flags = irq_save();
+	spinlock_lock(&wq->lock);
 
 	process_t *proc = process_active();
 	_move_to_wq(proc, wq);
 	_switch_out_active();
 
+	spinlock_unlokc(&wq->lock);
 	irq_restore(flags);
 }
 

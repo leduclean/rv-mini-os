@@ -25,14 +25,14 @@ void spinlock_init(spinlock_t *s);
  *
  * @param s A pointer to the spinlock structure.
  */
-void spinlock_acquire(spinlock_t *s);
+void spinlock_lock(spinlock_t *s);
 
 /**
  * @brief Release an acquired spinlock acquired by the @spinlock_acquire.
  *
  * @param s A pointer to the spinlock.
  */
-void spinlock_release(spinlock_t *s);
+void spinlock_unlock(spinlock_t *s);
 
 /**
  * @brief Acquire a spinlock and save irq state.
@@ -40,10 +40,10 @@ void spinlock_release(spinlock_t *s);
  * @param s A pointer to the spinlock.
  * @return The saved irq flags.
  */
-static inline irq_flags_t spinlock_acquire_irq_save(spinlock_t *s)
+static inline irq_flags_t spinlock_lock_irq_save(spinlock_t *s)
 {
 	irq_flags_t flags = irq_save();
-	spinlock_acquire(s);
+	spinlock_lock(s);
 	return flags;
 }
 
@@ -53,9 +53,8 @@ static inline irq_flags_t spinlock_acquire_irq_save(spinlock_t *s)
  * @param s A pointer to the spinlock.
  * @param flags The saved irq flags.
  */
-static inline void spinlock_release_irq_restore(spinlock_t *s,
-						irq_flags_t flags)
+static inline void spinlock_unlock_irq_restore(spinlock_t *s, irq_flags_t flags)
 {
-	spinlock_release(s);
+	spinlock_unlock(s);
 	irq_restore(flags);
 }
