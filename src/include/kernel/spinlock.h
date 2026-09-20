@@ -1,12 +1,17 @@
 #pragma once
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "asm/cpu.h"
 
 typedef struct {
-	volatile unsigned int flag;
+	// We use uint because riscv atomics use word or double word.
+	// i.e "A" extension and amoswap instruction.
+	atomic_uint flag;
 } spinlock_t;
+
+#define SPINLOCK_INIT { .flag = 0 }
 
 /**
  * @brief Init a spinlock structure.
