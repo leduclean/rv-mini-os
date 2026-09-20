@@ -7,12 +7,15 @@
 #include <stdint.h>
 
 #include <kernel/process.h>
+#include <kernel/spinlock.h>
 
+//TODO: There should be a static init.
 /** @brief Mutex, with its owner and the processes waiting for it. */
 typedef struct mutex {
 	uint8_t locked; ///< 1 if the mutex is held, 0 otherwise.
 	process_t *owner; ///< Process holding the mutex, NULL if free.
 	wait_queue_t wq; ///< Processes blocked waiting for the mutex.
+	spinlock_t lock; ///< Mutex internal structure lock.
 } mutex_t;
 
 /**
@@ -51,7 +54,7 @@ void mutex_lock(mutex_t *m);
  * @param m Mutex to lock.
  * @return 0 if the ownership was taken, -1 if it is already locked.
  */
-int8_t mutex_trylock(mutex_t *m);
+int mutex_trylock(mutex_t *m);
 
 /**
  * @brief Try to take the ownership of a mutex with a timeout.

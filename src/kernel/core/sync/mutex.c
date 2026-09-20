@@ -9,15 +9,14 @@
 #include <kernel/mutex.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+#include <kernel/spinlock.h>
 
 void mutex_init(mutex_t *m)
 {
-	// Atomic
-	irq_flags_t flags = irq_save();
+	spinlock_init(&m->lock);
+	wq_init(&m->wq);
 	m->locked = 0;
 	m->owner = NULL;
-	wq_init(&m->wq);
-	irq_restore(flags);
 }
 
 uint8_t mutex_is_lock(const mutex_t *m)
@@ -30,42 +29,49 @@ process_t *mutex_owner(const mutex_t *m)
 	return m->owner;
 }
 
-int8_t mutex_trylock(mutex_t *m)
+static int _mutex_trylock_unlocked(mutex_t *m)
 {
-	// Atomic
-	irq_flags_t flags = irq_save();
 	if (m->locked) {
 		// Already locked
-		irq_restore(flags);
 		return -1;
 	}
 
-	// If not locked take the onership.
+	// If not locked take the ownership.
 	m->locked = 1;
 	m->owner = process_active();
-	irq_restore(flags);
 	return 0;
+}
+
+int mutex_trylock(mutex_t *m)
+{
+	int res;
+	spinlock_lock(&m->lock);
+
+	res = _mutex_trylock_unlocked(m);
+
+	spinlock_unlock(&m->lock);
+	return res;
 }
 
 void mutex_lock(mutex_t *m)
 {
-	irq_flags_t flags = irq_save();
+	spinlock_lock(&m->lock);
 
-	if (mutex_trylock(m) == -1) {
-		scheduler_block_on(&m->wq);
+	if (_mutex_trylock_unlocked(m) == -1) {
+		scheduler_block_on_locked(&m->wq, &m->lock);
+		return;
 	}
 
-	irq_restore(flags);
+	spinlock_unlock(&m->lock);
 }
 
 void mutex_unlock(mutex_t *m)
 {
-	// Atomic
-	irq_flags_t flags = irq_save();
+	spinlock_lock(&m->lock);
+
 	process_t *current = process_active();
 	if ((!m->locked) || (m->owner != current)) {
-		irq_restore(flags);
-		return;
+		goto out;
 	}
 
 	if (!wq_is_empty(&m->wq)) {
@@ -79,5 +85,7 @@ void mutex_unlock(mutex_t *m)
 		m->locked = 0;
 		m->owner = NULL;
 	}
-	irq_restore(flags);
+
+out:
+	spinlock_unlock(&m->lock);
 }
