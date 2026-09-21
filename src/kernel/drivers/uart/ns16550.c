@@ -2,34 +2,18 @@
 
 #include <lib/stdio.h>
 
+#include <asm/board.h>
 #include <asm/mmio.h>
-#include <asm/platform.h>
 
 #include <drivers/uart.h>
 
 #include <kernel/scheduler.h>
+#include <kernel/semaphore.h>
 #include <kernel/waitqueue.h>
 
-#include "kernel/semaphore.h"
+#include "ns16550_regs.h"
 
 #define UART_RX_BUFFER_SIZE 128
-
-/**
- * @brief Sleeping queue relative to the uart IO.
- *
- * @note All of its processes should be woken on irq.
- */
-static wait_queue_t uart_wait_queue;
-
-static inline void _uart_init_queue(void)
-{
-	wq_init(&uart_wait_queue);
-}
-
-wait_queue_t *uart_get_wait_queue(void)
-{
-	return &uart_wait_queue;
-}
 
 /** @brief Ring buffer used to hold the received chars. */
 typedef struct {
@@ -39,6 +23,7 @@ typedef struct {
 } uart_ring_buffer_t;
 
 static uart_ring_buffer_t rx_buffer;
+static semaphore_t rx_count = SEMAPHORE_INITIALIZER(rx_count, 0);
 
 static inline int _buffer_empty(uart_ring_buffer_t *b)
 {
@@ -50,12 +35,15 @@ static inline int _buffer_full(uart_ring_buffer_t *b)
 	return ((b->head + 1) % UART_RX_BUFFER_SIZE) == b->tail;
 }
 
-static inline void _buffer_put(uart_ring_buffer_t *b, char c)
+static inline int _buffer_put(uart_ring_buffer_t *b, char c)
 {
-	if (!_buffer_full(b)) {
-		b->buf[b->head] = c;
-		b->head = (b->head + 1) % UART_RX_BUFFER_SIZE;
+	if (_buffer_full(b)) {
+		return -1;
 	}
+
+	b->buf[b->head] = c;
+	b->head = (b->head + 1) % UART_RX_BUFFER_SIZE;
+	return 0;
 }
 
 static inline char _buffer_get(uart_ring_buffer_t *b)
@@ -78,7 +66,7 @@ static inline void _uart_config_lcr(void)
 {
 	// 8 bits transmition/reception config
 	MMIO8(UART_BASE + UART_LCR) |= UART_LCR_8BIT |
-				       UART_LCR_PODD; // bits 0, 1, 3
+				       UART_LCR_PEN; // bits 0, 1, 3
 }
 
 static void _uart_set_baud(void)
@@ -100,12 +88,17 @@ static void _uart_set_baud(void)
 /** @brief Enable the RX interupt. */
 static inline void _uart_enable_rxirq(void)
 {
-	MMIO8(UART_BASE + UART_IER) |= UART_RXEN;
+	MMIO8(UART_BASE + UART_IER) |= UART_IER_RXEN;
+}
+
+/** @brief Enable the RX interupt. */
+static inline void _uart_disable_rxirq(void)
+{
+	MMIO8(UART_BASE + UART_IER) &= ~UART_IER_RXEN;
 }
 
 void uart_init(void)
 {
-	_uart_init_queue();
 	_uart_set_baud();
 	_uart_enable_fifo();
 	_uart_config_lcr();
@@ -145,18 +138,12 @@ static void _fill_rx_buff_daemon(void)
 	for (;;) {
 		sem_wait(&fill_signal);
 		while (_uart_rx_data_ready()) {
-			_buffer_put(&rx_buffer, _uart_getchar());
+			if (_buffer_put(&rx_buffer, _uart_getchar()) == 0) {
+				sem_post(&rx_count);
+			}
 		}
-	}
-}
-
-static semaphore_t wake_signal = SEMAPHORE_INITIALIZER(wake_signal, 0);
-
-static void _io_waker_daemon(void)
-{
-	for (;;) {
-		sem_wait(&wake_signal);
-		scheduler_wake_waiting_queue(&uart_wait_queue);
+		// After acquiring the irq, we can reenable the irq
+		_uart_enable_rxirq();
 	}
 }
 
@@ -165,24 +152,18 @@ void uart_spawn_daemons(void)
 	if (!process_spawn(_fill_rx_buff_daemon, "uart rx daem", HIGH, false)) {
 		printf("[FAILURE/UART]: failed to spawn uart rx daemon \n");
 	}
-
-	if (!process_spawn(_io_waker_daemon, "uart waker daem", HIGH, false)) {
-		printf("[FAILURE/UART]: failed to spawn uart IO waker daemon \n");
-	}
 }
 
-//TODO: Maybe it should take a size_t arg to specify how much we want to read
-int uart_read(char *c)
+void uart_read(char *c)
 {
-	if (!_buffer_empty(&rx_buffer)) {
-		*c = _buffer_get(&rx_buffer);
-		return 0;
-	}
-	return -1;
+	sem_wait(&rx_count);
+	*c = _buffer_get(&rx_buffer);
 }
 
 void uart_irq_handler(void)
 {
+	// Since this handler delegates the irq to
+	// the daemon it cannot acquire directly.
+	_uart_disable_rxirq();
 	sem_post(&fill_signal);
-	sem_post(&wake_signal);
 }

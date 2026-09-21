@@ -3,9 +3,12 @@
  * @brief Text console drawn on the Bochs display.
  */
 
-#ifndef __CONSOLE_H__
-#define __CONSOLE_H__
-#include <asm/platform.h>
+#pragma once
+
+// ponytail: pulls <asm/board.h> into a public driver header just for the
+// screen geometry. shell.c/parser.c only want a max command length; give
+// them a SHELL_LINE_MAX and these two move back into console.c.
+#include <asm/board.h>
 
 #define MAX_COLS (DISPLAY_WIDTH / 8) ///< Screen width, in chars.
 #define MAX_ROWS (DISPLAY_HEIGHT / 8) ///< Screen height, in chars.
@@ -39,5 +42,3 @@ int console_init(void);
  * @param len Number of characters to display.
  */
 void console_display_top_right(const char *s, int len);
-
-#endif
