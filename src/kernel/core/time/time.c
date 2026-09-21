@@ -1,13 +1,17 @@
 #include <lib/stdio.h>
 
 #include <asm/csr.h>
-#include <asm/platform.h>
+#include <asm/csr.h>
 
 #include <drivers/console.h>
 
 #include <kernel/scheduler.h>
 #include <kernel/semaphore.h>
 #include <kernel/time.h>
+
+/* Timer declaration */
+#define TIMER_FREQ 10000000 // 10MHz
+#define TIMER_RATIO 500
 
 /** @brief Irq frequency, for a 1/20 s period. */
 #define ITFREQ 20

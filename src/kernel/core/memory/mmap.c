@@ -2,7 +2,8 @@
 
 #include <asm/asm_defs.h>
 #include <asm/csr.h>
-#include <asm/platform.h>
+#include <asm/board.h>
+
 
 #include <kernel/ldsym.h>
 #include <kernel/mmap.h>

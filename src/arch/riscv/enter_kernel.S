@@ -1,4 +1,4 @@
-#include <asm/platform.h>
+#include <asm/csr.h>
 .text
 .globl enter_kernel, delegate_traps
 
@@ -14,7 +14,7 @@ enter_kernel:
     not t1, t1                
     and t0, t0, t1
 
-    li t1, S
+    li t1, PRV_S
     slli t1, t1, MSTATUS_MPP_SHIFT
 
 
