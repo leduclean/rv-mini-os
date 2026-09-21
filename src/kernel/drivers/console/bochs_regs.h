@@ -1,6 +1,8 @@
 #pragma once
 
-/* bochs-display / VBE register layout. Addresses live in <asm/board.h>. */
+/* bochs-display / VBE register layout */
+#define BOCHS_CONFIG_BASE_ADDRESS 0x40000000
+#define BOCHS_CONFIG_DISPI_ADDRESS 0x500
 
 #define DISPLAY_PCI_ID 0x11111234
 

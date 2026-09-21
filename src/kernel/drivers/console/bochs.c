@@ -9,9 +9,13 @@
 #include <drivers/console.h>
 #include <drivers/uart.h>
 
-#include "boch_regs.h"
+#include "bochs_regs.h"
 
-#define DISPI16(base_addr, reg_idx) MMIO16(base_addr + (reg_idx << 1))
+#define BOCHS_DISPI_CONFIG \
+	BOCHS_CONFIG_DISPI_ADDRESS + BOCHS_CONFIG_BASE_ADDRESS
+#define DISPI16(reg_idx)                                                \
+	MMIO16(BOCHS_CONFIG_BASE_ADDRESS + BOCHS_CONFIG_DISPI_ADDRESS + \
+	       (reg_idx << 1))
 
 /** @brief Device command bits: memory io, memory access, screen reach. */
 #define COMMAND_CONFIG 0b111
@@ -72,26 +76,24 @@ static int _config_pcie(void)
  */
 static int _config_screen(void)
 {
-	uintptr_t dispi_base = BOCHS_CONFIG_BASE_ADDRESS +
-			       BOCHS_CONFIG_DISPI_ADDRESS;
 	// type id verification (12 MSB comparison)
-	if ((MMIO16(dispi_base) & 0xFFF0) != VBE_DISPI_ID0) {
+	if ((MMIO16(BOCHS_DISPI_CONFIG) & 0xFFF0) != VBE_DISPI_ID0) {
 		return -1; // Error wrong screen device type
 	}
 	// Disconnect the screen for config
-	DISPI16(dispi_base, VBE_DISPI_INDEX_ENABLE) = 0;
+	DISPI16(VBE_DISPI_INDEX_ENABLE) = 0;
 
 	// Config
-	DISPI16(dispi_base, VBE_DISPI_INDEX_XRES) = DISPLAY_WIDTH;
-	DISPI16(dispi_base, VBE_DISPI_INDEX_YRES) = DISPLAY_HEIGHT;
-	DISPI16(dispi_base, VBE_DISPI_INDEX_BPP) = DISPLAY_BPP;
-	DISPI16(dispi_base, VBE_DISPI_INDEX_BANK) = DISPLAY_BANK;
-	DISPI16(dispi_base, VBE_DISPI_INDEX_X_OFFSET) = 0;
-	DISPI16(dispi_base, VBE_DISPI_INDEX_Y_OFFSET) = 0;
+	DISPI16(VBE_DISPI_INDEX_XRES) = DISPLAY_WIDTH;
+	DISPI16(VBE_DISPI_INDEX_YRES) = DISPLAY_HEIGHT;
+	DISPI16(VBE_DISPI_INDEX_BPP) = DISPLAY_BPP;
+	DISPI16(VBE_DISPI_INDEX_BANK) = DISPLAY_BANK;
+	DISPI16(VBE_DISPI_INDEX_X_OFFSET) = 0;
+	DISPI16(VBE_DISPI_INDEX_Y_OFFSET) = 0;
 
 	// ReEnable
-	DISPI16(dispi_base, VBE_DISPI_INDEX_ENABLE) = VBE_DISPI_ENABLED |
-						      VBE_DISPI_LFB_ENABLED;
+	DISPI16(VBE_DISPI_INDEX_ENABLE) = VBE_DISPI_ENABLED |
+					  VBE_DISPI_LFB_ENABLED;
 
 	return 0;
 };

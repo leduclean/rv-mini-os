@@ -20,8 +20,6 @@
 
 /* bochs-display, mapped by _config_pcie() */
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
-#define BOCHS_CONFIG_BASE_ADDRESS 0x40000000
-#define BOCHS_CONFIG_DISPI_ADDRESS 0x500
 
 /* Video mode this board is brought up in. */
 #define DISPLAY_WIDTH 1024
