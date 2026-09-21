@@ -4,6 +4,7 @@ project(OS C ASM)
 add_subdirectory(lib)
 add_subdirectory(user)
 add_subdirectory(kernel/core)
+add_subdirectory(kernel/drivers)
 add_subdirectory(kernel/init)
 add_subdirectory(arch/riscv)
 
@@ -11,6 +12,7 @@ add_executable(kernel.bin
     $<TARGET_OBJECTS:arch_riscv>
     $<TARGET_OBJECTS:kernel_init>
     $<TARGET_OBJECTS:kernel_core>
+    $<TARGET_OBJECTS:kernel_drivers>
     $<TARGET_OBJECTS:lib>
     $<TARGET_OBJECTS:user>
 )

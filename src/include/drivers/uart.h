@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief 16550 uart driver, interrupt driven on reception.
+ * @brief Uart driver api interrupt driven on reception.
  */
 
 #pragma once
-#include <kernel/waitqueue.h>
+
 
 /**
  * @brief Init the uart to send and receive chars.
@@ -12,13 +12,6 @@
  * @note Sets the baud rate, enables the fifo and the RX interrupt.
  */
 void uart_init(void);
-
-/**
- * @brief Get the queue of the processes blocked on a uart read.
- *
- * @return Pointer to the uart wait queue.
- */
-wait_queue_t *uart_get_wait_queue(void);
 
 /**
  * @brief Write a character in the THR fifo buffer, to transmit it.
@@ -36,12 +29,11 @@ void uart_putchar(char);
 void uart_irq_handler(void);
 
 /**
- * @brief Read a character from the rx buffer, without blocking.
+ * @brief Blocking reader on the rx buffer.
  *
  * @param c Where the read character is written.
- * @return 0 if a character was read, -1 if the buffer is empty.
  */
-int uart_read(char *c);
+void uart_read(char *c);
 
 /**
  * @brief Spawn Uart daemons.

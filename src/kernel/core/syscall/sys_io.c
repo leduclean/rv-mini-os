@@ -55,9 +55,7 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 	ssize_t readed = 0;
 
 	for (size_t i = 0; i < count; i++) {
-		while (uart_read(&kbuf[i]) == -1) {
-			scheduler_block_on(uart_get_wait_queue());
-		}
+		uart_read(&kbuf[i]);
 		readed++;
 	}
 

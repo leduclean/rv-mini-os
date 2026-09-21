@@ -26,9 +26,7 @@ int parser_read_line(char *buf, size_t size)
 	int len = 0;
 	for (;;) {
 		char c;
-		while (uart_read(&c) == -1) {
-			scheduler_block_on(uart_get_wait_queue());
-		}
+		uart_read(&c);
 
 		if ((c == '\n') || (c == '\r')) {
 			buf[len] = '\0';

@@ -1,0 +1,47 @@
+#pragma once
+
+/* bochs-display / VBE register layout. Addresses live in <asm/board.h>. */
+
+#define DISPLAY_PCI_ID 0x11111234
+
+// Shift definition for PCI config
+#define PCI_BUS_SHIFT 16
+#define PCI_DEVICE_SHIFT 11
+#define PCI_FUNC_SHIFT 8
+#define PCI_MAX_DEVICE 32
+
+// Device registers mapping
+#define PCI_DEV_COMMAND 0x04
+#define PCI_DEV_DISPLAY_ADDR 0x10
+#define PCI_DEV_CONFIG_ADDR 0x18
+
+// Config registers addresses
+#define VBE_DISPI_INDEX_ID 0x00
+#define VBE_DISPI_INDEX_XRES 0x01
+#define VBE_DISPI_INDEX_YRES 0x02
+#define VBE_DISPI_INDEX_BPP 0x03
+#define VBE_DISPI_INDEX_ENABLE 0x04
+#define VBE_DISPI_INDEX_BANK 0x05
+#define VBE_DISPI_INDEX_VIRT_WIDTH 0x06
+#define VBE_DISPI_INDEX_VIRT_HEIGHT 0x07
+#define VBE_DISPI_INDEX_X_OFFSET 0x08
+#define VBE_DISPI_INDEX_Y_OFFSET 0x09
+#define VBE_DISPI_INDEX_VIDEO_MEMORY_64K 0x0a
+#define VBE_DISPI_INDEX_ENDIAN 0x82
+
+#define VBE_DISPI_ID0 0xb0c0
+#define VBE_DISPI_ID1 0xb0c1
+#define VBE_DISPI_ID2 0xb0c2
+#define VBE_DISPI_ID3 0xb0c3
+#define VBE_DISPI_ID4 0xb0c4
+#define VBE_DISPI_ID5 0xb0c5
+
+#define VBE_DISPI_DISABLED 0x00
+#define VBE_DISPI_ENABLED 0x01
+#define VBE_DISPI_GETCAPS 0x02
+#define VBE_DISPI_8BIT_DAC 0x20
+#define VBE_DISPI_LFB_ENABLED 0x40
+#define VBE_DISPI_NOCLEARMEM 0x80
+
+#define VBE_MAX_WIDTH 1024
+#define VBE_MAX_HEIGHT 768
