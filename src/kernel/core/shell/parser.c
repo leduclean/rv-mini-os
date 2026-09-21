@@ -9,21 +9,9 @@
 #include <kernel/parser.h>
 #include <kernel/scheduler.h>
 
-/**
- * @brief Buffer flush.
- *
- * @param buf Buffer to flush.
- * @param size Size of @p buf.
- */
-static void _flush(char *buf, size_t size)
-{
-	memset(&buf, 0, sizeof(size));
-}
-
 int parser_read_line(char *buf, size_t size)
 {
-	_flush(buf, size);
-	int len = 0;
+	size_t len = 0;
 	for (;;) {
 		char c;
 		uart_read(&c);
@@ -42,7 +30,7 @@ int parser_read_line(char *buf, size_t size)
 			continue;
 		}
 
-		if (len < MAX_COLS - 1) {
+		if (len < size - 1) {
 			buf[len++] = c;
 			// Echo the current character
 			printf("%c", c);
