@@ -5,7 +5,7 @@
 #include <asm/asm_defs.h>
 #include <asm/cpu.h>
 #include <asm/csr.h>
-#include <asm/platform.h>
+#include <asm/csr.h>
 #include <asm/trap.h>
 
 #include <drivers/plic.h>

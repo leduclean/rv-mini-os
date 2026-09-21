@@ -1,10 +1,22 @@
+#include <asm/board.h>
 #include <asm/csr.h>
 #include <asm/mmio.h>
-#include <asm/platform.h>
 
 #include <drivers/uart.h>
 
 #include <kernel/time.h>
+
+// PLIC registers addresses
+#define PLIC_PENDING 0x0c001000
+#define PLIC_SOURCE 0x0c000000
+#define PLIC_ENABLE_S 0x0c002080
+#define PLIC_TARGET_S 0x0c201000
+#define PLIC_IRQ_CLAIM_S 0x0c201004
+
+// PLIC pushbutton irq
+#define PLIC_IRQ_2 0x2
+#define PLIC_UART_ID 10
+#define PLIC_ENABLE_UART (1 << PLIC_UART_ID)
 
 void plic_enable_s_external(void)
 {

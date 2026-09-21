@@ -8,7 +8,6 @@
 #include <lib/stdio.h>
 
 #include <asm/csr.h>
-#include <asm/platform.h>
 
 /** @brief Put the cpu in pause, waiting for an interrupt. */
 inline static void hlt(void)
