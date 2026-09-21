@@ -17,7 +17,7 @@
  */
 static void _flush(char *buf, size_t size)
 {
-	memset(&buf, 0, sizeof(size));
+	memset(&buf, 0, size);
 }
 
 int parser_read_line(char *buf, size_t size)
