@@ -13,6 +13,9 @@
 
 #include "ns16550_regs.h"
 
+/** @brief Access an ns16550 register, relative to the uart base. */
+#define UART_REG(reg) MMIO8(UART_BASE + (reg))
+
 #define UART_RX_BUFFER_SIZE 128
 
 /** @brief Ring buffer used to hold the received chars. */
@@ -59,42 +62,40 @@ static inline char _buffer_get(uart_ring_buffer_t *b)
 static inline void _uart_enable_fifo(void)
 {
 	// Enable fifo waiting list
-	MMIO8(UART_BASE + UART_FCR) = UART_FCR_EWL;
+	UART_REG(UART_FCR) = UART_FCR_EWL;
 }
 
 static inline void _uart_config_lcr(void)
 {
 	// 8 bits transmition/reception config
-	MMIO8(UART_BASE + UART_LCR) |= UART_LCR_8BIT |
-				       UART_LCR_PEN; // bits 0, 1, 3
+	UART_REG(UART_LCR) |= UART_LCR_8BIT | UART_LCR_PEN; // bits 0, 1, 3
 }
 
 static void _uart_set_baud(void)
 {
 	uint16_t rate = (UART_CLOCK_FREQ / (16 * UART_BAUD_RATE));
-	uintptr_t lcr_addr = UART_BASE + UART_LCR;
 
 	// Enable divisor latches
-	MMIO8(lcr_addr) |= UART_LCR_DLAB;
+	UART_REG(UART_LCR) |= UART_LCR_DLAB;
 
 	// Divisor rate writing
-	MMIO8(UART_BASE + UART_DLL) = (uint8_t)(rate);
-	MMIO8(UART_BASE + UART_DLH) = (uint8_t)(rate >> 8);
+	UART_REG(UART_DLL) = (uint8_t)(rate);
+	UART_REG(UART_DLH) = (uint8_t)(rate >> 8);
 
 	// Disable divisor latches to acces THR, RBR, IER
-	MMIO8(lcr_addr) &= ~UART_LCR_DLAB;
+	UART_REG(UART_LCR) &= ~UART_LCR_DLAB;
 }
 
 /** @brief Enable the RX interupt. */
 static inline void _uart_enable_rxirq(void)
 {
-	MMIO8(UART_BASE + UART_IER) |= UART_IER_RXEN;
+	UART_REG(UART_IER) |= UART_IER_RXEN;
 }
 
 /** @brief Enable the RX interupt. */
 static inline void _uart_disable_rxirq(void)
 {
-	MMIO8(UART_BASE + UART_IER) &= ~UART_IER_RXEN;
+	UART_REG(UART_IER) &= ~UART_IER_RXEN;
 }
 
 void uart_init(void)
@@ -107,7 +108,7 @@ void uart_init(void)
 
 void uart_putchar(char c)
 {
-	MMIO8(UART_BASE + UART_THR) = c;
+	UART_REG(UART_THR) = c;
 };
 
 /**
@@ -117,7 +118,7 @@ void uart_putchar(char c)
  */
 static char _uart_getchar(void)
 {
-	return MMIO8(UART_BASE + UART_RBR);
+	return UART_REG(UART_RBR);
 };
 
 /**
@@ -127,7 +128,7 @@ static char _uart_getchar(void)
  */
 static inline uint8_t _uart_rx_data_ready(void)
 {
-	return MMIO8(UART_BASE + UART_LSR) & 1;
+	return UART_REG(UART_LSR) & UART_LSR_DA;
 }
 
 static semaphore_t fill_signal = SEMAPHORE_INITIALIZER(fill_signal, 0);
