@@ -42,3 +42,8 @@ void uart_irq_handler(void);
  * @return 0 if a character was read, -1 if the buffer is empty.
  */
 int uart_read(char *c);
+
+/**
+ * @brief Spawn Uart daemons.
+ */
+void uart_spawn_daemons(void);

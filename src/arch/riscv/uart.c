@@ -10,6 +10,8 @@
 #include <kernel/scheduler.h>
 #include <kernel/waitqueue.h>
 
+#include "kernel/semaphore.h"
+
 #define UART_RX_BUFFER_SIZE 128
 
 /**
@@ -135,11 +137,37 @@ static inline uint8_t _uart_rx_data_ready(void)
 	return MMIO8(UART_BASE + UART_LSR) & 1;
 }
 
+static semaphore_t fill_signal = SEMAPHORE_INITIALIZER(fill_signal, 0);
+
 /** @brief Fill the rx ring buffer while rx contains data. */
-static void _uart_fill_rx_buff(void)
+static void _fill_rx_buff_daemon(void)
 {
-	while (_uart_rx_data_ready()) {
-		_buffer_put(&rx_buffer, _uart_getchar());
+	for (;;) {
+		sem_wait(&fill_signal);
+		while (_uart_rx_data_ready()) {
+			_buffer_put(&rx_buffer, _uart_getchar());
+		}
+	}
+}
+
+static semaphore_t wake_signal = SEMAPHORE_INITIALIZER(wake_signal, 0);
+
+static void _io_waker_daemon(void)
+{
+	for (;;) {
+		sem_wait(&wake_signal);
+		scheduler_wake_waiting_queue(&uart_wait_queue);
+	}
+}
+
+void uart_spawn_daemons(void)
+{
+	if (!process_spawn(_fill_rx_buff_daemon, "uart rx daem", HIGH, false)) {
+		printf("[FAILURE/UART]: failed to spawn uart rx daemon \n");
+	}
+
+	if (!process_spawn(_io_waker_daemon, "uart waker daem", HIGH, false)) {
+		printf("[FAILURE/UART]: failed to spawn uart IO waker daemon \n");
 	}
 }
 
@@ -155,6 +183,6 @@ int uart_read(char *c)
 
 void uart_irq_handler(void)
 {
-	_uart_fill_rx_buff();
-	scheduler_wake_waiting_queue(&uart_wait_queue);
+	sem_post(&fill_signal);
+	sem_post(&wake_signal);
 }
