@@ -34,8 +34,6 @@ static inline unsigned long _get_user_sstatus(void)
 /**
  * @brief Set the trap entry point called to treat the irq.
  *
- * TODO: This function might be unused after adding the S mode.
- *
  * @param entry Trap vector written in the mtvec register.
  *
  */
@@ -159,7 +157,6 @@ unsigned long usertrap(void)
 						   t->a[5]);
 			break;
 		case STORE_PAGE_FAULT: {
-			// TODO: drop once CoW is trusted, this fires per page.
 			printf("[Kernel/INFO]: CoW fault on 0x%lx (pid %d)\n",
 			       stval, p->pid);
 			if (vpage_handle_cow(p->root_ptable, (void *)stval) ==
