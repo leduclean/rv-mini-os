@@ -9,7 +9,7 @@
 #include <drivers/console.h>
 #include <drivers/uart.h>
 
-#include "console_map.h"
+#include "boch_regs.h"
 
 #define DISPI16(base_addr, reg_idx) MMIO16(base_addr + (reg_idx << 1))
 
