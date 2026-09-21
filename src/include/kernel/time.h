@@ -23,3 +23,8 @@ void time_init(void);
  * reschedules and rearms the timer.
  */
 void time_irq_handler(void);
+
+/**
+ * @brief Spawn timer daemons.
+ */
+void time_spawn_daemons(void);

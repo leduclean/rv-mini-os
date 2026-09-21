@@ -43,6 +43,7 @@ void kernel_start(void)
 
 	printf("[INFO] external irq enabled\n");
 
+	time_spawn_daemons();
 	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
 		printf("[FAILURE]: failed to spawn shell \n");
 	}
