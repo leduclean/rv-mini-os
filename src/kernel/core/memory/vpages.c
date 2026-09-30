@@ -5,6 +5,7 @@
 #include <lib/string.h>
 
 #include <asm/asm_defs.h>
+#include <asm/mmu.h>
 
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
@@ -181,6 +182,21 @@ static pte_t *walk_leaf(pte_t *root, const void *va)
 		table = _get_next_lvl_pte(*pte);
 	}
 	return NULL;
+}
+
+int vpage_unmmap(pte_t *root, void *va)
+{
+	pte_t *leaf = walk_leaf(root, va);
+	if (!leaf) {
+		return -1;
+	}
+
+	unsigned long *page = _get_next_lvl_pte(*leaf);
+	page_put(page);
+	*leaf = 0;
+	mmu_flush_tlb();
+
+	return 0;
 }
 
 static inline uint32_t get_flags(pte_t pte)

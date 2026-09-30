@@ -45,6 +45,15 @@ static inline int vpage_map_user(pte_t *root, const void *va, void *pa,
 }
 
 /**
+ * @brief Unmap a memory mapped virtual address of a single page in a page tree.
+ *
+ * @param root The root table of the page tree.
+ * @param va The virtual address of the page to unmap.
+ * @return 0 on SUCCESS, else -1 if the va isn't mapped.
+ */
+int vpage_unmmap(pte_t *root, void *va);
+
+/**
  * @brief Memory map a virtual address range to a physical address range of a page table.
  *
  * @note @root MUST be allocated via page_alloc(). The rest of the tree is entirely 
