@@ -49,18 +49,27 @@ static void _init_proc_table(void)
  *
  * @param proc Process to clear.
  */
-static void _clear_from_blocking_queues(process_t *proc)
+static void _remove_from_blocking_queues(process_t *proc)
 {
-	irq_flags_t state = irq_save();
-	// Remove it if it from sleeping queue (timeout).
-	if (scheduler_is_sleeping(proc)) {
-		scheduler_remove_sleeping(proc);
-	};
-
+	if (clist_is_in_list(&proc->sleep_node))
+		clist_remove(&proc->sleep_node);
 	if (clist_is_in_list(&proc->wait_node)) {
 		clist_remove(&proc->wait_node);
 	}
-	irq_restore(state);
+}
+
+/**
+ * @brief Remove a process from all the scheduling queues it could be in.
+ *
+ * @note This function is **not atomic**. The caller MUST ensure atomicity.
+ *
+ * @param proc Process to remove from the queues.
+ */
+static inline void _remove_from_sched_queues(process_t *proc)
+{
+	if (clist_is_in_list(&proc->ready_node))
+		clist_remove(&proc->ready_node);
+	_remove_from_blocking_queues(proc);
 }
 
 /**
@@ -74,12 +83,7 @@ static inline void _remove_from_all_queues(process_t *proc)
 {
 	if (clist_is_in_list(&proc->proc_node))
 		clist_remove(&proc->proc_node);
-	if (clist_is_in_list(&proc->ready_node))
-		clist_remove(&proc->ready_node);
-	if (clist_is_in_list(&proc->sleep_node))
-		clist_remove(&proc->sleep_node);
-	if (clist_is_in_list(&proc->wait_node))
-		clist_remove(&proc->wait_node);
+	_remove_from_sched_queues(proc);
 }
 
 /**
@@ -121,7 +125,9 @@ static inline void _process_zombify(process_t *proc, int exit_code)
 	proc->state = ZOMBIE;
 	proc->exit_code = exit_code;
 
+	_remove_from_sched_queues(proc);
 	wq_enqueue(&parent->zombies, &proc->wait_node);
+
 	if (parent->state == BLOCKED) {
 		// Parent is waiting so we wake him up
 		// to check if he can stop wait.
@@ -259,7 +265,7 @@ void process_wake(process_t *proc)
 	irq_flags_t state = irq_save();
 	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
 		// Remove it from sleeping and blocked queue if remaining
-		_clear_from_blocking_queues(proc);
+		_remove_from_blocking_queues(proc);
 		proc->state = RUNNING;
 	}
 	irq_restore(state);

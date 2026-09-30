@@ -57,21 +57,6 @@ void scheduler_wake_sleeping(void);
 void scheduler_wake_waiting_queue(wait_queue_t *wq);
 
 /**
- * @brief Remove a process from the sleeping queue.
- *
- * @param proc Process to remove.
- */
-void scheduler_remove_sleeping(process_t *proc);
-
-/**
- * @brief Check if a process is in the sleeping queue.
- *
- * @param proc Process to check.
- * @return 1 if it is sleeping, 0 otherwise.
- */
-uint8_t scheduler_is_sleeping(process_t *proc);
-
-/**
  * @brief Block the active process on a wait queue.
  *
  * @param wq Wait queue to block on.
@@ -112,4 +97,6 @@ void scheduler_sleep(uint32_t nbr_secondes);
  *
  * @param exit_code Exit code of the process to terminate.
  */
-void scheduler_terminate(int exit_code);
+[[noreturn]] void scheduler_terminate(int exit_code);
+
+[[noreturn]] void scheduler_terminate_group(int exit_code);
