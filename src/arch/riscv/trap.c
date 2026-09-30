@@ -5,7 +5,6 @@
 #include <asm/asm_defs.h>
 #include <asm/cpu.h>
 #include <asm/csr.h>
-#include <asm/csr.h>
 #include <asm/trap.h>
 
 #include <drivers/plic.h>
@@ -16,7 +15,6 @@
 #include <kernel/syscall.h>
 #include <kernel/time.h>
 #include <kernel/vpages.h>
-#include <user/user_entry.h>
 
 static inline unsigned long _get_user_sstatus(void)
 {
@@ -136,7 +134,7 @@ void kerneltrap(void)
 /**
  * @brief Asm entry point called when trapping from user mode.
  */
-unsigned long usertrap(void)
+void usertrap(void)
 {
 	process_t *p = process_active();
 	pt_regs_t *t = &p->tframe_pa->saved_regs;
@@ -180,9 +178,7 @@ unsigned long usertrap(void)
 		}
 	}
 
-	// Don't use t because a syscall may have change the
-	// physical address of the tframe.
-	return p->tframe_pa->saved_regs.satp;
+	trap_return_to_user();
 }
 
 extern void kernelvec(void);
@@ -194,22 +190,16 @@ void trap_init(void)
 	_init_stvec(kernelvec);
 }
 
-void trap_frame_init(process_t *p)
+void tframe_init(tframe_t *t, pte_t *root, unsigned long kstack_top)
 {
-	*p->tframe_pa = (tframe_t){
-              .saved_regs = {
-                      .sp = USTACK,
-                      .a[0] = (unsigned long)p->code,
-                      .sepc = (unsigned long)user_entry_point,
-                      .sstatus = _get_user_sstatus(),
-                      .satp = mmap_satp(p->root_ptable),
-              },
-              .kstack = (unsigned long)&p->kstack[KSTACK_SIZE],
-              .ksatp = mmap_kernel_satp(),
-      };
+	t->saved_regs.sstatus = _get_user_sstatus();
+	t->saved_regs.satp = mmap_satp(root);
+	t->kstack = kstack_top;
+	t->ksatp = mmap_kernel_satp();
 }
+
 void trap_return_to_user(void)
 {
 	process_t *p = process_active();
-	trap_return_va()(p->tframe_pa->saved_regs.satp);
+	trap_return_va()(p->tframe_pa->saved_regs.satp, p->tframe_va);
 };

@@ -4,6 +4,7 @@
 #include <lib/string.h>
 #include <lib/tinyalloc.h>
 
+#include <asm/asm_defs.h>
 #include <asm/cpu.h>
 #include <asm/trap.h>
 
@@ -15,6 +16,7 @@
 #include <kernel/time.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
+#include <user/user_entry.h>
 
 #define MAX_PROC 32
 
@@ -302,7 +304,10 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 		if (mmap_uimage(p) != 0) {
 			goto err_free_proc;
 		}
-		trap_frame_init(p);
+		tframe_init(p->tframe_pa, p->root_ptable,
+			    (unsigned long)&p->kstack[KSTACK_SIZE]);
+		tframe_start(p->tframe_pa, user_entry_point, (void *)USTACK);
+		tframe_set_arg(p->tframe_pa, 0, (unsigned long)code);
 	}
 
 	_activate_process(p);
@@ -384,7 +389,10 @@ int process_exec(process_t *p, void code(void))
 	}
 
 	p->code = code;
-	trap_frame_init(p);
+	tframe_init(p->tframe_pa, p->root_ptable,
+		    (unsigned long)&p->kstack[KSTACK_SIZE]);
+	tframe_start(p->tframe_pa, user_entry_point, (void *)USTACK);
+	tframe_set_arg(p->tframe_pa, 0, (unsigned long)code);
 
 	// Once all has worked free all the old ressources.
 	vpage_tree_free(old_ptable);

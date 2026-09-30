@@ -19,6 +19,13 @@ typedef struct process process_t;
 #define USTACK (MAX_VA - 2 * PAGE_SIZE)
 
 /**
+ * @brief Trap frame va of the thread @p pid.
+ *
+ * Below the main user stack, MAX_VA - 4 * PAGE_SIZE stays unmapped as a guard.
+ */
+#define THREAD_TRAPFRAME(pid) (MAX_VA - (4 + (unsigned long)(pid)) * PAGE_SIZE)
+
+/**
  * @brief Registers of the interrupted context, saved on the trap frame.
  *
  * @note trampoline.S hardcodes these offsets, keep both in sync. The frame
@@ -61,14 +68,52 @@ _Static_assert(__builtin_offsetof(tframe_t, ksatp) == 34 * 8,
 	       "trampoline.S offsets stale");
 
 /**
- * @brief Build the trap frame of a user process from scratch.
+ * @brief Bind the trap frame @p t to its owner.
  *
- * @note @c p->code is the single source of truth for the entry point; a0 only
- * carries a copy of it across to user mode.
+ * Sets only what depends on the owner: user sstatus, user satp, kstack and
+ * kernel satp. The saved registers are left untouched, so it can be called
+ * on a fresh frame (page_alloc zeroes it) as well as on a forked copy.
  *
- * @param p A user process with its uspace mapped and its code set.
+ * @param t The trap frame to init.
+ * @param root The owner root table, for satp.
+ * @param kstack_top The top of the owner kstack.
  */
-void trap_frame_init(process_t *p);
+void tframe_init(tframe_t *t, pte_t *root, unsigned long kstack_top);
+
+/**
+ * @brief Set the user stack pointer, aligned down on 16 bytes.
+ *
+ * @param t The trap frame.
+ * @param ustack Top of the user stack.
+ */
+static inline void tframe_start(tframe_t *t, void *entry, void *ustack)
+{
+	t->saved_regs.sp = (unsigned long)ustack;
+	t->saved_regs.sepc = (unsigned long)entry;
+}
+
+/**
+ * @brief Set the argument register a[@p idx].
+ *
+ * @param t The trap frame.
+ * @param idx Argument index, in [0, 8[.
+ * @param value Value of the argument.
+ */
+static inline void tframe_set_arg(tframe_t *t, int idx, unsigned long value)
+{
+	t->saved_regs.a[idx] = value;
+}
+
+/**
+ * @brief Set the value returned to user mode, ie a0.
+ *
+ * @param t The trap frame.
+ * @param value Returned value.
+ */
+static inline void tframe_set_return_val(tframe_t *t, unsigned long value)
+{
+	t->saved_regs.a[0] = value;
+}
 
 /**
  * @brief Entrypoint to the user mode from the kernel.
@@ -86,7 +131,7 @@ void trap_init(void);
 
 extern char trap_return[];
 
-typedef void (*trap_return_fn)(unsigned long satp);
+typedef void (*trap_return_fn)(unsigned long satp, unsigned long curr_tframe);
 
 /**
  * @brief Get a pointer to the trap return virtual addr.

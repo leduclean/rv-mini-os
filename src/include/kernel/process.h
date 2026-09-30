@@ -51,6 +51,8 @@ typedef struct process {
 	bool user; ///< User mode Process flag (fixed at creation).
 	tframe_t *
 		tframe_pa; //< The User trap frame used to save the user context.
+	unsigned long
+		tframe_va; //< The User virtual trap frame used to go back to user.
 
 	clist_node_t proc_node; ///< Process table node.
 	clist_node_t ready_node; ///< Scheduler ready queue node.

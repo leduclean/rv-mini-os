@@ -1,9 +1,8 @@
 #include <lib/stdio.h>
 
 #include <asm/asm_defs.h>
-#include <asm/csr.h>
 #include <asm/board.h>
-
+#include <asm/csr.h>
 
 #include <kernel/ldsym.h>
 #include <kernel/mmap.h>
@@ -116,6 +115,7 @@ int mmap_uspace(process_t *p)
 
 	p->root_ptable = root;
 	p->tframe_pa = t;
+	p->tframe_va = TRAPFRAME;
 
 	return 0;
 
