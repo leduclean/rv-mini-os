@@ -48,6 +48,17 @@ int8_t waitpid(int8_t pid);
 int8_t fork(void);
 
 /**
+ * @brief Create a new "child" in a manner similar to @p fork.
+ *
+ * @param entry The entry code of the process, can be NULL.
+ * @param args  The args of the @entry point.
+ * @param stack A pointer to the allocated stack.
+ * @param flags Flags to specify which elements to copy.
+ * @return The pid of the new child on success, -1 on error.
+ */
+int8_t clone(void *entry, void *args, void *stack, unsigned long flags);
+
+/**
  * @brief Execute a process referred by @path, this cause 
  * the currently run to be replaced with a new program.
  *

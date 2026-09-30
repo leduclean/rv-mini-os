@@ -12,6 +12,8 @@
 	X(WAIT, int8_t, wait, (void))                                     \
 	X(WAITPID, int8_t, waitpid, (int8_t pid))                         \
 	X(GETPID, uint8_t, getpid, (void))                                \
+	X(CLONE, int8_t, clone,                                           \
+	  (void *entry, void *args, void *stack, unsigned long flags))    \
 	X(FORK, int8_t, fork, (void))                                     \
 	X(EXEC, int, exec, (const char *path, char *const argv[]))        \
 	X(WRITE, ssize_t, write, (int fd, const char *buf, size_t count)) \

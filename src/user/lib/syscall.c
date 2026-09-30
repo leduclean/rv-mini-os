@@ -43,6 +43,12 @@ int8_t fork(void)
 	return SYSCALL(SYS_FORK);
 }
 
+int8_t clone(void *entry, void *args, void *stack, unsigned long flags)
+{
+	return SYSCALL(SYS_CLONE, (unsigned long)entry, (unsigned long)args,
+		       (unsigned long)stack, flags);
+}
+
 int exec(const char *path, char *const argv[])
 {
 	return SYSCALL(SYS_EXEC, (unsigned long)path, (unsigned long)argv);

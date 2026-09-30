@@ -26,6 +26,17 @@ int8_t sys_fork(void)
 	return child->pid;
 }
 
+int8_t sys_clone(void *entry, void *args, void *stack, unsigned long flags)
+{
+	process_t *parent = process_active();
+	process_t *child = process_clone(parent, entry, args, stack, flags);
+	if (!child) {
+		return -1;
+	}
+
+	return child->pid;
+}
+
 int sys_exec(const char *path, char *const argv[])
 {
 	//TODO: handle argv
