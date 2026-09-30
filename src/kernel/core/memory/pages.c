@@ -43,11 +43,12 @@ uint8_t page_get_ref_count(const void *page)
 	return page_rc[RAM_RELATIVE_PAGE_NUMBER(page)];
 }
 
-void page_get(const void *page)
+void *page_get(void *page)
 {
 	irq_flags_t state = irq_save();
 	page_rc[RAM_RELATIVE_PAGE_NUMBER(page)]++;
 	irq_restore(state);
+	return (void *)page;
 }
 
 void page_init(void)

@@ -59,8 +59,9 @@ void page_put(void *page);
  * @brief Take a reference on @page, keeping it alive until a matching put.
  *
  * @param page A pointer to the page.
+ * @return Another pointer to the page.
  */
-void page_get(const void *page);
+void *page_get(void *page);
 
 /**
  * @brief Get the reference counter of a page.
