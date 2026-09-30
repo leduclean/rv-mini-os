@@ -3,14 +3,14 @@
 #include <asm/asm_defs.h>
 #include <asm/board.h>
 #include <asm/csr.h>
+#include <asm/mmu.h>
+#include <asm/trap.h>
 
 #include <kernel/ldsym.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/process.h>
 #include <kernel/vpages.h>
-
-#include "asm/trap.h"
 
 static pte_t *kroot;
 
@@ -31,7 +31,7 @@ unsigned long mmap_kernel_satp(void)
 void mmap_switch_to_kernel(void)
 {
 	csr_write(satp, mmap_kernel_satp());
-	mmap_update_tlb();
+	mmu_flush_tlb();
 }
 
 int mmap_kernel(void)
@@ -78,7 +78,7 @@ int mmap_kernel(void)
 
 	// Alow Sv39 and write the kroot PPN to satp.
 	csr_write(satp, mmap_satp(kroot));
-	mmap_update_tlb();
+	mmu_flush_tlb();
 
 	return 0;
 

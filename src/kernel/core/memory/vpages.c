@@ -293,11 +293,16 @@ int vpage_handle_cow(pte_t *root, const void *va)
 		res = -1;
 		goto out;
 	}
+
 	void *page = (void *)(_get_next_lvl_pte(*leaf));
+	void *page_va = (void *)((unsigned long)va & ~OFFSET_MASK);
+
+	// Fast path
 	if (page_get_ref_count(page) == 1) {
 		// We are the last that has access to this page
 		*leaf &= ~PTE_COW;
 		*leaf |= PTE_W;
+		mmu_update_va(page_va);
 		return 0;
 	}
 
@@ -310,13 +315,12 @@ int vpage_handle_cow(pte_t *root, const void *va)
 	page_copy(new_page, page);
 	unset_cow(leaf);
 
-	res = vpage_map(root, (void *)((unsigned long)va & ~OFFSET_MASK),
-			new_page, get_flags(*leaf));
+	res = vpage_map(root, page_va, new_page, get_flags(*leaf));
 	if (res < 0) {
 		goto err_free_page;
 	}
 
-	mmap_update_tlb();
+	mmu_update_va(page_va);
 	return 0;
 
 err_free_page:
@@ -377,6 +381,6 @@ int vpage_tree_copy(pte_t *dst, pte_t *src)
 		return res;
 	}
 
-	mmap_update_tlb();
+	mmu_flush_tlb();
 	return 0;
 }

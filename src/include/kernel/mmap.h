@@ -60,11 +60,3 @@ void mmap_switch_to_kernel(void);
  * @param pt A physical page pointer.
  */
 unsigned long mmap_satp(void *pt);
-
-/**
- * @brief Helper to update the tlb cache.
- */
-static inline void mmap_update_tlb(void)
-{
-	__asm__ volatile("sfence.vma zero, zero" ::: "memory");
-}
