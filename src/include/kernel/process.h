@@ -5,6 +5,7 @@
 
 #pragma once
 #include <stdbool.h>
+#include <stdint.h>
 
 #include <lib/clist.h>
 
@@ -42,6 +43,7 @@ typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;
 /** @brief Process control block. */
 typedef struct process {
 	uint8_t pid; ///< Process identifier.
+	uint8_t tgid; ///< Thread group id.
 	void (*code)(void); ///< Kernel proc entry, read by _kproc_launcher.
 	char name[MAXNAME]; ///< Process name, null terminated.
 	state state; ///< Current lifecycle state.
@@ -172,6 +174,20 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
  */
 int8_t process_spawn_foreground(void code(void), const char *name,
 				priority prior, bool user);
+
+#define CLONE_VM (1 << 0)
+
+/**
+ * @brief Clone a proccess with granularity on which to copy or not.
+ *
+ * @param parent The parent to copy.
+ * @param entry The entry point of the child, NEEDED if @CLONE_VM is set.
+ * @param ustack A new stack, NEEDED if @CLONE_VM is set.
+ * @param flags  Flags to specify which element to copy. 
+ * @return A pointer to the new task.
+ */
+process_t *process_clone(process_t *parent, void *entry, void *args,
+			 void *stack, unsigned long flags);
 
 /**
  * @brief Duplicate a process state making a copy of it execution state.

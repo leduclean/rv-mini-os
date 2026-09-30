@@ -12,11 +12,9 @@
 trap_entry:
     // User:
     //   sp       = USTACK
-    //   sscratch = TRAPFRAME
+    //   sscratch = current trapframe
     //   stvec    = TRAMPOLINE
 
-
-    // sp = TRAPFRAME = tframe_t
     csrrw sp, sscratch, sp
 
     // Use the structure so save the state
@@ -103,9 +101,9 @@ _kernel_config:
 
 trap_handler:
     // call usertrap()
-    // The user trap will call returns the user pages satp in a0.
+    // The user trap will call trap_return also
     jalr t1
-// void trap_return(unsigned long usatp);
+// void trap_return(unsigned long usatp, unsigned long curr_tframe);
 trap_return:    
     // When entering user mode, stvec should 
     // be the trampoline page again.
@@ -116,50 +114,48 @@ trap_return:
     csrw  satp, a0 
     sfence.vma zero, zero 
 
-    li sp, TRAPFRAME
-
-    ld   t0, 31 * 8(sp)
+    ld   t0, 31 * 8(a1)
     csrw sstatus, t0
-    ld   t0, 29 * 8(sp)
+    ld   t0, 29 * 8(a1)
     csrw sepc, t0
 
-    ld ra,  1 * 8(sp)
+    ld sp,  0 * 8(a1) 
+    ld ra,  1 * 8(a1)
 
     // a[8]
-    ld a0,  2 * 8(sp)
-    ld a1,  3 * 8(sp)
-    ld a2,  4 * 8(sp)
-    ld a3,  5 * 8(sp)
-    ld a4,  6 * 8(sp)
-    ld a5,  7 * 8(sp)
-    ld a6,  8 * 8(sp)
-    ld a7,  9 * 8(sp)
+    ld a0,  2 * 8(a1)
+    ld a2,  4 * 8(a1)
+    ld a3,  5 * 8(a1)
+    ld a4,  6 * 8(a1)
+    ld a5,  7 * 8(a1)
+    ld a6,  8 * 8(a1)
+    ld a7,  9 * 8(a1)
 
     // s[12]
-    ld s0,  17 * 8(sp)
-    ld s1,  18 * 8(sp)
-    ld s2,  19 * 8(sp)
-    ld s3,  20 * 8(sp)
-    ld s4,  21 * 8(sp)
-    ld s5,  22 * 8(sp)
-    ld s6,  23 * 8(sp)
-    ld s7,  24 * 8(sp)
-    ld s8,  25 * 8(sp)
-    ld s9,  26 * 8(sp)
-    ld s10, 27 * 8(sp)
-    ld s11, 28 * 8(sp)
+    ld s0,  17 * 8(a1)
+    ld s1,  18 * 8(a1)
+    ld s2,  19 * 8(a1)
+    ld s3,  20 * 8(a1)
+    ld s4,  21 * 8(a1)
+    ld s5,  22 * 8(a1)
+    ld s6,  23 * 8(a1)
+    ld s7,  24 * 8(a1)
+    ld s8,  25 * 8(a1)
+    ld s9,  26 * 8(a1)
+    ld s10, 27 * 8(a1)
+    ld s11, 28 * 8(a1)
 
     // t[7] last, t0 and t1 were the working registers above
-    ld t2, 12 * 8(sp)
-    ld t3, 13 * 8(sp)
-    ld t4, 14 * 8(sp)
-    ld t5, 15 * 8(sp)
-    ld t6, 16 * 8(sp)
-    ld t1, 11 * 8(sp)
-    ld t0, 10 * 8(sp)
+    ld t2, 12 * 8(a1)
+    ld t3, 13 * 8(a1)
+    ld t4, 14 * 8(a1)
+    ld t5, 15 * 8(a1)
+    ld t6, 16 * 8(a1)
+    ld t1, 11 * 8(a1)
+    ld t0, 10 * 8(a1)
 
-    // scratch should be TRAPFRAME again
-    csrw sscratch, sp
-    ld sp,  0 * 8(sp)           // sp last, it is the base of every load above
+    // scratch should be current trapframe again
+    csrw sscratch, a1
+    ld a1,  3 * 8(a1)           // a1 last, it is the base of every load above
 
     sret

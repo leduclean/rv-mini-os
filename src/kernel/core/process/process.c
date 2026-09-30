@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdint.h>
 
 #include <lib/clist.h>
 #include <lib/string.h>
@@ -292,6 +293,7 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 	}
 
 	p->code = code;
+	p->tgid = p->pid;
 	if (p->pid == 0) {
 		p->ctx.ra = (uintptr_t)code;
 	} else {
@@ -322,37 +324,67 @@ err_restore_irq:
 	return p;
 }
 
-process_t *process_fork(process_t *parent)
+process_t *process_clone(process_t *parent, void *entry, void *args,
+			 void *stack, unsigned long flags)
 {
-	irq_flags_t state = irq_save();
-
 	if (!parent->user) {
 		panic("Only fork for user process is supported ");
 	}
 
+	irq_flags_t state = irq_save();
 	process_t *child = _alloc_squeletton(parent->name, parent->priority,
 					     parent->user, parent);
 	if (!child) {
 		goto err_restore_irq;
 	}
 
-	if (mmap_uspace(child) < 0) {
+	tframe_t *t = page_alloc();
+	if (!t) {
 		goto err_free_proc;
 	}
+	child->tframe_pa = t;
 
-	// Copy the trap frame of the parent
-	memcpy(child->tframe_pa, parent->tframe_pa, sizeof(*child->tframe_pa));
+	if (flags & CLONE_VM) {
+		// Add a reference to this page.
+		child->root_ptable = page_get((void *)parent->root_ptable);
+		child->tgid = parent->tgid;
 
-	// Copy all the three except TRAPFRAME
-	if (vpage_tree_copy(child->root_ptable, parent->root_ptable) < 0) {
-		goto err_free_tree;
+		if (!stack || !entry) {
+			goto err_free_map;
+		}
+		tframe_start(t, entry, stack);
+		tframe_set_arg(t, 0, (unsigned long)args);
+		child->tframe_va = THREAD_TRAPFRAME(child->pid);
+	} else {
+		pte_t *root = page_alloc();
+		if (!root) {
+			goto err_free_tframe;
+		}
+		child->root_ptable = root;
+		child->tgid = child->pid;
+
+		// CoW all the tree.
+		if (vpage_tree_copy(root, parent->root_ptable) < 0) {
+			goto err_free_map;
+		}
+
+		// Copy the trap frame of the parent to continue at the same state.
+		memcpy(t, parent->tframe_pa, sizeof(*child->tframe_pa));
+		// Child returns 0 from the original state. (ie fork() return 0 in the child)
+		tframe_set_return_val(t, 0);
+		child->tframe_va = TRAPFRAME;
 	}
 
-	// Child returns 0 from fork()
-	// This is going to be restored from trap_return
-	child->tframe_pa->saved_regs.a[0] = 0;
-	child->tframe_pa->saved_regs.satp = mmap_satp(child->root_ptable);
-	child->tframe_pa->kstack = (unsigned long)&child->kstack[KSTACK_SIZE];
+	// Map the trap frame into the table
+	int res = vpage_map(child->root_ptable, (void *)child->tframe_va, t,
+			    PTE_R | PTE_W);
+	if (res < 0) {
+		// t failed to get mapped so no in the tree yet
+		goto err_free_map;
+	}
+
+	tframe_init(t, child->root_ptable,
+		    (unsigned long)&child->kstack[KSTACK_SIZE]);
 
 	// On ctx switch on fork, we want this state
 	child->ctx.ra = (unsigned long)trap_return_to_user;
@@ -362,14 +394,25 @@ process_t *process_fork(process_t *parent)
 	irq_restore(state);
 	return child;
 
-err_free_tree:
-	vpage_tree_free(child->root_ptable);
+err_free_map:
+	if (flags & CLONE_VM) {
+		page_put(child->root_ptable);
+	} else {
+		vpage_tree_free(child->root_ptable);
+	}
+err_free_tframe:
+	page_put(child->tframe_pa);
 err_free_proc:
 	free(child);
 	child = NULL;
 err_restore_irq:
 	irq_restore(state);
 	return child;
+}
+
+process_t *process_fork(process_t *parent)
+{
+	return process_clone(parent, NULL, NULL, NULL, 0);
 }
 
 int process_exec(process_t *p, void code(void))
