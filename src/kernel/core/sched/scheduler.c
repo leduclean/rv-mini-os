@@ -350,7 +350,7 @@ void scheduler_exit(int exit_code)
 
 	process_zombify(current, exit_code);
 	_switch_out_active();
-	__builtin_unreachable();
+	panic("Zombie exit");
 }
 
 static inline int _exit_tgid_cb(clist_node_t *node, void *arg)
@@ -378,7 +378,6 @@ void scheduler_exit_group(int exit_code)
 	process_t *proc = process_active();
 	clist_for_each(process_table_clist(), _exit_tgid_cb, &proc->tgid);
 	scheduler_exit(exit_code);
-	__builtin_unreachable();
 }
 
 void scheduler_sleep(uint32_t nbr_secs)

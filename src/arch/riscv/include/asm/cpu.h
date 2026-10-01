@@ -45,8 +45,7 @@ inline static void irq_disable_s(void)
  * @note Never call _panic() directly, use the panic() macro: __FILE__ and
  * __LINE__ must expand at the call site, not here.
  */
-__attribute__((noreturn)) void _panic(const char *msg, const char *file,
-				      int line);
+[[noreturn]] void _panic(const char *msg, const char *file, int line);
 
 /** @brief Halt the kernel, reporting @msg and where it was raised. */
 #define panic(msg) _panic((msg), __FILE__, __LINE__)
