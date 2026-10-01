@@ -34,19 +34,6 @@ clist_node_t *wq_pop_head(wait_queue_t *wq)
 	return clist_pop_front(&wq->head);
 }
 
-process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid)
-{
-	clist_node_t *n;
-	for (n = wq->head.next; n != &wq->head; n = n->next) {
-		process_t *p = container_of(n, process_t, wait_node);
-		if (p->pid == pid) {
-			clist_remove(n);
-			return p;
-		}
-	}
-	return NULL;
-}
-
 uint8_t wq_is_empty(const wait_queue_t *wq)
 {
 	return clist_empty(&wq->head);

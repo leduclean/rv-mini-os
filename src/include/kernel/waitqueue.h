@@ -66,15 +66,6 @@ clist_node_t *wq_pop_head(wait_queue_t *wq);
 uint8_t wq_is_empty(const wait_queue_t *wq);
 
 /**
- * @brief Remove a waiting process by pid.
- *
- * @param wq Wait queue to search in.
- * @param pid Pid of the process to detach.
- * @return Pointer to the detached process, NULL if it was not waiting here.
- */
-process_t *wq_remove_by_pid(wait_queue_t *wq, int8_t pid);
-
-/**
  * @brief Traverse a wait queue, calling a function on each waiting node.
  *
  * @param wq Wait queue to traverse.

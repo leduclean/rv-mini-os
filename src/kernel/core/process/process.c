@@ -97,8 +97,8 @@ static inline void _init_process_queues(process_t *proc)
 	clist_init_node(&proc->ready_node);
 	clist_init_node(&proc->wait_node);
 	clist_init_node(&proc->sleep_node);
-	wq_init(&proc->zombies);
-	wq_init(&proc->child_wq);
+	clist_init_node(&proc->zombies);
+	wq_init(&proc->zombie_wq);
 }
 
 /**
@@ -233,12 +233,12 @@ void process_zombify(process_t *proc, int exit_code)
 	proc->exit_code = exit_code;
 
 	_remove_from_sched_queues(proc);
-	wq_enqueue(&parent->zombies, &proc->wait_node);
+	clist_push_back(&parent->zombies, &proc->wait_node);
 
 	if (parent->state == BLOCKED) {
 		// Parent is waiting so we wake him up
 		// to check if he can stop wait.
-		scheduler_wake_waiting_queue(&parent->child_wq);
+		scheduler_wake_waiting_queue(&parent->zombie_wq);
 	}
 
 	irq_restore(state);

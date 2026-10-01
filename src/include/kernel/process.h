@@ -64,8 +64,8 @@ typedef struct process {
 	uint64_t wake_up_time; ///< Wake up date, in secondes since boot.
 
 	process_t *parent; ///< Parent process, NULL if orphan.
-	wait_queue_t child_wq; ///< Queue blocked on while waiting for a child.
-	wait_queue_t zombies; ///< Terminated children waiting to be reaped.
+	clist_node_t zombies; ///< Terminated children waiting to be reaped.
+	wait_queue_t zombie_wq; ///< Queue for blocked thread on this thread.
 	int8_t exit_code; ///< Code to identify what made our process exit.
 
 	priority priority; ///< Scheduling priority class.
