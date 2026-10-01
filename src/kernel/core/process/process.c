@@ -163,15 +163,15 @@ static void _kproc_launcher(void)
 }
 
 /** @brief Create the idle process and make it active. */
-static void _init_idle(void)
+static int _init_idle(void)
 {
 	process_t *p = process_spawn(process_idle, "idle", IDLE, false);
 	if (!p) {
-		//TODO: handle error
-		return;
+		return -1;
 	}
 	active = p;
 	active->state = RUNNING;
+	return 0;
 }
 
 process_t *process_active(void)
@@ -452,11 +452,15 @@ int8_t process_spawn_foreground(void code(void), const char *name,
 	return pid;
 };
 
-void process_init(void)
+int process_init(void)
 {
+	int res;
+
 	_init_proc_table();
 	scheduler_init();
-	_init_idle();
+	res = _init_idle();
+
+	return res;
 }
 
 void process_idle(void)

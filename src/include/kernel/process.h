@@ -166,8 +166,12 @@ static inline void process_reap(process_t *proc)
 /** @brief Idle process, runs whenever no other process is ready. */
 void process_idle(void);
 
-/** @brief Init the process table, the scheduler queues and the idle process. */
-void process_init(void);
+/**
+ * @brief Init the process table, the scheduler queues and the idle process.
+ *
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * */
+int process_init(void);
 
 /**
  * @brief Spawn a process and admit it in the scheduler.

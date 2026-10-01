@@ -21,30 +21,44 @@
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 void kernel_start(void)
 {
+	int res;
+
 	printf("[INFO] Kernel start \n");
 
+	printf("[INFO] Tiny alloc initialized \n");
 	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
 		TA_ALIGNMENT);
-	printf("[INFO] Tiny alloc initialized \n");
 
-	page_init();
 	printf("[INFO] pages initialized \n");
+	page_init();
 
-	mmap_kernel();
 	printf("[INFO] kernel map \n");
+	res = mmap_kernel();
+	if (res < 0) {
+		panic("[FAILURE] Kernel map has failed");
+	}
 
-	process_init();
 	printf("[INFO] init proc \n");
+	process_init();
+	if (res < 0) {
+		panic("[FAILURE] Init proc has failed");
+	}
 
-	irq_enable_s();
 	printf("[INFO] S irq enabled\n");
-
-	plic_enable_s_external();
+	irq_enable_s();
 
 	printf("[INFO] external irq enabled\n");
+	plic_enable_s_external();
 
-	time_spawn_daemons();
-	uart_spawn_daemons();
+	res = time_spawn_daemons();
+	if (res < 0) {
+		panic("[FAILURE] Time daemon spawn has failed");
+	}
+
+	res = uart_spawn_daemons();
+	if (res < 0) {
+		panic("[FAILURE] Uart daemon spawn has failed");
+	}
 
 	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
 		printf("[FAILURE]: failed to spawn shell \n");

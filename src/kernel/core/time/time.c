@@ -1,7 +1,6 @@
 #include <lib/stdio.h>
 
 #include <asm/csr.h>
-#include <asm/csr.h>
 
 #include <drivers/console.h>
 
@@ -81,15 +80,17 @@ static void _tick_daemon(void)
 	}
 }
 
-void time_spawn_daemons(void)
+int time_spawn_daemons(void)
 {
 	if (!process_spawn(_clock_daemon, "clock daemon", HIGH, false)) {
-		printf("[FAILURE]: failed to spawn clock daemon \n");
+		return -1;
 	}
 
 	if (!process_spawn(_tick_daemon, "tick daemon", HIGH, false)) {
-		printf("[FAILURE]: failed to spawn tick daemon \n");
+		return -1;
 	}
+
+	return 0;
 }
 
 void time_init(void)

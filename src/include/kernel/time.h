@@ -26,5 +26,7 @@ void time_irq_handler(void);
 
 /**
  * @brief Spawn timer daemons.
+ *
+ * @return 0 on SUCCESS, error code < 0 on FAILURE. 
  */
-void time_spawn_daemons(void);
+int time_spawn_daemons(void);

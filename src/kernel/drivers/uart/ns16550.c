@@ -148,11 +148,12 @@ static void _fill_rx_buff_daemon(void)
 	}
 }
 
-void uart_spawn_daemons(void)
+int uart_spawn_daemons(void)
 {
 	if (!process_spawn(_fill_rx_buff_daemon, "uart rx daem", HIGH, false)) {
-		printf("[FAILURE/UART]: failed to spawn uart rx daemon \n");
+		return -1;
 	}
+	return 0;
 }
 
 void uart_read(char *c)

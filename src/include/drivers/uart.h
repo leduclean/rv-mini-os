@@ -5,7 +5,6 @@
 
 #pragma once
 
-
 /**
  * @brief Init the uart to send and receive chars.
  *
@@ -37,5 +36,7 @@ void uart_read(char *c);
 
 /**
  * @brief Spawn Uart daemons.
+ *
+ * @param 0 on SUCCESS, error code < 0 on FAILURE.
  */
-void uart_spawn_daemons(void);
+int uart_spawn_daemons(void);
