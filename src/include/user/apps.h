@@ -40,3 +40,8 @@ void read_test(void);
  * @brief Test the read and write syscall by streaming input in the console.
  */
 void stream_test(void);
+
+/**
+ * @brief Test the thread api.
+ */
+void thread_test(void);

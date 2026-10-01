@@ -164,6 +164,7 @@ void programs_init(void)
 	REGISTER_USER_APP(write_test);
 	REGISTER_USER_APP(read_test);
 	REGISTER_USER_APP(stream_test);
+	REGISTER_USER_APP(thread_test);
 
 	REGISTER_BUILT_IN(ps);
 }
