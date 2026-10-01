@@ -12,7 +12,7 @@ set(CMAKE_CXX_COMPILER_TARGET ${RISCV_TARGET})
 set(CMAKE_ASM_COMPILER_TARGET ${RISCV_TARGET})
 
 set(CMAKE_C_FLAGS "\
--std=c17 -march=rv64ima_zicsr -mabi=lp64 -mcmodel=medany \
+-std=c23 -march=rv64ima_zicsr -mabi=lp64 -mcmodel=medany \
 -mno-relax -mno-save-restore \
 -ffreestanding -fno-pie -fno-common -fno-builtin \
 -fno-strict-aliasing -fno-strict-overflow -fno-delete-null-pointer-checks \

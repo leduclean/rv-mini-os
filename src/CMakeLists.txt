@@ -39,11 +39,13 @@ set(QEMU_DEBUGT_OPTS -gdb tcp::1234 -S -d int,cpu -D qemu.log  ${QEMU_RUN_GUI_OP
 add_custom_target(run
     COMMAND ${QEMU} ${QEMU_RUN_OPTS} -kernel kernel.bin
     DEPENDS kernel.bin
+    USES_TERMINAL
 )
 
 add_custom_target(rung
     COMMAND ${QEMU} ${QEMU_RUN_GUI_OPTS} -kernel kernel.bin
     DEPENDS kernel.bin
+    USES_TERMINAL
 )
 
 add_custom_target(debug
