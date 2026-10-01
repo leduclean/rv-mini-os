@@ -19,7 +19,7 @@
 #include <kernel/time.h>
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
-void kernel_start(void)
+[[noreturn]] void kernel_start(void)
 {
 	int res;
 
