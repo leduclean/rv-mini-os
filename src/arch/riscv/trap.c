@@ -167,7 +167,7 @@ void usertrap(void)
 		case INSTRUCTION_PAGE_FAULT: {
 			printf("[Kernel]: SEGFAULT - va 0x%lx, epc 0x%lx, cause %ld (pid %d)\n",
 			       stval, t->sepc, scause, p->pid);
-			scheduler_terminate(-1);
+			scheduler_exit(-1);
 			break;
 		}
 

@@ -128,21 +128,40 @@ void process_block(process_t *proc);
 void process_wake(process_t *proc);
 
 /**
- * @brief Terminate a process.
+ * @brief Zombify a process, putting it in the zombies queue of its parent.
  *
- * @note It is zombified if it has a parent, cleaned up otherwise.
+ * @note The parent is woken up if it was waiting for a child.
+ * @note Use this when delayed destroy is needed.
+ * @warning Callling this function on an orphan proc will led to panic.
  *
- * @param proc Process to terminate.
- * @param exit_code 0 if the process finished normally else exit code.
+ * @param proc Process to zombify.
+ *
  */
-void process_terminate(process_t *proc, int exit_code);
+void process_zombify(process_t *proc, int exit_code);
+
+/**
+ * @brief Clean a process up, removing it from all queues and from memory.
+ *
+ * @warning Calling this function on the current task will led to 
+ * panic. If you want to do this, you should zombify the task via @process_zombify instead.
+ *
+ * @param proc Process to clean up.
+ */
+void process_destroy(process_t *proc);
 
 /**
  * @brief Reap a zombie process, called by its parent.
  *
  * @param proc Zombie process to reap.
  */
-void process_reap(process_t *proc);
+static inline void process_reap(process_t *proc)
+{
+	if (proc->state != ZOMBIE) {
+		return;
+	}
+
+	process_destroy(proc);
+}
 
 /** @brief Idle process, runs whenever no other process is ready. */
 void process_idle(void);

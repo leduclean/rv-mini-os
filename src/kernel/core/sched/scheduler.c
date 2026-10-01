@@ -1,18 +1,20 @@
 #include <stddef.h>
+#include <stdint.h>
 
 #include <lib/clist.h>
 #include <lib/container.h>
 #include <lib/stdio.h>
 
 #include <asm/cpu.h>
+#include <asm/trap.h>
 
 #include <kernel/mmap.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
+#include <kernel/spinlock.h>
 #include <kernel/time.h>
+#include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
-
-#include "kernel/spinlock.h"
 
 /**
  * @brief This counter is used to disable the scheduler preemption.
@@ -339,16 +341,44 @@ void scheduler_ready_process(process_t *proc)
 	irq_restore(flags);
 }
 
-void scheduler_terminate(int exit_code)
+void scheduler_exit(int exit_code)
 {
-	irq_flags_t flags = irq_save();
+	//TODO: check if it properly restores irqs after.
+	(void)irq_save();
+
 	process_t *current = process_active();
 
-	_ready_queue_remove(current);
-	process_terminate(current, exit_code);
+	process_zombify(current, exit_code);
 	_switch_out_active();
+	__builtin_unreachable();
+}
 
-	irq_restore(flags);
+static inline int _exit_tgid_cb(clist_node_t *node, void *arg)
+{
+	uint8_t tgid = *(uint8_t *)arg;
+
+	process_t *current = process_active();
+	process_t *p = container_of(node, process_t, proc_node);
+
+	//TODO: On multicore this is gonna crash.
+	// maybe a flag for killed needs to be add.
+	if (tgid == p->tgid && p != current) {
+		// No zombie state, we directly destroy the thread
+		process_destroy(p);
+	}
+
+	return 0;
+}
+
+void scheduler_exit_group(int exit_code)
+{
+	//TODO: check if it properly restores irqs after.
+	(void)irq_save();
+
+	process_t *proc = process_active();
+	clist_for_each(process_table_clist(), _exit_tgid_cb, &proc->tgid);
+	scheduler_exit(exit_code);
+	__builtin_unreachable();
 }
 
 void scheduler_sleep(uint32_t nbr_secs)

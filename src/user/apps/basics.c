@@ -40,14 +40,14 @@ void fork_exec_test(void)
 	int8_t pid;
 	pid = fork();
 	if (pid < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 	if (pid == 0) {
 		char func[15] = "sleep_call";
 		// Exec a child process
 		pid = exec(func, NULL);
 		if (pid < 0) {
-			return exit(1);
+			return exit_group(1);
 		}
 	} else {
 		waitpid(pid);
@@ -56,7 +56,7 @@ void fork_exec_test(void)
 		int res;
 		res = write(1, ubuf, 27);
 		if (res < 0) {
-			return exit(1);
+			return exit_group(1);
 		}
 	}
 }
@@ -66,7 +66,7 @@ void exec_test(void)
 	int8_t res;
 	res = exec("sleep_call", NULL);
 	if (res < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 }
 
@@ -76,7 +76,7 @@ void segfault_test(void)
 
 	res = fork();
 	if (res < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 	if (res == 0) {
 		// This will trigger a segfault
@@ -96,7 +96,7 @@ void write_test(void)
 
 	res = write(1, ubuf, 23);
 	if (res < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 }
 
@@ -107,12 +107,12 @@ void read_test(void)
 
 	res = read(1, ubuf, 10);
 	if (res < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 
 	res = write(1, ubuf, 10);
 	if (res < 0) {
-		return exit(1);
+		return exit_group(1);
 	}
 }
 
@@ -124,12 +124,12 @@ void stream_test(void)
 	for (;;) {
 		res = read(1, ubuf, 1);
 		if (res < 0) {
-			return exit(1);
+			return exit_group(1);
 		}
 
 		res = write(1, ubuf, 1);
 		if (res < 0) {
-			return exit(1);
+			return exit_group(1);
 		}
 	}
 }

@@ -87,57 +87,6 @@ static inline void _remove_from_all_queues(process_t *proc)
 }
 
 /**
- * @brief Clean a process up, removing it from all queues and from memory.
- *
- * @param proc Process to clean up.
- */
-static inline void _process_clean_up(process_t *proc)
-{
-	irq_flags_t state = irq_save();
-
-	proc->state = TERMINATED;
-	_remove_from_all_queues(proc);
-
-	if (proc->user && proc->root_ptable) {
-		vpage_tree_free(proc->root_ptable);
-	}
-
-	free(proc);
-	proc_table.active_process--;
-
-	irq_restore(state);
-}
-
-/**
- * @brief Zombify a process, putting it in the zombies queue of its parent.
- *
- * @note The parent is woken up if it was waiting for a child.
- *
- * @param proc Process to zombify.
- */
-static inline void _process_zombify(process_t *proc, int exit_code)
-{
-	irq_flags_t state = irq_save();
-
-	// ponytail: caller (process_terminate) already proved parent != NULL
-	process_t *parent = proc->parent;
-
-	proc->state = ZOMBIE;
-	proc->exit_code = exit_code;
-
-	_remove_from_sched_queues(proc);
-	wq_enqueue(&parent->zombies, &proc->wait_node);
-
-	if (parent->state == BLOCKED) {
-		// Parent is waiting so we wake him up
-		// to check if he can stop wait.
-		scheduler_wake_waiting_queue(&parent->child_wq);
-	}
-
-	irq_restore(state);
-}
-
-/**
  * @brief Reset all the nodes and the wait queues of a process.
  *
  * @param proc Process to reset.
@@ -210,7 +159,7 @@ static void _kproc_launcher(void)
 	irq_enable_s();
 	process_t *p = process_active();
 	p->code();
-	scheduler_terminate(0);
+	scheduler_exit_group(0);
 }
 
 /** @brief Create the idle process and make it active. */
@@ -271,22 +220,54 @@ void process_wake(process_t *proc)
 	irq_restore(state);
 }
 
-void process_terminate(process_t *proc, int exit_code)
+void process_zombify(process_t *proc, int exit_code)
 {
+	irq_flags_t state = irq_save();
+
 	process_t *parent = proc->parent;
-	if (parent) {
-		_process_zombify(proc, exit_code);
-	} else {
-		_process_clean_up(proc);
+	if (parent == NULL) {
+		panic("Zombify an orphan process is not permitted");
 	}
+
+	proc->state = ZOMBIE;
+	proc->exit_code = exit_code;
+
+	_remove_from_sched_queues(proc);
+	wq_enqueue(&parent->zombies, &proc->wait_node);
+
+	if (parent->state == BLOCKED) {
+		// Parent is waiting so we wake him up
+		// to check if he can stop wait.
+		scheduler_wake_waiting_queue(&parent->child_wq);
+	}
+
+	irq_restore(state);
 }
 
-void process_reap(process_t *proc)
+void process_destroy(process_t *proc)
 {
-	if (proc->state != ZOMBIE) {
-		return;
+	irq_flags_t state = irq_save();
+	if (process_active() == proc) {
+		panic("Trying to destroy the current process led to segfault. Use zombify instead");
 	}
-	_process_clean_up(proc);
+
+	proc->state = TERMINATED;
+	_remove_from_all_queues(proc);
+
+	pte_t *root = proc->root_ptable;
+	if (proc->user && root) {
+		vpage_unmmap(proc->root_ptable, (void *)proc->tframe_va);
+		if (page_get_ref_count(root) == 1) {
+			vpage_tree_free(proc->root_ptable);
+		} else {
+			page_put(root);
+		}
+	}
+
+	free(proc);
+	proc_table.active_process--;
+
+	irq_restore(state);
 }
 
 process_t *process_spawn(void code(void), const char *name, priority prior,

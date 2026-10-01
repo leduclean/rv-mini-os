@@ -12,13 +12,23 @@
 void sleep(uint32_t sec);
 
 /**
- * @brief Exit syscall called on a user process terminaison.
+ * @brief Exit syscall called to trigger the thread terminaison
  *
- * This function cleans the entire struct associated with the process itself.
+ * This function cleans the entire struct associated with the thread.
  *
  * @param code Terminaison code: 0 if normal, else error codes.
  */
-void exit(int code);
+void exit(uint8_t code);
+
+/**
+ * @brief Exit syscall called on a process terminaison.
+ *
+ * This function cleans the entire struct associated with the process
+ * and all the thread associated with the process.
+ *
+ * @param code Terminaison code: 0 if normal, else error codes.
+ */
+void exit_group(uint8_t code);
 
 /**
  * @brief Wait for the terminaison of any child, then reap it.

@@ -8,7 +8,8 @@
  * @{ */
 #define SYSCALLS(X)                                                       \
 	X(SLEEP, void, sleep, (uint32_t sec))                             \
-	X(EXIT, void, exit, (uint8_t code))                               \
+	X(EXIT, [[noreturn]] void, exit, (uint8_t code))                  \
+	X(EXIT_GROUP, [[noreturn]] void, exit_group, (uint8_t code))      \
 	X(WAIT, int8_t, wait, (void))                                     \
 	X(WAITPID, int8_t, waitpid, (int8_t pid))                         \
 	X(GETPID, uint8_t, getpid, (void))                                \

@@ -65,5 +65,10 @@ int sys_exec(const char *path, char *const argv[])
 
 void sys_exit(uint8_t code)
 {
-	scheduler_terminate(code);
+	scheduler_exit(code);
 }
+
+void sys_exit_group(uint8_t code)
+{
+	scheduler_exit_group(code);
+};

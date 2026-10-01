@@ -18,9 +18,15 @@ void sleep(uint32_t sec)
 {
 	SYSCALL(SYS_SLEEP, sec);
 }
-void exit(int code)
+
+void exit(uint8_t code)
 {
 	SYSCALL(SYS_EXIT, code);
+}
+
+void exit_group(uint8_t code)
+{
+	SYSCALL(SYS_EXIT_GROUP, code);
 }
 
 int8_t wait(void)

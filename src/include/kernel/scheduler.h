@@ -7,9 +7,7 @@
 #include <stdint.h>
 
 #include <kernel/process.h>
-
-#include "asm/cpu.h"
-#include "kernel/spinlock.h"
+#include <kernel/spinlock.h>
 
 /**
  * @brief Use this function before @scheduler_enable_preempt for a no switch section.
@@ -93,10 +91,17 @@ void scheduler_init(void);
  */
 void scheduler_sleep(uint32_t nbr_secondes);
 
-/** @brief Terminate the active process and switch to the next ready one. 
+/** @brief Exit the active task and switch to the next ready one.
  *
- * @param exit_code Exit code of the process to terminate.
+ * @note This will implicitly cause the current task to be zombify.
+ *
+ * @param exit_code Exit code of the exited task.
  */
-[[noreturn]] void scheduler_terminate(int exit_code);
+[[noreturn]] void scheduler_exit(int exit_code);
 
-[[noreturn]] void scheduler_terminate_group(int exit_code);
+/**
+ * @brief Exit the active task and all the thread with the same @gtid 
+ *
+ * @param exit_code Exit code of the exited task.
+ */
+[[noreturn]] void scheduler_exit_group(int exit_code);
