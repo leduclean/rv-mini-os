@@ -14,7 +14,7 @@ extern char _trampoline_start[], _trampoline_end[];
  * @brief Map the kernel page table root. 
  * 
  * @note The corresponding satp is accessible via @ref mmap_kernel_satp.
- * @return [TODO: error codes]
+ * @return 0 if sucess, error code < 0 on failure.
  */
 int mmap_kernel(void);
 
