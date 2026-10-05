@@ -7,6 +7,7 @@
 #include <asm/mmio.h>
 
 #include <drivers/console.h>
+#include <drivers/pci.h>
 #include <drivers/uart.h>
 
 #include "bochs_regs.h"
@@ -17,57 +18,36 @@
 	MMIO16(BOCHS_CONFIG_BASE_ADDRESS + BOCHS_CONFIG_DISPI_ADDRESS + \
 	       (reg_idx << 1))
 
-/** @brief Device command bits: memory io, memory access, screen reach. */
-#define COMMAND_CONFIG 0b111
-
 #define BG_COLOR 0x000000
 #define TEXT_COLOR 0xFFFFFF
 
 /**
- * @brief Make a PCI ECAM address.
+ * @brief Config BAR and enable pci device.
  *
- * @param bus Bus number.
- * @param dev Device number.
- * @param func Function number.
- * @param offset Offset of the register in the config space.
- * @return The assembled ECAM address.
- */
-static inline uintptr_t _make_device_addr(uint32_t bus, uint32_t dev,
-					  uint32_t func, uint32_t offset)
-{
-	return PCI_ECAM_BASE_ADDRESS | (bus << PCI_BUS_SHIFT) |
-	       (dev << PCI_DEVICE_SHIFT) | (func << PCI_FUNC_SHIFT) | offset;
-}
-
-/**
- * @brief Find the display device on the PCIe bus and map its base addresses.
- *
- * @return 0 on success, -1 if no display device was found.
+ * @return 0 on SUCCESS, -1 if the device was not found.
  */
 static int _config_pcie(void)
 {
-	int found = -1;
-	uintptr_t device_addr;
-	for (uint32_t dev = 0; dev <= 31; dev++) {
-		device_addr = _make_device_addr(0, dev, 0, 0);
-		if (MMIO32(device_addr) == DISPLAY_PCI_ID) {
-			found = 0;
-			break;
-		}
-	};
+	int res;
+	struct pci_device dev;
 
-	if (found != 0) {
-		return -1; // error
+	if (!pci_find_device(BOCHS_VENDOR_ID, BOCHS_DEV_ID, &dev)) {
+		return -1;
 	}
-	// Command setting for io, memory acces and screen reaching
-	MMIO32(device_addr + PCI_DEV_COMMAND) |= COMMAND_CONFIG;
 
-	// Base addr config for display and config
-	MMIO32(device_addr + PCI_DEV_DISPLAY_ADDR) = BOCHS_DISPLAY_BASE_ADDRESS;
-	MMIO32(device_addr + PCI_DEV_CONFIG_ADDR) = BOCHS_CONFIG_BASE_ADDRESS;
+	res = pci_set_bar(&dev, 0, BOCHS_DISPLAY_BASE_ADDRESS);
+	if (res < 0) {
+		return res;
+	}
+
+	res = pci_set_bar(&dev, 2, BOCHS_CONFIG_BASE_ADDRESS);
+	if (res < 0) {
+		return res;
+	}
+	pci_enable_device(&dev);
 
 	return 0;
-};
+}
 
 /**
  * @brief Config the Bochs display resolution, depth and offsets.
@@ -100,10 +80,16 @@ static int _config_screen(void)
 
 int console_init(void)
 {
-	if (_config_pcie() != 0)
-		return -1;
-	if (_config_screen() != 0)
-		return -1;
+	int res;
+	res = _config_pcie();
+	if (res < 0) {
+		return res;
+	}
+	res = _config_screen();
+	if (res < 0) {
+		return res;
+	}
+
 	return 0;
 };
 

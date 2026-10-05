@@ -15,9 +15,6 @@
 #define PLIC_MMIO_BASE 0x0c000000UL
 #define PLIC_MMIO_SIZE 0x202000UL
 
-/* PCIe ECAM configuration window */
-#define PCI_ECAM_BASE_ADDRESS 0x30000000
-
 /* bochs-display, mapped by _config_pcie() */
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
 

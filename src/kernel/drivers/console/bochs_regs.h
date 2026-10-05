@@ -1,21 +1,11 @@
 #pragma once
 
+#define BOCHS_VENDOR_ID 0x1234
+#define BOCHS_DEV_ID 0x1111
+
 /* bochs-display / VBE register layout */
 #define BOCHS_CONFIG_BASE_ADDRESS 0x40000000
 #define BOCHS_CONFIG_DISPI_ADDRESS 0x500
-
-#define DISPLAY_PCI_ID 0x11111234
-
-// Shift definition for PCI config
-#define PCI_BUS_SHIFT 16
-#define PCI_DEVICE_SHIFT 11
-#define PCI_FUNC_SHIFT 8
-#define PCI_MAX_DEVICE 32
-
-// Device registers mapping
-#define PCI_DEV_COMMAND 0x04
-#define PCI_DEV_DISPLAY_ADDR 0x10
-#define PCI_DEV_CONFIG_ADDR 0x18
 
 // Config registers addresses
 #define VBE_DISPI_INDEX_ID 0x00
