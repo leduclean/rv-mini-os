@@ -9,6 +9,31 @@
 
 #include <asm/csr.h>
 
+/**
+ * @brief Memory barrier for IO DMA coherency.
+ */
+inline static void m2m_rmb(void)
+{
+	__asm__ __volatile__("fence r, r" ::: "memory");
+}
+
+/**
+ * @brief Memory barrier for write coherency on a write.
+ */
+inline static void m2m_wmb(void)
+{
+	__asm__ __volatile__("fence w, w" ::: "memory");
+}
+
+/**
+ * @brief Memory barrier for RAM-to-MMIO/RAM Write coherency.
+ *        Ensures prior RAM writes complete before subsequent RAM or MMIO writes
+ */
+inline static void m2io_wmb(void)
+{
+	__asm__ __volatile__("fence w, ow" ::: "memory");
+}
+
 /** @brief Put the cpu in pause, waiting for an interrupt. */
 inline static void hlt(void)
 {
