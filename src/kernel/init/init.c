@@ -20,24 +20,6 @@
 #include <kernel/shell.h>
 #include <kernel/time.h>
 
-void test_sequence(void)
-{
-	const char write_data[] = "deadbeef";
-	size_t string_len = strlen(write_data);
-
-	uint8_t *sector_write_buf = calloc(1, 512);
-	uint8_t *sector_read_buf = calloc(1, 512);
-	memcpy(sector_write_buf, write_data, string_len);
-
-	virtio_blk_request(VIRTIO_BLK_T_OUT, 0, sector_write_buf, 512);
-	virtio_blk_request(VIRTIO_BLK_T_IN, 0, sector_read_buf, 512);
-
-	printf("READED DATA: %s\n", (char *)sector_read_buf);
-
-	free(sector_write_buf);
-	free(sector_read_buf);
-}
-
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 
 [[noreturn]] void kernel_start(void)
@@ -73,7 +55,7 @@ void test_sequence(void)
 	irq_enable_s();
 
 	printf("[INFO] external irq enabled\n");
-	plic_enable_s_external();
+	plic_init();
 
 	res = time_spawn_daemons();
 	if (res < 0) {
@@ -85,11 +67,9 @@ void test_sequence(void)
 		panic("[FAILURE] Uart daemon spawn has failed");
 	}
 
-	// if (!process_spawn(shell_run, "shell", NORMAL, false)) {
-	// 	printf("[FAILURE]: failed to spawn shell \n");
-	// }
-
-	test_sequence();
+	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
+		printf("[FAILURE]: failed to spawn shell \n");
+	}
 
 	process_idle();
 }
@@ -104,7 +84,6 @@ void start(void)
 {
 	page_init();
 	//TODO: Maybe it should resides in S mode
-	plic_config_uart();
 	uart_init();
 	pmp_allow_all();
 	delegate_traps();

@@ -1,15 +1,29 @@
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include <lib/clist.h>
 #include <lib/container.h>
 #include <lib/stdio.h>
+#include <lib/tinyalloc.h>
+
+#include <asm/cpu.h>
+#include <asm/trap.h>
+
+#include <drivers/console.h>
+#include <drivers/plic.h>
+#include <drivers/uart.h>
+#include <drivers/virtio_blk.h>
 
 #include <kernel/cmd_registry.h>
+#include <kernel/memory.h>
+#include <kernel/mmap.h>
 #include <kernel/mutex.h>
+#include <kernel/pages.h>
 #include <kernel/process.h>
 #include <kernel/programs.h>
 #include <kernel/scheduler.h>
+#include <kernel/shell.h>
 #include <kernel/time.h>
 #include <user/apps.h>
 
@@ -168,11 +182,25 @@ static void help(void)
 	}
 }
 
+void test_blk_req(void)
+{
+	const char write_data[] = "deadbeef";
+	size_t string_len = strlen(write_data);
+
+	uint8_t *sector_write_buf = calloc(1, 512);
+	uint8_t *sector_read_buf = calloc(1, 512);
+	memcpy(sector_write_buf, write_data, string_len);
+
+	virtio_blk_request(VIRTIO_BLK_T_OUT, 0, sector_write_buf, 512);
+	virtio_blk_request(VIRTIO_BLK_T_IN, 0, sector_read_buf, 512);
+
+	printf("READED DATA: %s\n", (char *)sector_read_buf);
+
+	free(sector_write_buf);
+	free(sector_read_buf);
+}
+
 /* --- Register all programs --- */
-
-#define REGISTER_USER_APP(func) cmd_register_prog(#func, func, NORMAL, true)
-#define REGISTER_BUILT_IN(func) cmd_register_builtin(#func, func)
-
 void programs_init(void)
 {
 	REGISTER_USER_APP(sleep_call);
@@ -184,6 +212,7 @@ void programs_init(void)
 	REGISTER_USER_APP(read_test);
 	REGISTER_USER_APP(stream_test);
 	REGISTER_USER_APP(thread_test);
+	REGISTER_KERNEL_APP(test_blk_req);
 
 	REGISTER_BUILT_IN(ps);
 	REGISTER_BUILT_IN(help);

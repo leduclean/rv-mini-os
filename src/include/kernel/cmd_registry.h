@@ -29,6 +29,7 @@ typedef struct {
 
 #define REGISTER_USER_APP(func) cmd_register_prog(#func, func, NORMAL, true)
 #define REGISTER_BUILT_IN(func) cmd_register_builtin(#func, func)
+#define REGISTER_KERNEL_APP(func) cmd_register_prog(#func, func, NORMAL, false)
 
 /**
  * @brief Register a builtin command, executed in the shell process.
