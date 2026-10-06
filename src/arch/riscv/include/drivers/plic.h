@@ -5,19 +5,20 @@
 
 #pragma once
 
-/** @brief Enable the supervisor external irq. */
-void plic_enable_s_external(void);
-
-/** @brief Disable the supervisor external irq. */
-void plic_disable_s_external(void);
+#include <stdint.h>
 
 /**
- * @brief Config the plic for the uart irq.
- *
- * @note Enables the uart source, gives it the priority 3 and drops the
- * threshold to 0 so every non-zero priority interrupt is permitted.
+ * @brief Init the plic device.
  */
-void plic_config_uart(void);
+void plic_init(void);
+
+/**
+ * @brief Enable a specific external device irq.
+ *
+ * @param irq_id The PLIC id of the peripheric.
+ * @param priority The wanted priority of the irq.
+ */
+void plic_enable_irq(uint32_t irq_id, uint32_t priority);
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
 void plic_handle_irq(void);

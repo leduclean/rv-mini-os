@@ -5,6 +5,7 @@
 #include <asm/board.h>
 #include <asm/mmio.h>
 
+#include <drivers/plic.h>
 #include <drivers/uart.h>
 
 #include <kernel/scheduler.h>
@@ -104,6 +105,7 @@ void uart_init(void)
 	_uart_enable_fifo();
 	_uart_config_lcr();
 	_uart_enable_rxirq();
+	plic_enable_irq(UART_PLIC_ID, 3);
 };
 
 void uart_putchar(char c)

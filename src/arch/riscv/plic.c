@@ -1,31 +1,57 @@
+#include <stdint.h>
+
 #include <asm/board.h>
+#include <asm/cpu.h>
 #include <asm/csr.h>
 #include <asm/mmio.h>
 
 #include <drivers/uart.h>
+#include <drivers/virtio_blk.h>
 
 #include <kernel/time.h>
 
-// PLIC registers addresses
-#define PLIC_PENDING 0x0c001000
-#define PLIC_SOURCE 0x0c000000
-#define PLIC_ENABLE_S 0x0c002080
-#define PLIC_TARGET_S 0x0c201000
-#define PLIC_IRQ_CLAIM_S 0x0c201004
+/* Register map offsets, named after the RISC-V PLIC spec "Memory Map" */
+#define PLIC_PRIORITY_BASE 0x000000 /* Interrupt Priorities */
+#define PLIC_PRIORITY_SIZE 4 /* One 32 bits register per source */
+#define PLIC_ENABLE_BASE 0x002000 /* Interrupt Enables */
+#define PLIC_ENABLE_CTX_STRIDE 0x80 /* Enable bits block per context */
+#define PLIC_THRESHOLD_BASE 0x200000 /* Priority Thresholds */
+#define PLIC_THRESHOLD_CTX_STRIDE 0x1000 /* Threshold block per context */
+#define PLIC_CLAIM_COMPLETE_OFF 0x4 /* Claim/complete, after the threshold */
 
-// PLIC pushbutton irq
-#define PLIC_IRQ_2 0x2
-#define PLIC_UART_ID 10
-#define PLIC_ENABLE_UART (1 << PLIC_UART_ID)
-
-void plic_enable_s_external(void)
+static inline uint32_t _get_context(void)
 {
-	csr_set(sie, SIE_SEIE);
+	//FIX: Context in S mode for hart0 is 1
+	//in multihart not true
+	return 1;
 }
 
-void plic_disable_s_external(void)
+static inline uintptr_t _priority_reg(uint32_t irq_id)
 {
-	csr_clear(sie, SIE_SEIE);
+	return PLIC_MMIO_BASE + PLIC_PRIORITY_BASE +
+	       PLIC_PRIORITY_SIZE * irq_id;
+}
+
+static inline uintptr_t _enable_reg(uint32_t ctx, uint32_t irq_id)
+{
+	return PLIC_MMIO_BASE + PLIC_ENABLE_BASE +
+	       PLIC_ENABLE_CTX_STRIDE * ctx + 4 * (irq_id / 32);
+}
+
+static inline uintptr_t _threshold_reg(uint32_t ctx)
+{
+	return PLIC_MMIO_BASE + PLIC_THRESHOLD_BASE +
+	       PLIC_THRESHOLD_CTX_STRIDE * ctx;
+}
+
+static inline uintptr_t _claim_complete_reg(uint32_t ctx)
+{
+	return _threshold_reg(ctx) + PLIC_CLAIM_COMPLETE_OFF;
+}
+
+static inline void plic_enable_s_external(void)
+{
+	csr_set(sie, SIE_SEIE);
 }
 
 /**
@@ -43,7 +69,7 @@ static void _plic_set_pty(uint32_t irq_id, uint32_t priority)
 		// range is between 0 and 7.
 		priority = 7;
 	}
-	MMIO32(PLIC_SOURCE + (irq_id << 2)) = priority;
+	MMIO32(_priority_reg(irq_id)) = priority;
 }
 
 /**
@@ -60,17 +86,20 @@ static void _set_priority_treshold(uint32_t threshold)
 	if (threshold > 7) {
 		threshold = 7;
 	}
-	MMIO32(PLIC_TARGET_S) = threshold;
+
+	MMIO32(_threshold_reg(_get_context())) = threshold;
 }
 
-void plic_config_uart(void)
+void plic_init(void)
 {
-	/* Enable UART irq */
-	MMIO32(PLIC_ENABLE_S) |= PLIC_ENABLE_UART;
-	/* Set Uart priority to  3 */
-	_plic_set_pty(PLIC_UART_ID, 3);
-	/* Set threshold to 0 to enable all < 0 interrupts */
 	_set_priority_treshold(0);
+	plic_enable_s_external();
+}
+
+void plic_enable_irq(uint32_t irq_id, uint32_t priority)
+{
+	MMIO32(_enable_reg(_get_context(), irq_id)) |= 1u << (irq_id % 32);
+	_plic_set_pty(irq_id, priority);
 }
 
 /**
@@ -80,7 +109,7 @@ void plic_config_uart(void)
  */
 static uint32_t _claim_plic(void)
 {
-	return MMIO32(PLIC_IRQ_CLAIM_S);
+	return MMIO32(_claim_complete_reg(_get_context()));
 }
 
 /**
@@ -90,7 +119,7 @@ static uint32_t _claim_plic(void)
  */
 static void _complete_plic(uint32_t irq)
 {
-	MMIO32(PLIC_IRQ_CLAIM_S) = irq;
+	MMIO32(_claim_complete_reg(_get_context())) = irq;
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
@@ -98,8 +127,11 @@ void plic_handle_irq(void)
 {
 	uint32_t irq = _claim_plic();
 	switch (irq) {
-	case PLIC_UART_ID:
+	case UART_PLIC_ID:
 		uart_irq_handler();
+		break;
+	case VIRTIO_BLK_PLIC_ID:
+		virtio_irq_handler();
 		break;
 	}
 	_complete_plic(irq);

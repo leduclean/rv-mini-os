@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define UART_PLIC_ID 10 /**< Uart Interrupt id in the plic */
+
 /**
  * @brief Init the uart to send and receive chars.
  *
