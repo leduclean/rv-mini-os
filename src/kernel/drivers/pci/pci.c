@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <asm/board.h>
 #include <asm/mmio.h>
 
 #include <drivers/pci.h>
@@ -106,7 +107,7 @@ static inline bool _pci_bar_is_64(uint32_t bar)
 	return (bar & PCI_BAR_TYPE_MASK) == PCI_BAR_TYPE_64;
 }
 
-int32_t pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
+int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n)
 {
 	if (n >= PCI_BAR_COUNT) {
 		return -1;
@@ -120,31 +121,63 @@ int32_t pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
 		return -1;
 	}
 
-	bool is_64 = _pci_bar_is_64(bar);
-	if (is_64 && n == PCI_BAR_COUNT - 1) {
-		// Need at least two bar for 64 bits bar.
+	_pci_write_config32(ecam_addr, reg, 0xFFFFFFFF);
+	uint64_t mask = _pci_read_config32(ecam_addr, reg) & ~PCI_BAR_FLAG_MASK;
+	if (mask == 0) {
+		_pci_write_config32(ecam_addr, reg, bar);
+		// BAR not unimplemented
+		return -1;
+	}
+	_pci_write_config32(ecam_addr, reg, bar);
+
+	if (_pci_bar_is_64(bar)) {
+		if (n == PCI_BAR_COUNT - 1) {
+			// Need at least two bar for 64 bits bar.
+			return -1;
+		}
+
+		uint32_t reg_hi = _pci_bar_reg(n + 1);
+		uint32_t bar_hi = _pci_read_config32(ecam_addr, reg_hi);
+
+		_pci_write_config32(ecam_addr, reg_hi, 0xFFFFFFFF);
+		uint32_t hi_m = _pci_read_config32(ecam_addr, reg_hi);
+		_pci_write_config32(ecam_addr, reg_hi, bar_hi);
+
+		mask |= ((uint64_t)hi_m << 32);
+	} else {
+		mask |= ((uint64_t)UINT32_MAX << 32);
+	}
+
+	return ~mask + 1;
+}
+
+int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
+{
+	if (n >= PCI_BAR_COUNT) {
 		return -1;
 	}
 
-	// This is the common method to determine the address space needed by the PCI.
-	_pci_write_config32(ecam_addr, reg, 0xFFFFFFFF);
-	uint32_t align_mask = _pci_read_config32(ecam_addr, reg) &
-			      ~PCI_BAR_FLAG_MASK;
-	uint32_t size = ~align_mask + 1;
-	_pci_write_config32(ecam_addr, reg, bar);
+	uint32_t ecam_addr = dev->ecam_addr;
+	uint32_t reg = _pci_bar_reg(n);
+	uint32_t bar = _pci_read_config32(ecam_addr, reg);
 
-	// Adress is misaligned.
-	if (addr & align_mask) {
+	if (bar & PCI_BAR_IO) {
 		return -1;
 	}
 
 	_pci_write_config32(ecam_addr, reg, (uint32_t)addr);
-	if (is_64) {
+
+	if (_pci_bar_is_64(bar)) {
+		if (n == PCI_BAR_COUNT - 1) {
+			// Need at least two bar for 64 bits bar.
+			return -1;
+		}
+
 		_pci_write_config32(ecam_addr, _pci_bar_reg(n + 1),
 				    (uint32_t)(addr >> 32));
 	}
 
-	return size;
+	return 0;
 }
 
 int pci_bar_addr(const struct pci_device *dev, uint8_t n, uint64_t *addr)

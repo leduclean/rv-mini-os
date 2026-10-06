@@ -52,6 +52,7 @@ static inline pte_t *_get_next_lvl_pte(const pte_t pte)
 	return (pte_t *)((pte >> PTE_PPN_SHIFT) << PAGE_SHIFT);
 }
 
+//TODO: Maybe this function should flush the each va
 int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 {
 	pte_t *table = root;

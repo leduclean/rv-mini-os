@@ -43,18 +43,25 @@ void test_sequence(void)
 [[noreturn]] void kernel_start(void)
 {
 	int res;
-
-	printf("[INFO] Kernel start \n");
-
-	printf("[INFO] Tiny alloc initialized \n");
-	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
-		TA_ALIGNMENT);
-
-	printf("[INFO] kernel map \n");
 	res = mmap_kernel();
 	if (res < 0) {
 		panic("[FAILURE] Kernel map has failed");
 	}
+
+	// PCI device init
+	res = console_init();
+	if (res < 0) {
+		panic("[FAILURE] Console init map has failed");
+	}
+
+	res = virtio_blk_init();
+	if (res < 0) {
+		panic("[FAILURE] Virtio blk driver init has failed");
+	}
+
+	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
+		TA_ALIGNMENT);
+	printf("[INFO] Tiny alloc initialized \n");
 
 	printf("[INFO] init proc \n");
 	process_init();
@@ -95,16 +102,11 @@ extern void delegate_traps(void);
  */
 void start(void)
 {
-	printf("[INFO] pages initialized \n");
 	page_init();
-
-	// Device init
-	console_init();
+	//TODO: Maybe it should resides in S mode
 	plic_config_uart();
 	uart_init();
-	virtio_blk_init();
 	pmp_allow_all();
-
 	delegate_traps();
 	trap_init();
 
@@ -112,6 +114,5 @@ void start(void)
 	// WARNING: this should always resides
 	// just before entering the kernel and S mode.
 	time_init();
-
 	enter_kernel(kernel_start);
 }

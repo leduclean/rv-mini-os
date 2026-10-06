@@ -1,7 +1,5 @@
 #pragma once
 
-#define PCI_ECAM_BASE_ADDRESS 0x30000000 /* Base address of the pci bus */
-
 /* Shifts to determine device ecam addr */
 #define PCI_BUS_SHIFT 20
 #define PCI_DEVICE_SHIFT 15

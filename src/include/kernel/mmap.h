@@ -11,12 +11,21 @@
 extern char _trampoline_start[], _trampoline_end[];
 
 /**
- * @brief Map the kernel page table root. 
+ * @brief Allocate the kernel page table tree and switch to kernel page table.
  * 
  * @note The corresponding satp is accessible via @ref mmap_kernel_satp.
  * @return 0 if sucess, error code < 0 on failure.
  */
 int mmap_kernel(void);
+
+/**
+ * @brief Maps IO memory mapped address into the kernel.
+ *
+ * @param addr Addr of the memory mapped address space.
+ * @param size The size of the mapped address.
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ */
+int iommap_kernel(void *addr, size_t size);
 
 /**
  * @brief Allocate and map what each user process owns (root pd and a trapframe).

@@ -14,6 +14,7 @@
 #include <drivers/pci.h>
 #include <drivers/virtio_blk.h>
 
+#include <kernel/mmap.h>
 #include <kernel/pages.h>
 
 #include "virtio.h"
@@ -21,6 +22,9 @@
 #define VIRTIO_VENDOR_ID 0x1AF4
 #define VIRTIO_BLK_DEV_ID 0x1042
 #define VIRTIO_CAP_VENDOR 0x09
+
+/* virtio blck maping, should be mapped at boot */
+#define VIRTIO_BLK_BASE_ADDRESS 0x60000000
 
 #define VIRTIO_MAX_QUEUE_SIZE 16
 #define VIRTIO_QUEUE_SELECT 0
@@ -249,8 +253,8 @@ static int _config_common(void)
 
 static int _config_pci(void)
 {
-	struct pci_device dev;
 	int res;
+	struct pci_device dev;
 
 	if (!pci_find_device(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEV_ID, &dev)) {
 		return -1;
@@ -262,10 +266,22 @@ static int _config_pci(void)
 		return -1;
 	}
 
-	res = pci_set_bar(&dev, cap_cfg->bar, VIRTIO_BLK_BASE_ADDRESS);
+	int64_t size = pci_get_bar_size(&dev, cap_cfg->bar);
+	if (size < 0) {
+		return size;
+	}
+
+	uint64_t map_addr = ALIGN_UP(VIRTIO_BLK_BASE_ADDRESS, size);
+	res = pci_set_bar(&dev, cap_cfg->bar, map_addr);
 	if (res < 0) {
 		return res;
 	}
+
+	res = iommap_kernel((void *)map_addr, size);
+	if (res < 0) {
+		return res;
+	}
+
 	pci_enable_device(&dev);
 	pci_set_master(&dev);
 	driver.dev = dev;

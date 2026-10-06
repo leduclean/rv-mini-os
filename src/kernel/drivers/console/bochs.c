@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include <lib/bit.h>
 #include <lib/font.h>
 #include <lib/string.h>
 
@@ -10,16 +11,24 @@
 #include <drivers/pci.h>
 #include <drivers/uart.h>
 
+#include <kernel/mmap.h>
+
 #include "bochs_regs.h"
 
-#define BOCHS_DISPI_CONFIG \
-	BOCHS_CONFIG_DISPI_ADDRESS + BOCHS_CONFIG_BASE_ADDRESS
-#define DISPI16(reg_idx)                                                \
-	MMIO16(BOCHS_CONFIG_BASE_ADDRESS + BOCHS_CONFIG_DISPI_ADDRESS + \
-	       (reg_idx << 1))
+#define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
+
+#define DISPI16(reg_idx) \
+	MMIO16(driver.cfg_base + BOCHS_CONFIG_DISPI_ADDRESS + (reg_idx << 1))
 
 #define BG_COLOR 0x000000
 #define TEXT_COLOR 0xFFFFFF
+
+struct bochs_driver {
+	uintptr_t fb_base; /* framebuffer BAR, programmed by _config_pcie() */
+	uintptr_t cfg_base; /* config BAR, programmed by _config_pcie() */
+};
+
+static struct bochs_driver driver;
 
 /**
  * @brief Config BAR and enable pci device.
@@ -29,21 +38,46 @@
 static int _config_pcie(void)
 {
 	int res;
+	int64_t size;
+	uint64_t map_addr;
 	struct pci_device dev;
 
 	if (!pci_find_device(BOCHS_VENDOR_ID, BOCHS_DEV_ID, &dev)) {
 		return -1;
 	}
 
-	res = pci_set_bar(&dev, 0, BOCHS_DISPLAY_BASE_ADDRESS);
-	if (res < 0) {
-		return res;
+	// Should go check all the cap
+	size = pci_get_bar_size(&dev, 0);
+	if (size < 0) {
+		return size;
 	}
 
-	res = pci_set_bar(&dev, 2, BOCHS_CONFIG_BASE_ADDRESS);
+	map_addr = ALIGN_UP(BOCHS_DISPLAY_BASE_ADDRESS, size);
+	res = pci_set_bar(&dev, 0, map_addr);
 	if (res < 0) {
 		return res;
 	}
+	res = iommap_kernel((void *)map_addr, size);
+	if (res < 0) {
+		return res;
+	}
+	driver.fb_base = map_addr;
+
+	size = pci_get_bar_size(&dev, 2);
+	if (size < 0) {
+		return size;
+	}
+	map_addr = ALIGN_UP(BOCHS_CONFIG_BASE_ADDRESS, size);
+	res = pci_set_bar(&dev, 2, map_addr);
+	if (res < 0) {
+		return res;
+	}
+	res = iommap_kernel((void *)map_addr, size);
+	if (res < 0) {
+		return res;
+	}
+	driver.cfg_base = map_addr;
+
 	pci_enable_device(&dev);
 
 	return 0;
@@ -57,7 +91,7 @@ static int _config_pcie(void)
 static int _config_screen(void)
 {
 	// type id verification (12 MSB comparison)
-	if ((MMIO16(BOCHS_DISPI_CONFIG) & 0xFFF0) != VBE_DISPI_ID0) {
+	if ((DISPI16(VBE_DISPI_INDEX_ID) & 0xFFF0) != VBE_DISPI_ID0) {
 		return -1; // Error wrong screen device type
 	}
 	// Disconnect the screen for config
@@ -106,9 +140,8 @@ static int _pixel(uint32_t x, uint32_t y, uint32_t color)
 	if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
 		return -1; // error out of range
 	}
-	static uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
-		(uint32_t (*const)[DISPLAY_HEIGHT][DISPLAY_WIDTH])
-			BOCHS_DISPLAY_BASE_ADDRESS;
+	uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
+		(uint32_t (*)[DISPLAY_HEIGHT][DISPLAY_WIDTH])driver.fb_base;
 	// usage
 	(*display_base)[y][x] = color;
 
@@ -184,8 +217,8 @@ static inline void _undraw_cursor(void)
 static void _scroll(void)
 {
 	// each caractere line has a width of 8 pixel
-	static uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
-		(uint32_t (*)[DISPLAY_WIDTH * 8]) BOCHS_DISPLAY_BASE_ADDRESS;
+	uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
+		(uint32_t (*)[DISPLAY_WIDTH * 8]) driver.fb_base;
 
 	// Move all the line to up
 	memmove(display_base, display_base + 1,
@@ -320,7 +353,11 @@ void console_putbytes(const char *s, int len)
 {
 	for (int i = 0; i < len; i++) {
 		uart_putchar(s[i]);
-		_handle_char(s[i]);
+		if (driver.fb_base) {
+			// Do not use screen until it is initialized.
+			// TODO: We could replay this delayed print
+			_handle_char(s[i]);
+		}
 	};
 };
 

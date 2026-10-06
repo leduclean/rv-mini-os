@@ -40,6 +40,15 @@ void pci_enable_device(struct pci_device *dev);
 void pci_set_master(struct pci_device *dev);
 
 /**
+ * @brief Gives the needed address size for the device bar.
+ *
+ * @param dev Device descriptor.
+ * @param n BAR number (0 to PCI_BAR_COUNT - 1).
+ * @return BAR address space size on success, -1 if n is invalid, the BAR is I/O or unimplemented.
+ */
+int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n);
+
+/**
  * @brief Assign a physical address to a memory BAR of the device.
  *
  * Must be called before enabling the device pci_enable_device().
@@ -47,10 +56,9 @@ void pci_set_master(struct pci_device *dev);
  * @param dev Device descriptor.
  * @param n BAR number (0 to 5).
  * @param addr Physical address, MUST be aligned on the BAR size.
- * @return size of the bar adress space on success, -1 if n is invalid, the BAR is I/O or unimplemented,
- * or addr is misaligned.
+ * @return 0 on success, -1 if n is invalid, the BAR is I/O or unimplemented.
  */
-int32_t pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr);
+int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr);
 
 /**
  * @brief Read the physical address assigned to a memory BAR.

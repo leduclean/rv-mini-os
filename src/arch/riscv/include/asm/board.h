@@ -15,11 +15,8 @@
 #define PLIC_MMIO_BASE 0x0c000000UL
 #define PLIC_MMIO_SIZE 0x202000UL
 
-/* bochs-display, mapped by _config_pcie() */
-#define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
-
-/* virtio blck maping, should be mapped at boot */
-#define VIRTIO_BLK_BASE_ADDRESS 0x60000000
+#define PCI_ECAM_BASE_ADDRESS 0x30000000 /* Base address of the pci bus */
+#define PCI_ECAM_SIZE (1 << 20) /* Size of the pci bus (we only use 1 bus) */
 
 /* Video mode this board is brought up in. */
 #define DISPLAY_WIDTH 1024
