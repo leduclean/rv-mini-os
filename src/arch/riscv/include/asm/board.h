@@ -18,6 +18,9 @@
 /* bochs-display, mapped by _config_pcie() */
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
 
+/* virtio blck maping, should be mapped at boot */
+#define VIRTIO_BLK_BASE_ADDRESS 0x60000000
+
 /* Video mode this board is brought up in. */
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT 768

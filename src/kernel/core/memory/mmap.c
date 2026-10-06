@@ -62,8 +62,16 @@ int mmap_kernel(void)
 		goto err_free_root;
 	}
 
+	//TODO: All IO should be mapped dynamically on driver init
 	res = vpage_map_range(kroot, (void *)BOCHS_DISPLAY_BASE_ADDRESS,
 			      (void *)BOCHS_DISPLAY_BASE_ADDRESS, DISPLAY_BYTES,
+			      PTE_R | PTE_W);
+	if (res < 0) {
+		goto err_free_root;
+	}
+
+	res = vpage_map_range(kroot, (void *)VIRTIO_BLK_BASE_ADDRESS,
+			      (void *)VIRTIO_BLK_BASE_ADDRESS, 0x4000,
 			      PTE_R | PTE_W);
 	if (res < 0) {
 		goto err_free_root;
