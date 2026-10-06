@@ -11,31 +11,6 @@
 #include <kernel/process.h>
 #include <kernel/programs.h>
 
-/** @brief Builtin shell command listing all the launchable programs. */
-static void _builtin_help(void)
-{
-	printf("Available commands: \n");
-	const cmd_desc_t *cmd = NULL;
-	for (uint8_t i = 0; i < cmd_count(); i++) {
-		cmd = cmd_nth(i);
-		switch (cmd->type) {
-		case CMD_BUILTIN:
-			printf("- [builtin] %s\n", cmd->name);
-			break;
-		case CMD_PROG:
-			printf("- [program] %s (priority: %d)\n", cmd->name,
-			       cmd->cmd.prog.prior);
-			break;
-		}
-	}
-}
-
-/** @brief Register the shell builtins. */
-static inline void _init_builtins(void)
-{
-	cmd_register_builtin("help", _builtin_help);
-}
-
 /**
  * @brief Handle a user shell command.
  *
@@ -80,7 +55,6 @@ static char line_buffer[MAX_COLS];
 
 void shell_run(void)
 {
-	_init_builtins();
 	programs_init();
 	for (;;) {
 		if (parser_read_line(line_buffer, MAX_COLS) != 0) {

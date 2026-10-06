@@ -149,6 +149,25 @@ static void ps(void)
 	clist_for_each(process_table_clist(), _pretty_print_process, NULL);
 }
 
+/** @brief Builtin shell command listing all the launchable programs. */
+static void help(void)
+{
+	printf("Available commands: \n");
+	const cmd_desc_t *cmd = NULL;
+	for (uint8_t i = 0; i < cmd_count(); i++) {
+		cmd = cmd_nth(i);
+		switch (cmd->type) {
+		case CMD_BUILTIN:
+			printf("- [builtin] %s\n", cmd->name);
+			break;
+		case CMD_PROG:
+			printf("- [program] %s (priority: %d)\n", cmd->name,
+			       cmd->cmd.prog.prior);
+			break;
+		}
+	}
+}
+
 /* --- Register all programs --- */
 
 #define REGISTER_USER_APP(func) cmd_register_prog(#func, func, NORMAL, true)
@@ -167,4 +186,5 @@ void programs_init(void)
 	REGISTER_USER_APP(thread_test);
 
 	REGISTER_BUILT_IN(ps);
+	REGISTER_BUILT_IN(help);
 }
