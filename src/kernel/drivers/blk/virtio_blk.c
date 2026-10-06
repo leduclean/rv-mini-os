@@ -1,8 +1,3 @@
-/**
- * @file
- * @brief [TODO:description]
- */
-
 #include <stddef.h>
 #include <stdint.h>
 
@@ -12,10 +7,12 @@
 #include <asm/cpu.h>
 
 #include <drivers/pci.h>
+#include <drivers/plic.h>
 #include <drivers/virtio_blk.h>
 
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
+#include <kernel/semaphore.h>
 
 #include "virtio.h"
 
@@ -30,6 +27,8 @@
 #define VIRTIO_QUEUE_SELECT 0
 
 #define VIRTIO_BLK_SIZE 512 //< Block size in bytes
+
+#define VIRTIO_IRQ_QUEUE (1 << 0) /**< Irq bit set for queue interrupt */
 
 /**
  * @name Request device status
@@ -46,8 +45,14 @@ struct virtio_blk_req_hdr {
 	uint64_t sector; /**< Offset multiplied by 512 for R/W. 0 for flush */
 };
 
+#define VIRTIO_REQ_NUM_DESC \
+	3 /**< Number of descriptor required for a single request */
+
 struct virtio_blk_req {
 	struct virtio_blk_req_hdr hdr;
+	uint16_t head;
+	semaphore_t completion_sem;
+	uint32_t len;
 	uint8_t status;
 };
 
@@ -76,9 +81,13 @@ struct virtio_blk_discard_write_zeroes {
 
 struct virtio_blk_driver {
 	struct pci_device dev;
+	volatile uint8_t *irq_addr;
+	volatile uint16_t *notify_addr;
 	struct virtq vq;
 	uint16_t free_head_idx;
-	volatile uint16_t *notify_addr;
+	semaphore_t free_slots;
+	struct virtio_blk_req *inflight[VIRTIO_MAX_QUEUE_SIZE];
+	uint16_t last_seen_used;
 };
 
 static struct virtio_blk_driver driver;
@@ -122,6 +131,26 @@ static int _set_notify_addr(uint16_t notify_off)
 	return 0;
 }
 
+static int _set_irq_addr(void)
+{
+	int res;
+
+	volatile struct virtio_pci_cap *cap = _get_virtio_cap(
+		&driver.dev, VIRTIO_PCI_CAP_ISR_CFG);
+	if (!cap) {
+		return -1;
+	}
+
+	uintptr_t bar_addr;
+	res = pci_bar_addr(&driver.dev, cap->bar, &bar_addr);
+	if (res < 0) {
+		return res;
+	}
+
+	driver.irq_addr = (volatile uint8_t *)(bar_addr + cap->offset);
+	return 0;
+}
+
 /**
  * @brief Makes the internal free list.
  *
@@ -151,6 +180,7 @@ static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 		return -1;
 	}
 	driver.vq.num = n;
+	sem_init(&driver.free_slots, n / VIRTIO_REQ_NUM_DESC);
 
 	uint64_t addr = (uint64_t)page_alloc();
 	if (!addr) {
@@ -242,6 +272,11 @@ static int _config_common(void)
 		return res;
 	}
 
+	res = _set_irq_addr();
+	if (res < 0) {
+		return res;
+	}
+
 	cfg->device_status |= VIRTIO_STATUS_DRIVER_OK;
 
 	if (cfg->device_status & VIRTIO_STATUS_FAILED) {
@@ -302,6 +337,8 @@ int virtio_blk_init(void)
 		return res;
 	}
 
+	plic_enable_irq(VIRTIO_BLK_PLIC_ID, 3);
+
 	return 0;
 }
 
@@ -310,11 +347,8 @@ static inline void _notify_device(void)
 	*driver.notify_addr = VIRTIO_QUEUE_SELECT;
 }
 
-static void _submit_req(struct virtio_blk_req *req, uint8_t type,
-			uint64_t sector, void *data, uint32_t size)
+static void _submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
 {
-	req->hdr.type = type;
-	req->hdr.sector = sector;
 
 	struct virtq_avail *avail = driver.vq.avail;
 	struct virtq_desc *desc = driver.vq.desc;
@@ -332,7 +366,7 @@ static void _submit_req(struct virtio_blk_req *req, uint8_t type,
 					  .next = idx1 };
 
 	uint16_t data_flags = VIRTQ_DESC_F_NEXT;
-	if (type == VIRTIO_BLK_T_IN) {
+	if (req->hdr.type == VIRTIO_BLK_T_IN) {
 		data_flags |=
 			VIRTQ_DESC_F_WRITE; // Device needs to write in our buffer
 	}
@@ -350,20 +384,21 @@ static void _submit_req(struct virtio_blk_req *req, uint8_t type,
 	};
 
 	avail->ring[avail->idx % queue_size] = idx0;
+	driver.free_head_idx = new_free_slot;
+	driver.inflight[idx0] = req;
+	req->head = idx0;
 
 	m2m_wmb();
-
+	// Device can take the request at here
 	avail->idx++;
-	driver.free_head_idx = new_free_slot;
 }
 
 /**
  * @brief Release a descriptor chain and claim status.
  *
  * @param head_idx Head idx of the chain.
- * @return The status state of the described operation.
  */
-static uint8_t _release_desc_chain(uint16_t head_idx)
+static void _release_desc_chain(uint16_t head_idx)
 {
 	struct virtq_desc *desc = driver.vq.desc;
 	struct virtq_desc *curr = &desc[head_idx];
@@ -376,30 +411,54 @@ static uint8_t _release_desc_chain(uint16_t head_idx)
 	struct virtq_desc *status = curr;
 	status->next = driver.free_head_idx;
 	driver.free_head_idx = head_idx;
+	sem_post(&driver.free_slots);
+}
 
-	return *(volatile uint8_t *)(status->addr);
+void virtio_irq_handler(void)
+{
+	// Reading this register deassert the interrupt
+	volatile uint8_t irq_status = *driver.irq_addr;
+	if (!(irq_status & VIRTIO_IRQ_QUEUE)) {
+		return;
+	}
+
+	volatile struct virtq_used *used = driver.vq.used;
+	while (driver.last_seen_used != used->idx) {
+
+		// Control dependancy on used->idx
+		// must be synchronised with dev_ack value.
+		// CPU could reorders used->idx read after dev_ack
+		// and device updates the used entry during this.
+		m2m_rmb();
+
+		struct virtq_used_elem dev_ack =
+			used->ring[driver.last_seen_used % driver.vq.num];
+		struct virtio_blk_req *req = driver.inflight[dev_ack.id];
+		req->len = dev_ack.len;
+		sem_post(&req->completion_sem);
+
+		driver.last_seen_used++;
+	}
 }
 
 int virtio_blk_request(uint8_t type, uint64_t sector, void *data, uint32_t size)
 {
-	struct virtio_blk_req req;
-	volatile struct virtq_used *used = driver.vq.used;
-	uint16_t last_seen = used->idx;
+	sem_wait(&driver.free_slots);
 
-	_submit_req(&req, type, sector, data, size);
+	struct virtio_blk_req req;
+	req.hdr.type = type;
+	req.hdr.sector = sector;
+	sem_init(&req.completion_sem, 0);
+
+	_submit_req(&req, data, size);
 	m2io_wmb();
 	_notify_device();
 
-	// Pool
-	//FIX: Stub, we will use interrupt
-	while (last_seen == used->idx) {
-		// Spin lock
-	}
+	sem_wait(&req.completion_sem);
 
-	volatile struct virtq_used_elem e =
-		used->ring[last_seen % driver.vq.num];
+	_release_desc_chain(req.head);
 
-	uint16_t status = _release_desc_chain(e.id);
+	uint16_t status = req.status;
 	if (status == VIRTIO_BLK_S_IOERR) {
 		panic("Block IO error");
 	}
@@ -407,5 +466,5 @@ int virtio_blk_request(uint8_t type, uint64_t sector, void *data, uint32_t size)
 		panic("Unsupported Virtio Block operations");
 	}
 
-	return e.len;
+	return req.len;
 }
