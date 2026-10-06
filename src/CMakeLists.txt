@@ -39,7 +39,7 @@ add_custom_command(
 )
 set(QEMU_DISK_OPTS
   -drive file=${DISK_IMG},if=none,format=raw,id=disk0
-  -device virtio-blk-pci,drive=disk0,id=vblk0,disable-legacy=on
+  -device virtio-blk-pci,drive=disk0,id=vblk0,disable-legacy=on,addr=1
 )
 
 set(QEMU_BASE_OPTS
@@ -60,7 +60,7 @@ set(QEMU_DEBUG_OPTS
 )
 
 set(QEMU_RUN_GUI_OPTS
-    -device bochs-display
+    -device bochs-display,addr=2
     -serial mon:stdio
     -display default,show-cursor=on ${QEMU_BASE_OPTS}
 )
