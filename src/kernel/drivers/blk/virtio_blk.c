@@ -13,6 +13,7 @@
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/semaphore.h>
+#include <kernel/spinlock.h>
 
 #include "virtio.h"
 
@@ -78,13 +79,22 @@ struct virtio_blk_discard_write_zeroes {
 /** @}*/
 
 struct virtio_blk_driver {
+	/* Immutables states */
 	struct pci_device dev;
 	volatile uint8_t *irq_addr;
 	volatile uint16_t *notify_addr;
 	struct virtq vq;
+
+	/* Protects the driver side of the queue: desc[] content, avail ring,
+	 * avail->idx, free list and inflight[]. */
+	spinlock_t vq_lock;
 	uint16_t free_head_idx;
-	semaphore_t free_slots;
 	struct virtio_blk_req *inflight[VIRTIO_MAX_QUEUE_SIZE];
+
+	/* Free descriptor chains count */
+	semaphore_t free_slots;
+
+	/* IRQ handler / single-hart only (no lock) */
 	uint16_t last_seen_used;
 };
 
@@ -150,11 +160,9 @@ static int _set_irq_addr(void)
 }
 
 /**
- * @brief Makes the internal free list.
- *
- * @warning Must be called after @p _setup_queues
+ * @brief Initialize the internal free list structure.
  */
-static void _init_virtio_desc(void)
+static void _init_free_list(void)
 {
 	struct virtq_desc *head = driver.vq.desc;
 	uint16_t queue_size = driver.vq.num;
@@ -163,6 +171,8 @@ static void _init_virtio_desc(void)
 	}
 
 	driver.free_head_idx = 0;
+	sem_init(&driver.free_slots, queue_size / VIRTIO_REQ_NUM_DESC);
+	spinlock_init(&driver.vq_lock);
 }
 
 static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
@@ -174,11 +184,11 @@ static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 	}
 
 	int n = cfg->queue_size;
+
 	if (n == 0) {
 		return -1;
 	}
 	driver.vq.num = n;
-	sem_init(&driver.free_slots, n / VIRTIO_REQ_NUM_DESC);
 
 	uint64_t addr = (uint64_t)page_alloc();
 	if (!addr) {
@@ -199,6 +209,7 @@ static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 	cfg->queue_device = (uint64_t)(addr);
 	driver.vq.used = (struct virtq_used *)(addr);
 
+	_init_free_list();
 	cfg->queue_enable = 1;
 	return 0;
 }
@@ -262,8 +273,6 @@ static int _config_common(void)
 	if (res < 0) {
 		return res;
 	}
-
-	_init_virtio_desc();
 
 	res = _set_notify_addr(cfg->queue_notify_off);
 	if (res < 0) {
@@ -352,6 +361,8 @@ static void _submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
 	struct virtq_desc *desc = driver.vq.desc;
 	uint16_t queue_size = driver.vq.num;
 
+	spinlock_lock(&driver.vq_lock);
+
 	uint16_t idx0 = driver.free_head_idx;
 	uint16_t idx1 = desc[idx0].next;
 	uint16_t idx2 = desc[idx1].next;
@@ -389,6 +400,8 @@ static void _submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
 	m2m_wmb();
 	// Device can take the request at here
 	avail->idx++;
+
+	spinlock_unlock(&driver.vq_lock);
 }
 
 /**
@@ -406,9 +419,14 @@ static void _release_desc_chain(uint16_t head_idx)
 		curr = &desc[curr->next];
 	};
 
+	spinlock_lock(&driver.vq_lock);
+
 	struct virtq_desc *status = curr;
 	status->next = driver.free_head_idx;
 	driver.free_head_idx = head_idx;
+
+	spinlock_unlock(&driver.vq_lock);
+
 	sem_post(&driver.free_slots);
 }
 
