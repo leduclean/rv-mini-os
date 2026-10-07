@@ -111,6 +111,20 @@ clist_node_t *clist_find(clist_node_t *head,
 			 int (*pred)(clist_node_t *node, void *), void *args);
 
 /**
+ * @brief Find the first element of the clist maching predicate 
+ * browsing in reverse size.
+ *
+ * @param head Head sentinel of the clist.
+ * @param pred Predicate applied to each node.
+ * @param args Argument forwarded to every @p pred call.
+ * @return Pointer to the matching node, NULL if none matched.
+ */
+clist_node_t *clist_find_rev(clist_node_t *head,
+			     int (*pred)(clist_node_t *node,
+					 [[maybe_unused]] void *),
+			     void *args);
+
+/**
  * @brief Traverse the clist, calling a function on each member.
  *
  * @param head Head sentinel of the clist to traverse.

@@ -107,6 +107,20 @@ clist_node_t *clist_find(clist_node_t *head,
 	return NULL;
 }
 
+clist_node_t *clist_find_rev(clist_node_t *head,
+			     int (*pred)(clist_node_t *node, void *),
+			     void *args)
+{
+	clist_node_t *current = head->prev;
+	while (current != head) {
+		if (pred(current, args)) {
+			return current;
+		}
+		current = current->prev;
+	}
+	return NULL;
+}
+
 clist_node_t *
 clist_for_each_and_del(clist_node_t *head,
 		       int (*callback)(clist_node_t *node, void *), void *args)
