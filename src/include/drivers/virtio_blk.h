@@ -1,30 +1,34 @@
 #pragma once
 #include <stdint.h>
 
-/**
- * @brief [TODO:description]
- *
- * @return [TODO:return]
- */
-int virtio_blk_init(void);
+#define VIRTIO_BLK_SIZE 512 /**< Block size in bytes */
 
-//TODO: doc
-#define VIRTIO_BLK_T_IN 0
-#define VIRTIO_BLK_T_OUT 1
-#define VIRTIO_BLK_T_FLUSH 4
-#define VIRTIO_BLK_T_DISCARD 11
-#define VIRTIO_BLK_T_WRITE_ZEROES 13
+/**
+ * @name Virtio Block command type
+ *
+ * @{*/
+#define VIRTIO_BLK_T_IN 0 /**< Disk Write request */
+#define VIRTIO_BLK_T_OUT 1 /**< Disk Read request */
+/** @}*/
 
 #define VIRTIO_BLK_PLIC_ID 33 /** Obtained via the dumpdtb and pci mapping */
 
 /**
- * @brief [TODO:description]
+ * @brief Init the virtio blk driver.
  *
- * @param type [TODO:parameter]
- * @param sector [TODO:parameter]
- * @param data [TODO:parameter]
- * @param size [TODO:parameter]
- * @return [TODO:return]
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ */
+int virtio_blk_init(void);
+
+/**
+ * @brief Emit a request to the block device. 
+ * @note This is a blocking function waiting for device ack.
+ *
+ * @param type Type of disk request.
+ * @param sector The sector offset in 512 bytes block.
+ * @param data A pointer to the used buffer.
+ * @param size The size of the buffer.
+ * @return The written len on SUCCESS, error code < 0 on FAILURE.
  */
 int virtio_blk_request(uint8_t type, uint64_t sector, void *data,
 		       uint32_t size);

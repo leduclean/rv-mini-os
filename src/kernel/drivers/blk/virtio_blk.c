@@ -26,8 +26,6 @@
 #define VIRTIO_MAX_QUEUE_SIZE 16
 #define VIRTIO_QUEUE_SELECT 0
 
-#define VIRTIO_BLK_SIZE 512 //< Block size in bytes
-
 #define VIRTIO_IRQ_QUEUE (1 << 0) /**< Irq bit set for queue interrupt */
 
 /**
