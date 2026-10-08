@@ -4,14 +4,11 @@
 
 #include <lib/clist.h>
 
-#include <asm/asm_defs.h>
-
 #include <drivers/virtio_blk.h>
 
+#include <kernel/fs.h>
 #include <kernel/mutex.h>
 #include <kernel/spinlock.h>
-
-#define BLK_SIZE PAGE_SIZE
 
 struct cblk {
 	/* Lock protects internal metadata */
@@ -23,7 +20,7 @@ struct cblk {
 
 	/* Mutex protects access of the buffer */
 	mutex_t m;
-	char buf[BLK_SIZE];
+	char buf[FS_BLK_SIZE];
 };
 
 /**
@@ -31,6 +28,13 @@ struct cblk {
  */
 void bcache_init(void);
 
+/**
+ * @brief Gets a block by block number. The block might be already used 
+ * if in cache or it might be incoherent to the disk if it's just a buffer.
+ *
+ * @param blkno The block number
+ */
+struct cblk *bcache_getblk(int blkno);
 /**
  * @brief Read a block from the cache, on HIT it will just give a ref 
  * to the corresponding block but on MISS it will fetch to the disk.

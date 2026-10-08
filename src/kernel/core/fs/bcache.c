@@ -6,6 +6,7 @@
 #include <drivers/virtio_blk.h>
 
 #include <kernel/bcache.h>
+#include <kernel/fs.h>
 #include <kernel/mutex.h>
 #include <kernel/spinlock.h>
 
@@ -35,7 +36,7 @@ void bcache_init(void)
 
 static inline int _get_sector(int blkno)
 {
-	return blkno * (BLK_SIZE / VIRTIO_BLK_SIZE);
+	return blkno * (FS_BLK_SIZE / VIRTIO_BLK_SIZE);
 }
 
 static inline bool _is_dirty_locked(struct cblk *blk)
@@ -127,7 +128,7 @@ static struct cblk *_find_reusable_locked(void)
 	return container_of(blk_node, struct cblk, node);
 }
 
-static struct cblk *_get_block(int blkno)
+struct cblk *bcache_getblk(int blkno)
 {
 	struct cblk *blk;
 	spinlock_lock(&list_lock);
@@ -158,7 +159,7 @@ static struct cblk *_get_block(int blkno)
 
 struct cblk *bcache_read(int blkno)
 {
-	struct cblk *blk = _get_block(blkno);
+	struct cblk *blk = bcache_getblk(blkno);
 
 	spinlock_lock(&blk->lock);
 	bool is_valid = _is_valid_locked(blk);
@@ -167,7 +168,7 @@ struct cblk *bcache_read(int blkno)
 	if (!is_valid) {
 		int res = virtio_blk_request(VIRTIO_BLK_T_IN,
 					     _get_sector(blkno), blk->buf,
-					     BLK_SIZE);
+					     FS_BLK_SIZE);
 		if (res < 0) {
 			bcache_release(blk);
 			return NULL;
@@ -201,7 +202,7 @@ int bcache_sync(struct cblk *blk)
 	spinlock_unlock(&blk->lock);
 
 	res = virtio_blk_request(VIRTIO_BLK_T_OUT, _get_sector(blk->blkno),
-				 blk->buf, BLK_SIZE);
+				 blk->buf, FS_BLK_SIZE);
 	if (res < 0) {
 		return res;
 	}
