@@ -1,13 +1,13 @@
-#include <limits.h>
 #include <stdint.h>
 
 #include <lib/bitmap.h>
+#include <lib/string.h>
 
 #include <kernel/balloc.h>
 #include <kernel/bcache.h>
 #include <kernel/fs.h>
 
-int32_t balloc(void)
+static int32_t _bbm_alloc(void)
 {
 	uint32_t nb_bmblk = fs_get_nb_dbm();
 	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
@@ -34,7 +34,7 @@ int32_t balloc(void)
 	return -1;
 }
 
-int32_t bfree(int blkno)
+static int _bbm_free(uint32_t blkno)
 {
 	// Only data block free are allowed
 	if (!fs_blk_is_data_blk(blkno)) {
@@ -56,3 +56,27 @@ int32_t bfree(int blkno)
 	bcache_release(bm_blk);
 	return 0;
 }
+
+int32_t balloc(void)
+{
+	int32_t blkno = _bbm_alloc();
+	if (blkno < 0)
+		return -1;
+
+	struct cblk *b = bcache_read(blkno);
+	if (!b) {
+		_bbm_free(blkno);
+		return -1;
+	}
+
+	memset(b->buf, 0, FS_BLK_SIZE);
+	bcache_mark_dirty(b);
+	bcache_release(b);
+	return blkno;
+}
+
+int bfree(uint32_t blkno)
+{
+	bcache_invalidate(blkno);
+	return _bbm_free(blkno);
+};
