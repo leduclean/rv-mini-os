@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include <lib/container.h>
+#include <lib/types.h>
 
 #include <kernel/fs.h>
 #include <kernel/mutex.h>
@@ -20,7 +21,10 @@ enum inode_type : uint8_t {
 	INODE_FILE,
 	INODE_SPECIAL_FILE,
 };
-#define DINODE_MAX_DIR 12
+
+#define DINODE_DIR_ADDR 12
+#define DINODE_INDIR_ADDR (FS_BLK_SIZE / sizeof(uint32_t))
+#define MAX_FILE_SIZE (DINODE_DIR_ADDR + DINODE_INDIR_ADDR) * FS_BLK_SIZE
 /**
  * @class dinode
  * @brief In disk node.
@@ -30,7 +34,7 @@ struct dinode {
 	uint32_t size;
 	enum inode_type type;
 	uint32_t nblink;
-	uint32_t dirblkno[DINODE_MAX_DIR];
+	uint32_t dirblkno[DINODE_DIR_ADDR];
 	uint32_t indir;
 };
 
@@ -113,3 +117,35 @@ void inode_unlock(struct inode *i);
  * @pre @c i->m held (inode_lock()).
  */
 int inode_mark_dirty(struct inode *i);
+
+/**
+ * @brief Writes the inode data content with a provided buffer.
+ *
+ * @note Writing out of range will led to file size extension.
+ *
+ * @param i A pointer to the inode.
+ * @param user_src Flag indicating weither the src is user provided.
+ * @param src Pointer to the src buffer to write.
+ * @param offset The offset in the data content.
+ * @param n The number of bytes to write.
+ * @return The number of bytes written, error code < 0 if no data written.
+ *
+ * @pre You must hold the content lock via inode_lock()
+ */
+ssize_t inode_write(struct inode *i, bool user_src, const char *src,
+		    uint32_t offset, size_t n);
+
+/**
+ * @brief Read the inode data content with a provided buffer.
+ *
+ * @param i A pointer to the inode.
+ * @param user_src Flag indicating weither the dst is user provided.
+ * @param dst Pointer to the buffer to read in.
+ * @param offset The offset in the data content.
+ * @param n The number of bytes to read.
+ * @return The number of bytes read, error code < 0 if no data read.
+ *
+ * @pre You must hold the content lock via inode_lock()
+ */
+ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
+		   size_t count);

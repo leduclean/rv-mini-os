@@ -8,6 +8,7 @@
  * inode_put() must be called without inode->m.
  */
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <lib/bitmap.h>
@@ -20,6 +21,9 @@
 #include <kernel/fs.h>
 #include <kernel/inode.h>
 #include <kernel/mutex.h>
+
+#include "kernel/vpages.h"
+#include "lib/types.h"
 
 #define INODE_CACHE_SIZE 64
 #define INODES_PER_BLK (FS_BLK_SIZE / sizeof(struct dinode))
@@ -243,7 +247,7 @@ static int _release_dir_blk_locked(struct inode *i)
 {
 
 	int res;
-	for (int idx = 0; idx < DINODE_MAX_DIR; idx++) {
+	for (int idx = 0; idx < DINODE_DIR_ADDR; idx++) {
 		uint32_t blkno = i->content.dirblkno[idx];
 		if (blkno == 0) {
 			continue;
@@ -269,8 +273,7 @@ static int _release_indir_locked(struct inode *i)
 	}
 
 	uint32_t *content = (uint32_t *)indir_blk->buf;
-	uint32_t nb_blkno = sizeof(indir_blk->buf) / sizeof(uint32_t);
-	for (uint32_t i = 0; i < nb_blkno; i++) {
+	for (uint32_t i = 0; i < DINODE_INDIR_ADDR; i++) {
 		uint32_t blkno = content[i];
 		if (blkno == 0) {
 			continue;
@@ -283,6 +286,59 @@ static int _release_indir_locked(struct inode *i)
 	bcache_mark_dirty(indir_blk);
 	bcache_release(indir_blk);
 	return 0;
+}
+
+static inline int32_t _get_dir_blk(struct inode *i, uint32_t nth)
+{
+	uint32_t blkno = i->content.dirblkno[nth];
+	if (blkno == 0) {
+		blkno = balloc();
+		if (blkno < 0) {
+			return blkno;
+		}
+		i->content.dirblkno[nth] = blkno;
+	}
+
+	return blkno;
+}
+
+static inline int32_t _get_indir_blk(struct inode *i, uint32_t nth)
+{
+	// One indirection lvl
+	struct cblk *indir_blk = bcache_read(i->content.indir);
+	if (!indir_blk) {
+		return -1;
+	}
+
+	uint32_t *content = (uint32_t *)indir_blk->buf;
+	uint32_t blkno = content[nth];
+	if (blkno == 0) {
+		blkno = balloc();
+		if (blkno < 0) {
+			goto err_release;
+		}
+		content[nth] = blkno;
+		bcache_mark_dirty(indir_blk);
+	}
+err_release:
+	bcache_release(indir_blk);
+	return blkno;
+}
+
+int32_t _get_data_locked(struct inode *i, uint32_t nth)
+{
+	int32_t res;
+	if (nth >= DINODE_DIR_ADDR + DINODE_INDIR_ADDR) {
+		return -1;
+	}
+
+	if (nth < DINODE_DIR_ADDR) {
+		res = _get_dir_blk(i, nth);
+
+	} else {
+		res = _get_indir_blk(i, nth);
+	}
+	return res;
 }
 
 static int inode_truncate_locked(struct inode *i)
@@ -376,4 +432,106 @@ void inode_put(struct inode *i)
 	}
 	i->refcnt--;
 	spinlock_unlock(&cache_lock);
+}
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+ssize_t inode_write(struct inode *i, bool user_src, const char *src,
+		    uint32_t offset, size_t count)
+{
+	int res = 0;
+
+	//NOTE: We allow file size extension when writing but not more than
+	// the MAX_FILE_SIZE.
+	if (offset > i->content.size || (offset + count) > MAX_FILE_SIZE) {
+		return -1;
+	}
+
+	size_t done, m;
+
+	for (done = 0; done < count; done += m, offset += m, src += m) {
+		uint32_t blk_off = offset % FS_BLK_SIZE;
+		// Byte to process in the block
+		m = MIN(count - done, FS_BLK_SIZE - blk_off);
+
+		int32_t dblkno = _get_data_locked(i, offset / FS_BLK_SIZE);
+		if (dblkno < 0) {
+			res = dblkno;
+			goto out;
+		}
+
+		struct cblk *dblk = bcache_getblk(dblkno);
+		if (!dblk) {
+			res = -1;
+			goto out;
+		}
+
+		if (user_src) {
+			pte_t *root = process_active()->root_ptable;
+			res = vpage_copyin(root, dblk->buf + blk_off, src, m);
+			if (res < 0) {
+				bcache_release(dblk);
+				goto out;
+			}
+
+		} else {
+			memcpy(dblk->buf + blk_off, src, m);
+		}
+
+		bcache_mark_dirty(dblk);
+		bcache_release(dblk);
+	}
+
+out:
+	// File growing is possible
+	if (i->content.size < offset) {
+		i->content.size = offset;
+		inode_mark_dirty(i);
+	}
+
+	return done ? done : res;
+}
+
+ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
+		   size_t count)
+{
+	//NOTE: read cannot read out of range of the current content
+	if (offset + count > i->content.size) {
+		return -1;
+	}
+
+	int res = 0;
+	size_t done, m;
+
+	for (done = 0; done < count; done += m, offset += m, dst += m) {
+		uint32_t blk_off = offset % FS_BLK_SIZE;
+		m = MIN(count - done, FS_BLK_SIZE - blk_off);
+
+		int32_t dblkno = _get_data_locked(i, offset / FS_BLK_SIZE);
+		if (dblkno < 0) {
+			res = dblkno;
+			goto out;
+		}
+
+		struct cblk *dblk = bcache_getblk(dblkno);
+		if (!dblk) {
+			res = -1;
+			goto out;
+		}
+		if (user_src) {
+			pte_t *root = process_active()->root_ptable;
+			res = vpage_copyout(root, dst, dblk->buf + blk_off, m);
+			if (res < 0) {
+				bcache_release(dblk);
+				goto out;
+			}
+
+		} else {
+			memcpy(dblk->buf + blk_off, dst, m);
+		}
+		bcache_release(dblk);
+	}
+
+out:
+	return done ? done : res;
 }
