@@ -35,7 +35,7 @@ void bcache_init(void);
 int32_t bcache_alloc(void);
 
 /**
- * @brief Release a data disk block priority
+ * @brief Free a data block and invalidate it cache entry.
  *
  * @warning ONLY data block free are allowed.
  *
@@ -85,7 +85,7 @@ int bcache_sync(struct cblk *blk);
 /**
  * @brief Release the cache associated ressources.
  *
- * @param blk A pointer to the block to rele
+ * @param blk A pointer to the block to release.
  * @pre @p blk obtained by bcache_getblk()/bcache_read(), not yet released.
  * @post @p blk must not be used anymore.ase.
  */

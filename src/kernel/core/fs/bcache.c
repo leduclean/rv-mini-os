@@ -171,10 +171,24 @@ static int _bbm_free(uint32_t blkno)
 	return 0;
 }
 
+static inline void _invalid_cache_entry(uint32_t blkno)
+{
+	spinlock_lock(&cache_lock);
+	// Invalid cache entry
+	struct cblk *blk = _cache_request_locked(blkno);
+	if (blk) {
+		_clear_dirty_locked(blk);
+		_clear_valid_locked(blk);
+		blk->blkno = UINT32_MAX;
+	}
+	spinlock_unlock(&cache_lock);
+}
+
 int bcache_free(uint32_t blkno)
 {
+	_invalid_cache_entry(blkno);
 	return _bbm_free(blkno);
-}
+};
 
 int32_t bcache_alloc(void)
 {
