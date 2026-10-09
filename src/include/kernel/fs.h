@@ -14,9 +14,10 @@ struct fs_meta {
 	uint32_t nb_blk;
 	uint32_t blk_size;
 
-	int nb_dblk;
-	int nb_bmblk;
+	int nb_ibm;
 	int nb_inode;
+	int nb_dblk;
+	int nb_dbm;
 };
 
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
@@ -28,10 +29,12 @@ struct fs_meta {
 #define FS_NB_BLK 2048
 #define FS_NB_RESERVED 1
 #define FS_NB_SUPERBLK 1
-#define FS_NB_INODE 3
-#define FS_NB_BM 2
-#define FS_NB_DBLK \
-	(FS_NB_BLK - FS_NB_INODE - FS_NB_BM - FS_NB_SUPERBLK - FS_NB_RESERVED)
+#define FS_NB_IBM 2
+#define FS_NB_DBM 2
+#define FS_NB_INODE 5
+#define FS_NB_DBLK                                                          \
+	(FS_NB_BLK - FS_NB_INODE - FS_NB_IBM - FS_NB_DBM - FS_NB_SUPERBLK - \
+	 FS_NB_RESERVED)
 /** @}*/
 
 /** 
@@ -40,8 +43,8 @@ struct fs_meta {
  * @{*/
 #define FS_SUPERBLK_START 1
 #define FS_INODE_BM_START (FS_SUPERBLK_START + FS_NB_SUPERBLK)
-#define FS_BLK_BM_START (FS_INODE_BM_START + FS_NB_INODE)
-#define FS_INODE_TABLE_START (FS_BLK_BM_START + FS_NB_BM)
+#define FS_BLK_BM_START (FS_INODE_BM_START + FS_NB_IBM)
+#define FS_INODE_TABLE_START (FS_BLK_BM_START + FS_NB_DBM)
 #define FS_DATA_START (FS_INODE_TABLE_START + FS_NB_INODE)
 /** @}*/
 
@@ -57,9 +60,14 @@ static inline uint32_t fs_get_bm_bits_per_blk(void)
 	return superblock.blk_size * CHAR_BIT;
 }
 
-static inline uint32_t fs_get_nb_bmblk(void)
+static inline uint32_t fs_get_nb_dbm(void)
 {
-	return superblock.nb_bmblk;
+	return superblock.nb_dbm;
+}
+
+static inline uint32_t fs_get_nb_ibm(void)
+{
+	return superblock.nb_ibm;
 }
 
 static inline bool fs_blk_is_data_blk(int blkno)
