@@ -239,9 +239,10 @@ int inode_mark_dirty(struct inode *i)
 	return _mark_dirty_locked(i);
 }
 
-static int inode_truncate_locked(struct inode *i)
+static int _release_dir_blk_locked(struct inode *i)
 {
-	int res = 0;
+
+	int res;
 	for (int idx = 0; idx < DINODE_MAX_DIR; idx++) {
 		uint32_t blkno = i->content.dirblkno[idx];
 		if (blkno == 0) {
@@ -254,6 +255,50 @@ static int inode_truncate_locked(struct inode *i)
 			return res;
 		}
 	}
+
+	return 0;
+}
+
+static int _release_indir_locked(struct inode *i)
+{
+
+	// One indirection lvl
+	struct cblk *indir_blk = bcache_read(i->content.indir);
+	if (!indir_blk) {
+		return -1;
+	}
+
+	uint32_t *content = (uint32_t *)indir_blk->buf;
+	uint32_t nb_blkno = sizeof(indir_blk->buf) / sizeof(uint32_t);
+	for (uint32_t i = 0; i < nb_blkno; i++) {
+		uint32_t blkno = content[i];
+		if (blkno == 0) {
+			continue;
+		}
+
+		content[i] = 0;
+		bfree(blkno);
+	}
+
+	bcache_mark_dirty(indir_blk);
+	bcache_release(indir_blk);
+	return 0;
+}
+
+static int inode_truncate_locked(struct inode *i)
+{
+	int res;
+
+	res = _release_dir_blk_locked(i);
+	if (res < 0) {
+		return res;
+	}
+
+	res = _release_indir_locked(i);
+	if (res < 0) {
+		return res;
+	}
+
 	i->content.size = 0;
 	return 0;
 }

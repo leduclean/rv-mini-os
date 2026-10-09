@@ -14,7 +14,7 @@
 #include <kernel/fs.h>
 #include <kernel/mutex.h>
 
-enum inode_type : uint32_t {
+enum inode_type : uint8_t {
 	INODE_FREE,
 	INODE_DIRECTORY,
 	INODE_FILE,
@@ -27,18 +27,19 @@ enum inode_type : uint32_t {
  *
  */
 struct dinode {
-	uint64_t size;
+	uint32_t size;
 	enum inode_type type;
-	int nblink;
-	int dirblkno[DINODE_MAX_DIR];
+	uint32_t nblink;
+	uint32_t dirblkno[DINODE_MAX_DIR];
+	uint32_t indir;
 };
+
 static_assert(FS_BLK_SIZE % sizeof(struct dinode) == 0,
 	      "dinode must divide block");
 
 /**
  * @class inode
  * @brief In memory node.
- *
  */
 struct inode {
 
