@@ -27,6 +27,25 @@ struct cblk {
 void bcache_init(void);
 
 /**
+ * @brief Alloc a free block in the disk bitmap loading it in the cache.
+ * @note The returned block is set to 0.
+ *
+ * @return blkno of the block on SUCCESS, -1 on FAILURE.
+ */
+int32_t bcache_alloc(void);
+
+/**
+ * @brief Release a data disk block priority
+ *
+ * @warning ONLY data block free are allowed.
+ *
+ * @param blkno The block number of the data block to free.
+ * @return 0 on SUCCESS, -1 if you are trying to free a non data
+ * block or if the bitmap is inacessible.
+ */
+int bcache_free(uint32_t blkno);
+
+/**
  * @brief Gets a block by block number. The block might be already used 
  * if in cache or it might be incoherent to the disk if it's just a buffer.
  *

@@ -7,9 +7,9 @@
 #include <kernel/bcache.h>
 #include <kernel/fs.h>
 
-int balloc(void)
+int32_t balloc(void)
 {
-	uint32_t nb_bmblk = fs_get_nb_bmblk();
+	uint32_t nb_bmblk = fs_get_nb_dbm();
 	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
 
 	for (uint32_t i = 0; i < nb_bmblk; i++) {
@@ -34,7 +34,7 @@ int balloc(void)
 	return -1;
 }
 
-int bfree(int blkno)
+int32_t bfree(int blkno)
 {
 	// Only data block free are allowed
 	if (!fs_blk_is_data_blk(blkno)) {
