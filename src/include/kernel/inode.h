@@ -20,6 +20,7 @@ enum inode_type : uint8_t {
 	INODE_DIRECTORY,
 	INODE_FILE,
 	INODE_SPECIAL_FILE,
+	INODE_DEVICE,
 };
 
 #define DINODE_DIR_ADDR 12
@@ -33,6 +34,7 @@ enum inode_type : uint8_t {
 struct dinode {
 	uint32_t size;
 	enum inode_type type;
+	uint8_t dev_id; /* INODE_DEVICE */
 	uint32_t nblink;
 	uint32_t dirblkno[DINODE_DIR_ADDR];
 	uint32_t indir;

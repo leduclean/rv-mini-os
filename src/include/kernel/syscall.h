@@ -11,6 +11,9 @@
 
 #include <kernel/syscall_def.h>
 
+#define SYS_BUFFER_SIZE \
+	(1 << 10) /**< Max kernel buffer size use for syscall op. */
+
 #define X_DEF_KERNEL(_enum, ret, name, args) ret sys_##name args;
 SYSCALLS(X_DEF_KERNEL)
 #undef X_DEF_KERNEL

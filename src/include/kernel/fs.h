@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/types.h>
+
 #include <asm/asm_defs.h>
 
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
@@ -33,6 +35,8 @@
 #define FS_DATA_START (FS_INODE_TABLE_START + FS_NB_INODE)
 /** @}*/
 
+#define FS_CONSOLE 0 /* Define the dev_id of the console */
+
 /**
  * @class fs_meta
  * @brief Future parsed structure of the mkfs.
@@ -48,6 +52,11 @@ struct fs_meta {
 	int nb_dbm;
 };
 
+struct file;
+
+typedef ssize_t (*write_cb)(struct file *f, const char *buf, size_t count);
+typedef ssize_t (*read_cb)(struct file *f, char *buf, size_t count);
+
 /**
  * @class file
  * @brief File structure, this can be detained by multiple processes 
@@ -59,6 +68,9 @@ struct file {
 	uint32_t inum; /**< Inode number of the file */
 	uint32_t off;
 	uint8_t mode;
+
+	write_cb w_op;
+	read_cb r_op;
 };
 
 extern struct fs_meta superblock;
@@ -100,6 +112,15 @@ static inline bool fs_blk_is_data_blk(int blkno)
 	return FS_DATA_START <= blkno &&
 	       blkno < FS_DATA_START + superblock.nb_dblk;
 }
+
+void fs_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op);
+
+/**
+ * @brief Get a new reference to this file, typically when forking a task.
+ *
+ * @param f A pointer to the file to obtain a reference.
+ */
+void fs_get(struct file *f);
 
 /**
  * @brief Put a reference to a file, typically called on a close() routine.

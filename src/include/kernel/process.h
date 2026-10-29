@@ -249,6 +249,6 @@ int process_give_fd(process_t *p, struct file *f);
  * @brief Get the file descriptor associated with the task file number.
  *
  * @param p A pointe to the task owning the fd.
- * @param fd The file descriptor associated structure.
+ * @param fd The file descriptor associated structure or NULL if doesn't exists.
  */
 struct file *process_get_fd(process_t *p, int fd);

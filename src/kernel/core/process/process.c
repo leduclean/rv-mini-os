@@ -466,6 +466,9 @@ int process_give_fd(process_t *p, struct file *f)
 
 struct file *process_get_fd(process_t *p, int fd)
 {
+	if (fd >= NOFILE || fd < 0) {
+		return NULL;
+	}
 	return p->fdtable[fd];
 }
 

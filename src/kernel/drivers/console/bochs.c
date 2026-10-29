@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdint.h>
 
 #include <lib/bit.h>
@@ -14,6 +15,10 @@
 #include <kernel/mmap.h>
 
 #include "bochs_regs.h"
+#include "kernel/fs.h"
+#include "kernel/process.h"
+#include "kernel/syscall.h"
+#include "kernel/vpages.h"
 
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
 
@@ -112,6 +117,44 @@ static int _config_screen(void)
 	return 0;
 };
 
+static ssize_t console_write([[maybe_unused]] struct file *f, const char *ubuf,
+			     size_t count)
+{
+	char kbuf[SYS_BUFFER_SIZE];
+	if (count > SYS_BUFFER_SIZE) {
+		return -1;
+	}
+
+	int res = vpage_copyin(process_active()->root_ptable, kbuf, ubuf,
+			       count);
+	if (res < 0) {
+		return res;
+	}
+
+	console_putbytes(kbuf, count);
+	return count;
+}
+
+static ssize_t console_read([[maybe_unused]] struct file *f, char *ubuf,
+			    size_t count)
+{
+	if (count > SYS_BUFFER_SIZE) {
+		return -1;
+	}
+	char kbuf[SYS_BUFFER_SIZE];
+	for (size_t i = 0; i < count; i++) {
+		uart_read(&kbuf[i]);
+	}
+
+	int res = vpage_copyout(process_active()->root_ptable, ubuf, kbuf,
+				count);
+	if (res < 0) {
+		return res;
+	}
+
+	return count;
+}
+
 int console_init(void)
 {
 	int res;
@@ -124,6 +167,7 @@ int console_init(void)
 		return res;
 	}
 
+	fs_map_dev_cb(FS_CONSOLE, console_write, console_read);
 	return 0;
 };
 

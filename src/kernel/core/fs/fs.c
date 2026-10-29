@@ -63,6 +63,16 @@ int fs_init(void)
 	return 0;
 }
 
+void fs_put(struct file *f)
+{
+	f->refcnt--;
+}
+
+void fs_get(struct file *f)
+{
+	f->refcnt++;
+}
+
 #define FS_FILE 100 /**< Max number of open files. */
 
 static struct file ftable[FS_FILE] = { 0 };
@@ -76,6 +86,21 @@ struct file *file_alloc(void)
 	}
 
 	return NULL;
+}
+
+struct dev_info {
+	write_cb w_op;
+	read_cb r_op;
+};
+
+#define FS_MAX_DEV 30
+
+static struct dev_info dev_map[FS_MAX_DEV];
+
+void fs_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op)
+{
+	dev_map[dev_id].r_op = r_op;
+	dev_map[dev_id].w_op = w_op;
 }
 
 static int dir_add_entry(struct inode *dir, const char *name, uint32_t inum)
@@ -201,26 +226,111 @@ err_release_curr:
 	return NULL;
 }
 
-void fs_put(struct file *f)
+static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
 {
-	f->refcnt--;
+	int res;
+	ssize_t written;
+
+	struct inode *i = inode_get(f->inum);
+	if (!i) {
+		res = -1;
+		goto err;
+	}
+	res = inode_lock(i);
+	if (res < 0) {
+		goto err_put_inode;
+	}
+
+	written = inode_write(i, true, ubuf, f->off, count);
+	if (written < 0) {
+		goto err_release_inode;
+	}
+	res = inode_mark_dirty(i);
+	if (res < 0) {
+		goto err_release_inode;
+	}
+
+	f->off += written;
+	res = written;
+
+err_release_inode:
+	inode_unlock(i);
+err_put_inode:
+	inode_put(i);
+err:
+	return res;
+}
+
+static ssize_t file_read(struct file *f, char *ubuf, size_t count)
+{
+	int res;
+	ssize_t readed;
+	struct inode *i = inode_get(f->inum);
+	if (!i) {
+		res = -1;
+		goto err;
+	}
+	res = inode_lock(i);
+	if (res < 0) {
+		goto err_put_inode;
+	}
+
+	readed = inode_read(i, true, ubuf, f->off, count);
+	if (readed < 0) {
+		goto err_release_inode;
+	}
+
+	f->off += readed;
+	res = readed;
+err_release_inode:
+	inode_unlock(i);
+err_put_inode:
+	inode_put(i);
+err:
+	return res;
+}
+
+static void link_dev_cb(struct file *f, int dev_id)
+{
+	f->r_op = dev_map[dev_id].r_op;
+	f->w_op = dev_map[dev_id].w_op;
 }
 
 struct file *fs_open(char *path, unsigned long flags)
 {
+	int res;
 	struct inode *i = inode_from_path(path, flags);
 	if (!i) {
 		return NULL;
 	}
+
 	struct file *f = file_alloc();
 	if (!f) {
-		inode_put(i);
-		return NULL;
+		goto err_release_inode;
 	}
+
+	res = inode_lock(i);
+	if (res < 0) {
+		goto err_release_inode;
+	}
+
+	if (i->content.type == INODE_DEVICE) {
+		link_dev_cb(f, i->content.dev_id);
+	} else {
+		f->r_op = file_read;
+		f->w_op = file_write;
+	}
+
+	inode_unlock(i);
+
 	f->inum = i->id;
 	f->mode = flags & O_MODE_MASK;
 	f->off = 0;
 	f->refcnt = 1;
 
 	return f;
+
+err_release_inode:
+	inode_put(i);
+	return NULL;
 }
