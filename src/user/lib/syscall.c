@@ -60,6 +60,11 @@ int exec(const char *path, char *const argv[])
 	return SYSCALL(SYS_EXEC, (unsigned long)path, (unsigned long)argv);
 }
 
+int open(char *path, unsigned long flags)
+{
+	return SYSCALL(SYS_OPEN, (unsigned long)path, flags);
+}
+
 ssize_t write(int fd, const char *buf, size_t count)
 {
 	return SYSCALL(SYS_WRITE, fd, (unsigned long)buf, count);

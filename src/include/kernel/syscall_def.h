@@ -17,6 +17,7 @@
 	  (void *entry, void *args, void *stack, unsigned long flags))    \
 	X(FORK, int8_t, fork, (void))                                     \
 	X(EXEC, int, exec, (const char *path, char *const argv[]))        \
+	X(OPEN, int, open, (char *path, unsigned long flags))             \
 	X(WRITE, ssize_t, write, (int fd, const char *buf, size_t count)) \
 	X(READ, ssize_t, read, (int fd, char *buf, size_t count))
 /* }@*/

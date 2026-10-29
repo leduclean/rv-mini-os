@@ -4,6 +4,9 @@
 
 #include <lib/types.h>
 
+// Expose the syscall flags to user
+#include <user/kinterface.h>
+
 /**
  * @brief Sleep syscall used to make a process sleep.
  *
@@ -75,6 +78,15 @@ int8_t clone(void *entry, void *args, void *stack, unsigned long flags);
  * @return Does not returns on success, -1 on error.
  */
 int exec(const char *path, char *const argv[]);
+
+/**
+ * @brief Open a file and returns the corresponding file descriptor number.
+ *
+ * @param path The path of the file.
+ * @param flags The wanted flags for the user.
+ * @return File descriptor number associated with this open state.
+ */
+int open(char *path, unsigned long flags);
 
 /**
  * @brief Writes up to count @count bytes from the buffer at @buf 
