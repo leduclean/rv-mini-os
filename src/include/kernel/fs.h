@@ -5,21 +5,6 @@
 
 #include <asm/asm_defs.h>
 
-/**
- * @class fs_meta
- * @brief Future parsed structure of the mkfs.
- *
- */
-struct fs_meta {
-	uint32_t nb_blk;
-	uint32_t blk_size;
-
-	int nb_ibm;
-	int nb_inode;
-	int nb_dblk;
-	int nb_dbm;
-};
-
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
 
 /** 
@@ -48,7 +33,47 @@ struct fs_meta {
 #define FS_DATA_START (FS_INODE_TABLE_START + FS_NB_INODE)
 /** @}*/
 
+/**
+ * @class fs_meta
+ * @brief Future parsed structure of the mkfs.
+ *
+ */
+struct fs_meta {
+	uint32_t nb_blk;
+	uint32_t blk_size;
+
+	int nb_ibm;
+	int nb_inode;
+	int nb_dblk;
+	int nb_dbm;
+};
+
+/**
+ * @class file
+ * @brief File structure, this can be detained by multiple processes 
+ * if the fork() syscall is used.
+ *
+ */
+struct file {
+	uint32_t refcnt; /**< Fork process keep might keep the same fd. */
+	uint32_t inum; /**< Inode number of the file */
+	uint32_t off;
+	uint8_t mode;
+};
+
 extern struct fs_meta superblock;
+
+/**
+ * @brief Init the file system.
+ *
+ * @return 0 on success, error code < 0 on FAILURE.
+ */
+int fs_init(void);
+
+/**
+ * @brief Alloc a new file descriptor in the open file table.
+ */
+struct file *file_alloc(void);
 
 static inline uint32_t fs_get_block_size(void)
 {
@@ -75,3 +100,18 @@ static inline bool fs_blk_is_data_blk(int blkno)
 	return FS_DATA_START <= blkno &&
 	       blkno < FS_DATA_START + superblock.nb_dblk;
 }
+
+/**
+ * @brief Put a reference to a file, typically called on a close() routine.
+ *
+ * @param f A pointer to the reference of the file to release.
+ */
+void fs_put(struct file *f);
+
+/**
+ * @brief Kernel primitive to open a file and get the associate file structure.
+ *
+ * @param path The path of 
+ * @param flags @p Open System flags.
+ */
+struct file *fs_open(char *path, unsigned long flags);

@@ -11,11 +11,13 @@
 
 #include <asm/trap.h>
 
+#include <kernel/fs.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
+#define NOFILE 16 /**< Number of file descriptor */
 
 /** @brief Lifecycle states of a process. */
 typedef enum {
@@ -69,6 +71,8 @@ typedef struct process {
 	int8_t exit_code; ///< Code to identify what made our process exit.
 
 	priority priority; ///< Scheduling priority class.
+
+	struct file *fdtable[NOFILE]; //< Task specific file descriptor table.
 } process_t;
 
 /**
@@ -231,3 +235,20 @@ process_t *process_fork(process_t *parent);
  * @return 0 on SUCCESS, error code < 0 on FAILURE.
  */
 int process_exec(process_t *p, void code(void));
+
+/**
+ * @brief Attribute a in-task file descriptor number to a file descriptor.
+ *
+ * @param p Pointer to the task to attribute fd.
+ * @param f Pointer to the file descriptor structure.
+ * @return The fd number on SUCCESS, -1 on FAILURE.
+ */
+int process_give_fd(process_t *p, struct file *f);
+
+/**
+ * @brief Get the file descriptor associated with the task file number.
+ *
+ * @param p A pointe to the task owning the fd.
+ * @param fd The file descriptor associated structure.
+ */
+struct file *process_get_fd(process_t *p, int fd);

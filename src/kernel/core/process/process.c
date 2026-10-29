@@ -452,6 +452,23 @@ int8_t process_spawn_foreground(void code(void), const char *name,
 	return pid;
 };
 
+int process_give_fd(process_t *p, struct file *f)
+{
+	for (int fd = 0; fd < NOFILE; fd++) {
+		if (p->fdtable[fd] == NULL) {
+			p->fdtable[fd] = f;
+			return fd;
+		}
+	}
+
+	return -1;
+}
+
+struct file *process_get_fd(process_t *p, int fd)
+{
+	return p->fdtable[fd];
+}
+
 int process_init(void)
 {
 	int res;
