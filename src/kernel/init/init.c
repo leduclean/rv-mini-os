@@ -20,6 +20,8 @@
 #include <kernel/shell.h>
 #include <kernel/time.h>
 
+#include "kernel/fs.h"
+
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
 
 [[noreturn]] void kernel_start(void)
@@ -39,6 +41,11 @@
 	res = virtio_blk_init();
 	if (res < 0) {
 		panic("[FAILURE] Virtio blk driver init has failed");
+	}
+
+	res = fs_init();
+	if (res < 0) {
+		panic("[FAILURE] File system init has failed");
 	}
 
 	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
