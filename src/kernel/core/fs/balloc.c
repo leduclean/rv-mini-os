@@ -25,7 +25,7 @@ static int32_t _bbm_alloc(void)
 			bm_set_bit(bm_blk->buf, bit_idx);
 			bcache_mark_dirty(bm_blk);
 			bcache_release(bm_blk);
-			return bit_idx + (i * bm_bit_per_blk);
+			return bit_idx + (i * bm_bit_per_blk) + FS_DATA_START;
 		}
 
 		bcache_release(bm_blk);
@@ -42,14 +42,15 @@ static int _bbm_free(uint32_t blkno)
 	}
 
 	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
-	uint32_t bm_blk_no = FS_BLK_BM_START + blkno / bm_bit_per_blk;
+	int idx = blkno - FS_DATA_START;
+	uint32_t bm_blk_no = FS_BLK_BM_START + idx / bm_bit_per_blk;
 
 	struct cblk *bm_blk = bcache_read(bm_blk_no);
 	if (!bm_blk) {
 		return -1;
 	}
 
-	int bit_idx = blkno % bm_bit_per_blk;
+	int bit_idx = idx % bm_bit_per_blk;
 	bm_clear_bit(bm_blk->buf, bit_idx);
 
 	bcache_mark_dirty(bm_blk);
