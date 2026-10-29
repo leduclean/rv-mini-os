@@ -174,22 +174,27 @@ out:
 
 #define PATH_DELIMITATOR "/"
 
-static struct inode *inode_from_path(char *path, unsigned long flags)
+static struct inode *inode_from_path(const char *path, unsigned long flags)
 {
 	size_t len = strlen(path);
 	if (len < 1) {
 		return NULL;
 	}
+
 	if (path[0] != '/') {
 		return NULL;
 	}
 
-	char *token = strtok(path, PATH_DELIMITATOR);
+	char kpath[FS_MAX_PATH];
+	strcpy(kpath, path);
+
+	char *token = strtok(kpath, PATH_DELIMITATOR);
 	struct inode *curr = inode_get(root->id);
 
 	int res;
 	while (token != NULL) {
 		char *next_token = strtok(NULL, PATH_DELIMITATOR);
+		printf("token: %s\n", next_token);
 		struct inode *next = NULL;
 
 		res = dir_lookup(curr, token, &next);
@@ -296,7 +301,7 @@ static void link_dev_cb(struct file *f, int dev_id)
 	f->w_op = dev_map[dev_id].w_op;
 }
 
-struct file *fs_open(char *path, unsigned long flags)
+struct file *fs_open(const char *path, unsigned long flags)
 {
 	int res;
 	struct inode *i = inode_from_path(path, flags);

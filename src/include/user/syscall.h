@@ -86,7 +86,7 @@ int exec(const char *path, char *const argv[]);
  * @param flags The wanted flags for the user.
  * @return File descriptor number associated with this open state.
  */
-int open(char *path, unsigned long flags);
+int open(const char *path, unsigned long flags);
 
 /**
  * @brief Writes up to count @count bytes from the buffer at @buf 

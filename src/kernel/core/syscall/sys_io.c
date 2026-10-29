@@ -16,18 +16,13 @@
 #include <kernel/vpages.h>
 #include <user/kinterface.h>
 
-#define SYS_MAX_PATH \
-	(10 *        \
-	 (MAXNAME +  \
-	  2)) /** Max size for a path, correspond to 10 Name + separator */
-
-int sys_open(char *path, unsigned long flags)
+int sys_open(const char *path, unsigned long flags)
 {
-	char kernel_path[SYS_MAX_PATH];
+	char kernel_path[FS_MAX_PATH];
 
 	process_t *active = process_active();
 	int res = vpage_copyinstr(active->root_ptable, kernel_path, path,
-				  SYS_MAX_PATH);
+				  FS_MAX_PATH);
 	if (res < 0) {
 		return res;
 	}

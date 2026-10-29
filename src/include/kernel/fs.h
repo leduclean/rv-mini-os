@@ -9,6 +9,11 @@
 
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
 
+#define FS_MAX_PATH \
+	(10 *       \
+	 (MAXNAME + \
+	  2)) /** Max size for a path, correspond to 10 Name + separator */
+
 /** 
  * @name File system meta stub until mkfs
  *
@@ -135,4 +140,4 @@ void fs_put(struct file *f);
  * @param path The path of 
  * @param flags @p Open System flags.
  */
-struct file *fs_open(char *path, unsigned long flags);
+struct file *fs_open(const char *path, unsigned long flags);

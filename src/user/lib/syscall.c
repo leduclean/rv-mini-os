@@ -60,7 +60,7 @@ int exec(const char *path, char *const argv[])
 	return SYSCALL(SYS_EXEC, (unsigned long)path, (unsigned long)argv);
 }
 
-int open(char *path, unsigned long flags)
+int open(const char *path, unsigned long flags)
 {
 	return SYSCALL(SYS_OPEN, (unsigned long)path, flags);
 }
