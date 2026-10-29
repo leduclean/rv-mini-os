@@ -42,8 +42,27 @@ static inline int _get_tab_idx(uint32_t id)
 	return id % INODES_PER_BLK;
 }
 
-void inode_init(void)
+static int _reserve_first_inode()
 {
+
+	uint32_t blkno = FS_INODE_BM_START;
+	struct cblk *blk = bcache_read(blkno);
+	if (!blk) {
+		return -1;
+	}
+	bm_set_bit(blk->buf, 0);
+	bcache_mark_dirty(blk);
+	bcache_release(blk);
+	return 0;
+};
+
+int inode_init(void)
+{
+	int res = _reserve_first_inode();
+	if (res < 0) {
+		return res;
+	}
+
 	struct inode *curr;
 	for (int i = 0; i < INODE_CACHE_SIZE; i++) {
 		curr = &islots[i];
@@ -52,6 +71,8 @@ void inode_init(void)
 		clist_init_node(&curr->node);
 		clist_push_front(&icache, &curr->node);
 	}
+
+	return 0;
 }
 
 static int32_t _ibm_alloc(void)

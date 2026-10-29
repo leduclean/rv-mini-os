@@ -61,6 +61,13 @@ struct inode {
 };
 
 /**
+ * @brief Init the inode cache structure and bitmap.
+ *
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ */
+int inode_init(void);
+
+/**
  * @brief Scan the bitmap looking for a free inode entry.
  *
  * @param type Return the new corresponding inode with it content type updated.
@@ -103,7 +110,7 @@ int inode_lock(struct inode *i);
  *
  * @param i A pointer to the inode to lock.
  * @return 0 on SUCCESS, error code < 0 if disk fetch failed.
- * @post inode_unlock on @i should be called after using the content.
+ * @pre A call to this function follows an inode_lock() call on @i 
  */
 void inode_unlock(struct inode *i);
 
