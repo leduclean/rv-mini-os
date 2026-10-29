@@ -141,6 +141,7 @@ static int dir_lookup(struct inode *dir, const char *name, struct inode **i)
 	}
 
 	if (dir->content.type != INODE_DIRECTORY) {
+		inode_unlock(dir);
 		return -1;
 	}
 

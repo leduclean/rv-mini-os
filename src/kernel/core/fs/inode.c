@@ -548,7 +548,7 @@ ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
 			}
 
 		} else {
-			memcpy(dblk->buf + blk_off, dst, m);
+			memcpy(dst, dblk->buf + blk_off, m);
 		}
 		bcache_release(dblk);
 	}
