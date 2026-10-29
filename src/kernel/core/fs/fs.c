@@ -195,7 +195,6 @@ static struct inode *inode_from_path(const char *path, unsigned long flags)
 	int res;
 	while (token != NULL) {
 		char *next_token = strtok(NULL, PATH_DELIMITATOR);
-		printf("token: %s\n", next_token);
 		struct inode *next = NULL;
 
 		res = dir_lookup(curr, token, &next);
