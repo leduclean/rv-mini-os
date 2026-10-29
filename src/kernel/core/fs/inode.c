@@ -481,7 +481,7 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
 			goto out;
 		}
 
-		struct cblk *dblk = bcache_getblk(dblkno);
+		struct cblk *dblk = bcache_read(dblkno);
 		if (!dblk) {
 			res = -1;
 			goto out;
@@ -534,7 +534,7 @@ ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
 			goto out;
 		}
 
-		struct cblk *dblk = bcache_getblk(dblkno);
+		struct cblk *dblk = bcache_read(dblkno);
 		if (!dblk) {
 			res = -1;
 			goto out;
