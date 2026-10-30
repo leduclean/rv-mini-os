@@ -26,15 +26,9 @@ void fork_exec_test(void);
 void segfault_test(void);
 
 /**
- * @brief Test the write syscall.
+ * @brief Read write roundtrip.
  */
-void write_test(void);
-
-/**
- * @brief Test the read and write syscall by reading then writing 
- * in the console.
- */
-void read_test(void);
+void fs_io_test(void);
 
 /**
  * @brief Test the read and write syscall by streaming input in the console.

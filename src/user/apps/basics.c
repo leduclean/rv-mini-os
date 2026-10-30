@@ -4,8 +4,10 @@
  */
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include <user/apps.h>
+#include <user/kinterface.h>
 #include <user/syscall.h>
 
 #define SLEEP_TIME 2
@@ -89,31 +91,31 @@ void segfault_test(void)
 	}
 }
 
-void write_test(void)
+void fs_io_test(void)
 {
 	int8_t res;
-	char ubuf[23] = "[TEST] write success \n";
+	char ubuf[] = "[TEST] write success \n";
 
-	res = write(1, ubuf, 23);
-	if (res < 0) {
+	int fd = open("/path/to/foo", O_CREAT | O_W | O_R);
+	if (fd < 0) {
 		return exit_group(1);
 	}
-}
 
-void read_test(void)
-{
-	int8_t res;
-	char ubuf[10];
-
-	res = read(1, ubuf, 10);
+	res = write(fd, ubuf, sizeof(ubuf));
 	if (res < 0) {
 		return exit_group(1);
 	}
 
-	res = write(1, ubuf, 10);
+	res = read(fd, ubuf, sizeof(ubuf));
 	if (res < 0) {
 		return exit_group(1);
 	}
+
+	res = write(STDOUT, ubuf, sizeof(ubuf));
+	if (res < 0) {
+		return exit_group(1);
+	}
+	//TODO: Close syscall
 }
 
 void stream_test(void)

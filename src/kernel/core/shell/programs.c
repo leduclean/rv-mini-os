@@ -208,11 +208,10 @@ void programs_init(void)
 	REGISTER_USER_APP(exec_test);
 	REGISTER_USER_APP(fork_exec_test);
 	REGISTER_USER_APP(segfault_test);
-	REGISTER_USER_APP(write_test);
-	REGISTER_USER_APP(read_test);
 	REGISTER_USER_APP(stream_test);
 	REGISTER_USER_APP(thread_test);
 	REGISTER_KERNEL_APP(test_blk_req);
+	REGISTER_USER_APP(fs_io_test);
 
 	REGISTER_BUILT_IN(ps);
 	REGISTER_BUILT_IN(help);

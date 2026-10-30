@@ -13,6 +13,7 @@
 #include <drivers/uart.h>
 #include <drivers/virtio_blk.h>
 
+#include <kernel/fs.h>
 #include <kernel/memory.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
@@ -20,10 +21,29 @@
 #include <kernel/shell.h>
 #include <kernel/time.h>
 
-#include "kernel/fs.h"
+/**
+ * @brief Handle all the blocking initialization.
+ */
+static void init(void)
+{
+	int res;
+	/* Blocking task that require blk io */
+	res = fs_init();
+	if (res < 0) {
+		panic("[FAILURE] File system init has failed");
+	}
+
+	res = process_map_console(process_active());
+	if (res < 0) {
+		panic("[FAILURE] Console map has failed");
+	}
+
+	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
+		printf("[FAILURE]: failed to spawn shell \n");
+	}
+}
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */
-
 [[noreturn]] void kernel_start(void)
 {
 	int res;
@@ -32,7 +52,6 @@
 		panic("[FAILURE] Kernel map has failed");
 	}
 
-	// PCI device init
 	res = console_init();
 	if (res < 0) {
 		panic("[FAILURE] Console init map has failed");
@@ -41,11 +60,6 @@
 	res = virtio_blk_init();
 	if (res < 0) {
 		panic("[FAILURE] Virtio blk driver init has failed");
-	}
-
-	res = fs_init();
-	if (res < 0) {
-		panic("[FAILURE] File system init has failed");
 	}
 
 	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
@@ -58,6 +72,9 @@
 		panic("[FAILURE] Init proc has failed");
 	}
 
+	/*WARNING: from here we are in the idle process.
+     * This process cannot sleep so if a task as io, use init() 
+     * task to do it. */
 	printf("[INFO] S irq enabled\n");
 	irq_enable_s();
 
@@ -74,7 +91,7 @@
 		panic("[FAILURE] Uart daemon spawn has failed");
 	}
 
-	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
+	if (!process_spawn(init, "init", NORMAL, false)) {
 		printf("[FAILURE]: failed to spawn shell \n");
 	}
 
