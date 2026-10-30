@@ -118,6 +118,30 @@ void fs_io_test(void)
 	//TODO: Close syscall
 }
 
+void fs_close_test()
+{
+	int8_t res;
+	char success[] = "[TEST] close success \n";
+	char failure[] = "[TEST] close FAILED \n";
+	char sink[10];
+
+	res = close(10);
+	if (res == 0) {
+		res = write(STDOUT, failure, sizeof(failure));
+	}
+
+	res = close(STDIN);
+	if (res < 0) {
+	}
+
+	res = read(STDIN, sink, sizeof(sink));
+	if (res == 0) {
+		res = write(STDOUT, failure, sizeof(failure));
+	}
+
+	res = write(STDOUT, success, sizeof(success));
+}
+
 void stream_test(void)
 {
 	int8_t res;

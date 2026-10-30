@@ -67,3 +67,9 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 	}
 	return f->r_op(f, ubuf, count);
 }
+
+int sys_close(int fd)
+{
+	process_t *active = process_active();
+	return process_release_fd(active, fd);
+}

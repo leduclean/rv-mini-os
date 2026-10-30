@@ -39,3 +39,8 @@ void stream_test(void);
  * @brief Test the thread api.
  */
 void thread_test(void);
+
+/**
+ * @brief Test close behavior on a fd.
+ */
+void fs_close_test(void);

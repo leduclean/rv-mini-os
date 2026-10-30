@@ -89,6 +89,14 @@ int exec(const char *path, char *const argv[]);
 int open(const char *path, unsigned long flags);
 
 /**
+ * @brief Close a file descriptor.
+ *
+ * @param fd The file descriptor to close.
+ * @return 0 on success, -1 if the file descriptor was not open.
+ */
+int close(int fd);
+
+/**
  * @brief Writes up to count @count bytes from the buffer at @buf 
  * to the file referred by @fd.
  *

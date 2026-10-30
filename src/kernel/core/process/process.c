@@ -498,12 +498,24 @@ int process_give_fd(process_t *p, struct file *f)
 	return -1;
 }
 
-struct file *process_get_fd(process_t *p, int fd)
+struct file *process_get_fd(const process_t *p, int fd)
 {
 	if (fd >= NOFILE || fd < 0) {
 		return NULL;
 	}
 	return p->fdtable[fd];
+}
+
+int process_release_fd(process_t *p, int fd)
+{
+	struct file *f = p->fdtable[fd];
+	if (!f) {
+		return -1;
+	}
+	p->fdtable[fd] = NULL;
+	file_put(f);
+
+	return 0;
 }
 
 int process_map_console(process_t *p)

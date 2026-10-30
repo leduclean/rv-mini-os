@@ -249,7 +249,15 @@ int process_give_fd(process_t *p, struct file *f);
  * @param p A pointer to the task owning the fd.
  * @param fd The file descriptor associated structure or NULL if doesn't exists.
  */
-struct file *process_get_fd(process_t *p, int fd);
+struct file *process_get_fd(const process_t *p, int fd);
+
+/**
+ * @brief Release the file descriptor owned by the task.
+ *
+ * @param fd The file descriptor.
+ * @return 0 on SUCCESS, -1 if fd is not a open file descriptor. 
+ */
+int process_release_fd(process_t *p, int fd);
 
 /**
  * @brief Map the console in the process file descriptor.

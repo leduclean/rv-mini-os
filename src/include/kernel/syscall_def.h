@@ -19,8 +19,9 @@
 	X(EXEC, int, exec, (const char *path, char *const argv[]))        \
 	X(OPEN, int, open, (const char *path, unsigned long flags))       \
 	X(WRITE, ssize_t, write, (int fd, const char *buf, size_t count)) \
-	X(READ, ssize_t, read, (int fd, char *buf, size_t count))
-/* }@*/
+	X(READ, ssize_t, read, (int fd, char *buf, size_t count))         \
+	X(CLOSE, int, close, (int fd))                                    \
+	/* }@*/
 
 #define X_ENUM(name, ...) SYS_##name,
 enum { SYSCALLS(X_ENUM) SYS_NBR };
