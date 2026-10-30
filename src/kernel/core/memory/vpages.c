@@ -11,6 +11,8 @@
 #include <kernel/pages.h>
 #include <kernel/vpages.h>
 
+#include "lib/types.h"
+
 /* Sv39 indirection levels */
 #define LEVELS 3
 #define OFFSET_MASK 0xfffUL
@@ -265,7 +267,7 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 	return 0;
 }
 
-int vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
+ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 {
 	const char *pa = _get_pa_from_va(root, (void *)va,
 					 PTE_V | PTE_U | PTE_R);
@@ -286,7 +288,7 @@ int vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 	}
 
 	memcpy(dst, pa, size + 1);
-	return 0;
+	return size + 1;
 }
 
 int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
@@ -299,6 +301,23 @@ int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
 	memcpy(pa, src, count);
 
 	return 0;
+}
+
+ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max)
+{
+	char *pa = _get_pa_from_va(root, (void *)va, PTE_V | PTE_U | PTE_W);
+	if (!pa) {
+		return -1;
+	}
+
+	size_t size = strnlen(src, max);
+	if (size == max) {
+		// No terminator symbol
+		return -1;
+	}
+
+	memcpy(pa, src, size + 1);
+	return size + 1;
 }
 
 int vpage_handle_cow(pte_t *root, const void *va)

@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/types.h>
+
 typedef unsigned long pte_t;
 typedef uint32_t ppn_t;
 
@@ -124,9 +126,9 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
  * @param dst The kernel buffer destination of the copy.
  * @param va The virtual address emitted by a user process.
  * @param max The max number of char to copy.
- * @return 0 on SUCCESS else error code < 0.
+ * @return number of byte copied on SUCCESS else error code < 0.
  */
-int vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
+ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
 
 /**
  * @brief Copy @count byte from a physical address to a virtual address.
@@ -138,3 +140,14 @@ int vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
  * @return 0 on SUCCESS else error code <0.
  */
 int vpage_copyout(pte_t *root, void *va, const void *src, size_t count);
+
+/**
+ * @brief Copy in a kernel destination buffer a user virtual address.
+ *
+ * @param root The root page directory of emitted va.
+ * @param va The virtual address emitted by a user process.
+ * @param src The kernel buf to copy from. 
+ * @param max The max number of char to copy.
+ * @return number of byte copied on SUCCESS else error code < 0.
+ */
+ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max);
