@@ -15,5 +15,14 @@
 #define O_CREAT (1UL << 3)
 /** @}*/
 
-#define STDOUT 1 /* Console file descriptor number */
-#define STDIN 2 /* Console input file descriptor number */
+#define STDOUT 0 /* Console file descriptor number. */
+#define STDIN 1 /* Console input file descriptor number. */
+
+/**
+ * @name Clone syscall flags.
+ * @{
+ */
+#define CLONE_VM (1 << 0) /**< Caller and child run in the same memory. */
+#define CLONE_FILES \
+	(1 << 1) /**< Caller and child share the same file descriptors. */
+/** @} */

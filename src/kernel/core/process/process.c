@@ -9,6 +9,7 @@
 #include <asm/cpu.h>
 #include <asm/trap.h>
 
+#include <kernel/file.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/process.h>
@@ -17,6 +18,7 @@
 #include <kernel/time.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
+#include <user/kinterface.h>
 #include <user/user_entry.h>
 
 #define MAX_PROC 32
@@ -126,8 +128,8 @@ static inline process_t *_alloc_squeletton(const char *name, priority prior,
 
 	strncpy(proc->name, name, sizeof(proc->name) - 1);
 	proc->user = user;
-	proc->priority = prior;
 	proc->parent = parent;
+	proc->priority = prior;
 	proc->pid = proc_table.next_pid++;
 	proc->state = NEW;
 
@@ -220,6 +222,16 @@ void process_wake(process_t *proc)
 	irq_restore(state);
 }
 
+static void release_fds(process_t *p)
+{
+	for (int i = 0; i < NOFILE; i++) {
+		struct file *f = p->fdtable[i];
+		if (f) {
+			file_put(f);
+		}
+	}
+}
+
 void process_zombify(process_t *proc, int exit_code)
 {
 	irq_flags_t state = irq_save();
@@ -233,6 +245,7 @@ void process_zombify(process_t *proc, int exit_code)
 	proc->exit_code = exit_code;
 
 	_remove_from_sched_queues(proc);
+	release_fds(proc);
 	clist_push_back(&parent->zombies, &proc->wait_node);
 
 	if (parent->state == BLOCKED) {
@@ -270,6 +283,24 @@ void process_destroy(process_t *proc)
 	irq_restore(state);
 }
 
+static void copy_fds(process_t *child, const process_t *parent, bool clone)
+{
+	if (!parent) {
+		return;
+	}
+
+	for (int i = 0; i < NOFILE; i++) {
+		struct file *f = parent->fdtable[i];
+		if (f) {
+			if (clone) {
+				child->fdtable[i] = file_clone(f);
+			} else {
+				child->fdtable[i] = file_get(f);
+			}
+		}
+	}
+}
+
 process_t *process_spawn(void code(void), const char *name, priority prior,
 			 bool user)
 {
@@ -299,6 +330,7 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 		tframe_set_arg(p->tframe_pa, 0, (unsigned long)code);
 	}
 
+	copy_fds(p, process_active(), false);
 	_activate_process(p);
 	irq_restore(state);
 	return p;
@@ -376,6 +408,8 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 	// On ctx switch on fork, we want this state
 	child->ctx.ra = (unsigned long)trap_return_to_user;
 	child->ctx.sp = (unsigned long)&child->kstack[KSTACK_SIZE];
+
+	copy_fds(child, parent, flags & CLONE_FILES);
 
 	_activate_process(child);
 	irq_restore(state);
@@ -470,6 +504,29 @@ struct file *process_get_fd(process_t *p, int fd)
 		return NULL;
 	}
 	return p->fdtable[fd];
+}
+
+int process_map_console(process_t *p)
+{
+	struct file *f;
+	int res = fs_mknod("/dev/console", FILE_DEV_CONSOLE);
+	if (res < 0) {
+		return res;
+	}
+
+	f = file_open("/dev/console", O_W);
+	if (!f) {
+		return -1;
+	}
+	p->fdtable[STDOUT] = f;
+
+	f = file_open("/dev/console", O_R);
+	if (!f) {
+		return -1;
+	}
+	p->fdtable[STDIN] = f;
+
+	return 0;
 }
 
 int process_init(void)

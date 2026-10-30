@@ -202,8 +202,6 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 int8_t process_spawn_foreground(void code(void), const char *name,
 				priority prior, bool user);
 
-#define CLONE_VM (1 << 0)
-
 /**
  * @brief Clone a proccess with granularity on which to copy or not.
  *
@@ -248,7 +246,16 @@ int process_give_fd(process_t *p, struct file *f);
 /**
  * @brief Get the file descriptor associated with the task file number.
  *
- * @param p A pointe to the task owning the fd.
+ * @param p A pointer to the task owning the fd.
  * @param fd The file descriptor associated structure or NULL if doesn't exists.
  */
 struct file *process_get_fd(process_t *p, int fd);
+
+/**
+ * @brief Map the console in the process file descriptor.
+ *
+ * @param p A pointer to the first task mapped.
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @pre fs_init() should be called before this function.
+ */
+int process_map_console(process_t *p);
