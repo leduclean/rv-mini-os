@@ -12,13 +12,14 @@
 #include <drivers/pci.h>
 #include <drivers/uart.h>
 
+#include <kernel/file.h>
+#include <kernel/fs.h>
 #include <kernel/mmap.h>
+#include <kernel/process.h>
+#include <kernel/syscall.h>
+#include <kernel/vpages.h>
 
 #include "bochs_regs.h"
-#include "kernel/fs.h"
-#include "kernel/process.h"
-#include "kernel/syscall.h"
-#include "kernel/vpages.h"
 
 #define BOCHS_DISPLAY_BASE_ADDRESS 0x50000000
 
@@ -167,7 +168,7 @@ int console_init(void)
 		return res;
 	}
 
-	fs_map_dev_cb(FS_CONSOLE, console_write, console_read);
+	file_map_dev_cb(FILE_DEV_CONSOLE, console_write, console_read);
 	return 0;
 };
 

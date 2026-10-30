@@ -1,4 +1,5 @@
 #pragma once
+
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -40,8 +41,6 @@
 #define FS_DATA_START (FS_INODE_TABLE_START + FS_NB_INODE)
 /** @}*/
 
-#define FS_CONSOLE 0 /* Define the dev_id of the console */
-
 /**
  * @class fs_meta
  * @brief Future parsed structure of the mkfs.
@@ -57,29 +56,6 @@ struct fs_meta {
 	int nb_dbm;
 };
 
-struct file;
-
-typedef ssize_t (*write_cb)(struct file *f, const char *buf, size_t count);
-typedef ssize_t (*read_cb)(struct file *f, char *buf, size_t count);
-
-/**
- * @class file
- * @brief File structure, this can be detained by multiple processes 
- * if the fork() syscall is used.
- *
- */
-struct file {
-	uint32_t refcnt; /**< Fork process keep might keep the same fd. */
-	uint32_t inum; /**< Inode number of the file */
-	uint32_t off;
-	uint8_t mode;
-
-	write_cb w_op;
-	read_cb r_op;
-};
-
-extern struct fs_meta superblock;
-
 /**
  * @brief Init the file system.
  *
@@ -88,56 +64,41 @@ extern struct fs_meta superblock;
 int fs_init(void);
 
 /**
- * @brief Alloc a new file descriptor in the open file table.
+ * @brief Gets the number of bit map bits per blocks.
  */
-struct file *file_alloc(void);
-
-static inline uint32_t fs_get_block_size(void)
-{
-	return superblock.blk_size;
-}
-
-static inline uint32_t fs_get_bm_bits_per_blk(void)
-{
-	return superblock.blk_size * CHAR_BIT;
-}
-
-static inline uint32_t fs_get_nb_dbm(void)
-{
-	return superblock.nb_dbm;
-}
-
-static inline uint32_t fs_get_nb_ibm(void)
-{
-	return superblock.nb_ibm;
-}
-
-static inline bool fs_blk_is_data_blk(int blkno)
-{
-	return FS_DATA_START <= blkno &&
-	       blkno < FS_DATA_START + superblock.nb_dblk;
-}
-
-void fs_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op);
+uint32_t fs_get_bm_bits_per_blk(void);
 
 /**
- * @brief Get a new reference to this file, typically when forking a task.
- *
- * @param f A pointer to the file to obtain a reference.
+ * @brief Gets the number of data bit map blocks.
  */
-void fs_get(struct file *f);
+uint32_t fs_get_nb_dbm(void);
 
 /**
- * @brief Put a reference to a file, typically called on a close() routine.
- *
- * @param f A pointer to the reference of the file to release.
+ * @brief Gets the number of inode bit map blocks.
  */
-void fs_put(struct file *f);
+uint32_t fs_get_nb_ibm(void);
+
+bool fs_blk_is_data_blk(int blkno);
 
 /**
- * @brief Kernel primitive to open a file and get the associate file structure.
+ * @brief Create a device node.
  *
- * @param path The path of 
- * @param flags @p Open System flags.
+ * @param path Path to the node.
+ * @param dev_id The device id of the node.
+ * @return 0 on SUCCESS, error code < 0 on FAILURE.
  */
-struct file *fs_open(const char *path, unsigned long flags);
+int fs_mknod(const char *path, int dev_id);
+
+/* Forwards declatations to break circular import */
+struct inode;
+enum inode_type : uint8_t;
+
+/**
+ * @brief Retriver an inode from a path in the file system tree.
+ *
+ * @param path Path of the inode.
+ * @param flags See the O_X flags of the kinterface header.
+ * @param leaf_type Inode of the leaf type created if the flags contains O_CREAT
+ */
+struct inode *fs_inode_from_path(const char *path, unsigned long flags,
+				 enum inode_type leaf_type);

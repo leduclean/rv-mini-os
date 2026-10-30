@@ -12,7 +12,6 @@
 #include <lib/container.h>
 #include <lib/types.h>
 
-#include <kernel/fs.h>
 #include <kernel/mutex.h>
 
 enum inode_type : uint8_t {

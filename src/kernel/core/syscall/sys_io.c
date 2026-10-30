@@ -8,7 +8,7 @@
 #include <drivers/console.h>
 #include <drivers/uart.h>
 
-#include <kernel/fs.h>
+#include <kernel/file.h>
 #include <kernel/inode.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
@@ -27,14 +27,14 @@ int sys_open(const char *path, unsigned long flags)
 		return res;
 	}
 
-	struct file *f = fs_open(kernel_path, flags);
+	struct file *f = file_open(kernel_path, flags);
 	if (!f) {
 		return -1;
 	}
 
 	int fd = process_give_fd(active, f);
 	if (fd < 0) {
-		fs_put(f);
+		file_put(f);
 	}
 
 	return fd;
