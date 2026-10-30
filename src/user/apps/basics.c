@@ -156,7 +156,44 @@ void fs_close_test(void)
 		TEST_ERROR();
 	}
 
-	res = write(STDOUT, success, sizeof(success));
+	TEST_SUCCESS();
+}
+
+void fs_seek_test(void)
+{
+	int64_t off;
+
+	int fd = open(FS_TEST_FILE, O_CREAT | O_W | O_R);
+	if (fd < 0) {
+		TEST_ERROR();
+	}
+
+	off = seek(fd, -10, SEEK_SET);
+	if (off != -1) {
+		TEST_ERROR();
+	}
+
+	off = seek(fd, 10, SEEK_SET);
+	if (off != 10) {
+		TEST_ERROR();
+	}
+
+	off = seek(fd, -10, SEEK_CUR);
+	if (off != 0) {
+		TEST_ERROR();
+	}
+
+	off = seek(fd, -10, SEEK_CUR);
+	if (off != -1) {
+		TEST_ERROR();
+	}
+
+	off = seek(fd, 10, SEEK_END);
+	if (off < 0) {
+		TEST_ERROR();
+	}
+
+	TEST_SUCCESS();
 }
 
 void stream_test(void)

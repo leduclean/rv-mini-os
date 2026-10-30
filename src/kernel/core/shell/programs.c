@@ -213,6 +213,7 @@ void programs_init(void)
 	REGISTER_KERNEL_APP(test_blk_req);
 	REGISTER_USER_APP(fs_io_test);
 	REGISTER_USER_APP(fs_close_test);
+	REGISTER_USER_APP(fs_seek_test);
 
 	REGISTER_BUILT_IN(ps);
 	REGISTER_BUILT_IN(help);
