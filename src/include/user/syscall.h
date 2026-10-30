@@ -117,3 +117,13 @@ ssize_t write(int fd, const char *buf, size_t count);
  * @return The number of byte readed on success, -1 on error.
  */
 ssize_t read(int fd, char *buf, size_t count);
+
+/**
+ * @brief Move the read/write file offset.
+ *
+ * @param fd File descriptor idx.
+ * @param offset The offset to move to.
+ * @param whence From where to move, see SEEK_X for whence values.
+ * @return Resulting offset in bytes on successful completion, otherwise -1.
+ */
+int64_t seek(int fd, int64_t offset, int whence);

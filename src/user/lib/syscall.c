@@ -79,3 +79,9 @@ ssize_t read(int fd, char *buf, size_t count)
 {
 	return SYSCALL(SYS_READ, fd, (unsigned long)buf, count);
 }
+
+int64_t seek(int fd, int64_t offset, int whence)
+{
+	return SYSCALL(SYS_SEEK, (unsigned long)fd, (unsigned long)offset,
+		       (unsigned long)whence);
+}

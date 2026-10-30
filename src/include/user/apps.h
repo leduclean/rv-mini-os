@@ -44,3 +44,8 @@ void thread_test(void);
  * @brief Test close behavior on a fd.
  */
 void fs_close_test(void);
+
+/** 
+* @brief Test the seek syscall on a fd.
+*/
+void fs_seek_test(void);

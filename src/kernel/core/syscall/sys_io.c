@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stdint.h>
 
 #include <lib/string.h>
 #include <lib/types.h>
@@ -72,4 +73,15 @@ int sys_close(int fd)
 {
 	process_t *active = process_active();
 	return process_release_fd(active, fd);
+}
+
+int64_t sys_seek(int fd, int64_t offset, int whence)
+{
+	process_t *active = process_active();
+	struct file *f = process_get_fd(active, fd);
+	if (!f) {
+		return -1;
+	}
+
+	return file_seek(f, offset, whence);
 }

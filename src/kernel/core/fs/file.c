@@ -172,3 +172,37 @@ err_release_inode:
 	inode_put(i);
 	return NULL;
 }
+
+int64_t file_seek(struct file *f, int64_t offset, int whence)
+{
+	int64_t next;
+	switch (whence) {
+	case SEEK_SET:
+		next = offset;
+		break;
+	case SEEK_CUR:
+		next = f->off + offset;
+		break;
+	case SEEK_END:
+		struct inode *i = inode_get(f->inum);
+		int res = inode_lock(i);
+		if (res < 0) {
+			inode_put(i);
+			return res;
+		}
+		next = i->content.size + offset;
+		inode_unlock(i);
+		inode_put(i);
+
+		break;
+	default:
+		return -1;
+	}
+
+	if (next < 0) {
+		return -1;
+	}
+
+	f->off = next;
+	return next;
+}

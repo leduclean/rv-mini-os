@@ -26,3 +26,12 @@
 #define CLONE_FILES \
 	(1 << 1) /**< Caller and child share the same file descriptors. */
 /** @} */
+
+/**
+ * @name Seek whence mode for the lseek() syscall.
+ * @{
+ */
+#define SEEK_SET (1 << 0) /**< File offset set to offset bytes. */
+#define SEEK_CUR (1 << 1) /**< File offset set to its location + offset. */
+#define SEEK_END (1 << 2) /**< File offset set to size of the file + offset. */
+/** @} */

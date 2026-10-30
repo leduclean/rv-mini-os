@@ -21,6 +21,7 @@
 	X(WRITE, ssize_t, write, (int fd, const char *buf, size_t count)) \
 	X(READ, ssize_t, read, (int fd, char *buf, size_t count))         \
 	X(CLOSE, int, close, (int fd))                                    \
+	X(SEEK, int64_t, seek, (int fd, int64_t offset, int whence))      \
 	/* }@*/
 
 #define X_ENUM(name, ...) SYS_##name,
