@@ -3,6 +3,8 @@
 #include <user/apps.h>
 #include <user/thread.h>
 
+#include "test.h"
+
 #define STACK_SIZE 1024
 
 void thread(void *args)
@@ -28,14 +30,8 @@ void thread_test(void)
 	thread_join(tid);
 
 	if (i == 1) {
-		char ubuf[24] = "[TEST] thread success \n";
-
-		int res;
-		res = write(1, ubuf, 27);
-		if (res < 0) {
-			return exit_group(1);
-		}
+		TEST_SUCCESS();
 	} else {
-		exit_group(1);
+		TEST_ERROR();
 	}
 }

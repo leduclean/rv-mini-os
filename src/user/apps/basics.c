@@ -10,6 +10,8 @@
 #include <user/kinterface.h>
 #include <user/syscall.h>
 
+#include "test.h"
+
 #define SLEEP_TIME 2
 
 void sleep_call(void)
@@ -26,7 +28,7 @@ void fork_test(void)
 
 	res = fork();
 	if (res < 0) {
-		return exit(1);
+		TEST_ERROR();
 	}
 
 	// First write after the fork: this store is what faults, on both sides.
@@ -35,6 +37,8 @@ void fork_test(void)
 	// Read back through the stack. Each side must see its own value: if the
 	// page were still shared, both would sleep the same amount of time.
 	sleep(marker);
+
+	TEST_SUCCESS();
 }
 
 void fork_exec_test(void)
@@ -42,14 +46,14 @@ void fork_exec_test(void)
 	int8_t pid;
 	pid = fork();
 	if (pid < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
 	if (pid == 0) {
 		char func[15] = "sleep_call";
 		// Exec a child process
 		pid = exec(func, NULL);
 		if (pid < 0) {
-			return exit_group(1);
+			TEST_ERROR();
 		}
 	} else {
 		waitpid(pid);
@@ -58,9 +62,11 @@ void fork_exec_test(void)
 		int res;
 		res = write(1, ubuf, 27);
 		if (res < 0) {
-			return exit_group(1);
+			TEST_ERROR();
 		}
 	}
+
+	TEST_SUCCESS();
 }
 
 void exec_test(void)
@@ -68,7 +74,7 @@ void exec_test(void)
 	int8_t res;
 	res = exec("sleep_call", NULL);
 	if (res < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
 }
 
@@ -78,7 +84,7 @@ void segfault_test(void)
 
 	res = fork();
 	if (res < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
 	if (res == 0) {
 		// This will trigger a segfault
@@ -91,52 +97,63 @@ void segfault_test(void)
 	}
 }
 
+#define FS_TEST_FILE "/path/to/test"
+
 void fs_io_test(void)
 {
 	int8_t res;
-	char ubuf[] = "[TEST] write success \n";
+	const char writen[] = "test\n";
+	char readed[sizeof(writen)];
 
-	int fd = open("/path/to/foo", O_CREAT | O_W | O_R);
+	int fd = open(FS_TEST_FILE, O_CREAT | O_W | O_R);
 	if (fd < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
 
-	res = write(fd, ubuf, sizeof(ubuf));
+	res = write(fd, writen, sizeof(writen));
 	if (res < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
 
-	res = read(fd, ubuf, sizeof(ubuf));
-	if (res < 0) {
-		return exit_group(1);
+	int64_t off = seek(fd, 0, SEEK_SET);
+	if (off != 0) {
+		TEST_ERROR();
 	}
 
-	res = write(STDOUT, ubuf, sizeof(ubuf));
+	res = read(fd, readed, sizeof(readed));
 	if (res < 0) {
-		return exit_group(1);
+		TEST_ERROR();
 	}
-	//TODO: Close syscall
+
+	for (size_t i = 0; i < sizeof(readed); i++) {
+		if (readed[i] != writen[i]) {
+			TEST_ERROR();
+		}
+	}
+
+	TEST_SUCCESS();
+
+	close(fd);
 }
 
-void fs_close_test()
+void fs_close_test(void)
 {
 	int8_t res;
-	char success[] = "[TEST] close success \n";
-	char failure[] = "[TEST] close FAILED \n";
 	char sink[10];
 
 	res = close(10);
 	if (res == 0) {
-		res = write(STDOUT, failure, sizeof(failure));
+		TEST_ERROR();
 	}
 
 	res = close(STDIN);
 	if (res < 0) {
+		TEST_ERROR();
 	}
 
 	res = read(STDIN, sink, sizeof(sink));
 	if (res == 0) {
-		res = write(STDOUT, failure, sizeof(failure));
+		TEST_ERROR();
 	}
 
 	res = write(STDOUT, success, sizeof(success));
@@ -150,12 +167,12 @@ void stream_test(void)
 	for (;;) {
 		res = read(1, ubuf, 1);
 		if (res < 0) {
-			return exit_group(1);
+			TEST_ERROR();
 		}
 
 		res = write(1, ubuf, 1);
 		if (res < 0) {
-			return exit_group(1);
+			TEST_ERROR();
 		}
 	}
 }
