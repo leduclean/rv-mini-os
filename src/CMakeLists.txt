@@ -59,6 +59,7 @@ target_link_options(
         -nostdlib
         -static
 )
+target_link_libraries(user.elf ulib)
 
 set(QEMU qemu-system-riscv64)
 

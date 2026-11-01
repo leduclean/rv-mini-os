@@ -11,4 +11,5 @@ target_include_directories(
     PUBLIC
         ${CMAKE_SOURCE_DIR}/user/include
         ${CMAKE_SOURCE_DIR}/include/user
+        ${CMAKE_SOURCE_DIR}/include/lib
 )

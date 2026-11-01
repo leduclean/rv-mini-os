@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include <kinterface.h>
+#include <string.h>
 
 #include "apps.h"
 #include "syscall.h"
@@ -126,10 +127,8 @@ void fs_io_test(void)
 		TEST_ERROR();
 	}
 
-	for (size_t i = 0; i < sizeof(readed); i++) {
-		if (readed[i] != writen[i]) {
-			TEST_ERROR();
-		}
+	if (strcmp(writen, readed) != 0) {
+		TEST_ERROR();
 	}
 
 	TEST_SUCCESS();
