@@ -1,4 +1,4 @@
-    .equ STACK_ALIGN, 16 /** RV64 riscv abi specify this for the stack */
+    #include <abi.h>
     .equ STACK_SIZE, 4096
     .section .text.init,"ax",@progbits
     .globl entry
