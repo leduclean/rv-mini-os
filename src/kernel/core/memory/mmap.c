@@ -20,7 +20,7 @@ static pte_t *kroot;
 
 unsigned long mmap_satp(void *pt)
 {
-	return ((SATP_SV39_MODE << SATP_MODE_SHIFT) | PAGE_NUMBER(pt));
+	return ((SATP_SV39_MODE << SATP_MODE_SHIFT) | page_get_num(pt));
 }
 
 unsigned long mmap_kernel_satp(void)
@@ -56,8 +56,7 @@ int mmap_kernel(void)
 	}
 
 	res = vpage_map_range(kroot, (void *)_ram_start, (void *)_ram_start,
-			      (size_t)_heap_end - (size_t)_ram_start,
-			      PTE_R | PTE_W | PTE_X);
+			      _ram_end - _ram_start, PTE_R | PTE_W | PTE_X);
 	if (res < 0) {
 		goto err_free_root;
 	}

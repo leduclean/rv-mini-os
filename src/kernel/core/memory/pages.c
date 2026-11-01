@@ -6,6 +6,7 @@
 #include <asm/asm_defs.h>
 #include <asm/cpu.h>
 
+#include <kernel/ldsym.h>
 #include <kernel/pages.h>
 
 /**
@@ -29,35 +30,43 @@ static inline void _push_free(void *page)
 	clist_push_front(&free_pages, &p->node);
 }
 
+// Keep in sync with MEMORY in kernel.ld (checked by page_init()).
+#define RAM_SIZE (128UL * 1024 * 1024)
+
 /**
- * @brief Ref Counter for shared page free
+ * @brief Ref counter of every ram page, indexed by page_idx().
  *
- * @note The first entries are reserved because the first 
- * ram pages are allocated for the code itself. But only the
- * entire ram size is known at compile time.
+ * @note Sized on the whole ram (a compile-time constant): the entries of
+ * the kernel image pages are never used.
  */
-static uint8_t page_rc[RAM_PAGE_COUNT] = { 0 };
+static uint8_t page_rc[RAM_SIZE >> PAGE_SHIFT] = { 0 };
+
+static inline size_t page_idx(const void *page)
+{
+	return ((uintptr_t)page - (uintptr_t)_ram_start) >> PAGE_SHIFT;
+}
 
 uint8_t page_get_ref_count(const void *page)
 {
-	return page_rc[RAM_RELATIVE_PAGE_NUMBER(page)];
+	return page_rc[page_idx(page)];
 }
 
 void *page_get(void *page)
 {
 	irq_flags_t state = irq_save();
-	page_rc[RAM_RELATIVE_PAGE_NUMBER(page)]++;
+	page_rc[page_idx(page)]++;
 	irq_restore(state);
 	return (void *)page;
 }
 
 void page_init(void)
 {
-	clist_init_node(&free_pages);
-	page_t *p;
+	if ((uintptr_t)(_ram_end - _ram_start) != RAM_SIZE) {
+		panic("pages.c RAM_SIZE out of sync with kernel.ld");
+	}
 
-	for (unsigned long i = 0; i < PAGE_COUNT; i++) {
-		p = (page_t *)(i * PAGE_SIZE + PAGE_BASE);
+	clist_init_node(&free_pages);
+	for (char *p = _page_start; p < _page_end; p += PAGE_SIZE) {
 		_push_free(p);
 	}
 }
@@ -85,7 +94,7 @@ void page_put(void *page)
 	if (page_get_ref_count(page) == 0) {
 		panic("page_put() on a page nobody holds: double free");
 	}
-	if (--page_rc[RAM_RELATIVE_PAGE_NUMBER(page)] == 0) {
+	if (--page_rc[page_idx(page)] == 0) {
 		_push_free(page);
 	}
 	irq_restore(state);

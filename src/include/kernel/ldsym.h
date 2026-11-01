@@ -5,8 +5,9 @@
 
 #pragma once
 
-extern char _ram_start[], _etext[], _edata[], _end[];
+extern char _ram_start[], _ram_end[], _kernel_end[];
 extern char _user_start[], _user_end[];
 extern char _trampoline_start[], _trampoline_end[];
-extern char __bss_start[], __bss_end[];
-extern char _heap_start[], _heap_end[];
+extern char _bss_start[], _bss_end[];
+extern char _kheap_start[], _kheap_end[];
+extern char _page_start[], _page_end[];

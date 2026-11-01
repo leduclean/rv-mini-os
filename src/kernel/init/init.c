@@ -62,7 +62,7 @@ static void init(void)
 		panic("[FAILURE] Virtio blk driver init has failed");
 	}
 
-	ta_init(_heap_start, _heap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
+	ta_init(_kheap_start, _kheap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
 		TA_ALIGNMENT);
 	printf("[INFO] Tiny alloc initialized \n");
 

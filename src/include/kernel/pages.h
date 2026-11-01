@@ -11,27 +11,16 @@
 
 #include <asm/asm_defs.h>
 
-#include <kernel/ldsym.h>
-
-#define PAGE_ALIGN_UP(addr) ALIGN_UP(addr, PAGE_SIZE)
-
-// Values known at compile time
-#define RAM_BASE 0x80000000
-#define RAM_SIZE (128UL * 1024 * 1024)
-#define RAM_END (RAM_BASE + RAM_SIZE)
-#define RAM_PAGE_COUNT ((RAM_END - PAGE_ALIGN_UP(RAM_BASE)) >> PAGE_SHIFT)
-
-// First usable page and how many of them (128M of ram minus the kernel image).
-// Link-time values: usable at runtime, not in a constant expression.
-#define PAGE_BASE ((uintptr_t)PAGE_ALIGN_UP((uintptr_t)_heap_start))
-#define PAGE_END ((uintptr_t)_heap_end)
-#define PAGE_COUNT ((PAGE_END - PAGE_BASE) >> PAGE_SHIFT)
-#define PAGE_NUMBER(addr) ((unsigned long)addr >> PAGE_SHIFT)
-
-#define HEAP_RELATIVE_PAGE_NUMBER(addr) \
-	(PAGE_NUMBER(addr) - PAGE_NUMBER(PAGE_BASE))
-#define RAM_RELATIVE_PAGE_NUMBER(addr) \
-	(PAGE_NUMBER(addr) - PAGE_NUMBER(RAM_BASE))
+/**
+ * @brief Gets the number associated with an address of a page.
+ *
+ * @param addr page addr.
+ * @return Page number of this addr.
+ */
+static inline unsigned long page_get_num(const void *addr)
+{
+	return (uintptr_t)addr >> PAGE_SHIFT;
+}
 
 /**
  * @brief Init the paging allocator. 

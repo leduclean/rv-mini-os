@@ -75,7 +75,7 @@ int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 			}
 
 			alloc_tables[lvl] = next;
-			*pte = (PAGE_NUMBER(next) << PTE_PPN_SHIFT) | PTE_V;
+			*pte = (page_get_num(next) << PTE_PPN_SHIFT) | PTE_V;
 		}
 
 		// Go to the next level of indirection
@@ -88,7 +88,7 @@ int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 	if (flags & PTE_W)
 		pte_flags |= PTE_D;
 
-	*leaf_pte = (PAGE_NUMBER(pa) << PTE_PPN_SHIFT) | pte_flags;
+	*leaf_pte = (page_get_num(pa) << PTE_PPN_SHIFT) | pte_flags;
 
 	return 0;
 
