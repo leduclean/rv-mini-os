@@ -6,4 +6,9 @@ file(
 )
 add_library(user OBJECT ${USER_SRCS})
 
-target_include_directories(user PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_include_directories(
+    user
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/user/include
+        ${CMAKE_SOURCE_DIR}/include/user
+)

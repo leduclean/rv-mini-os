@@ -2,10 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <lib/types.h>
-
-// Expose the syscall flags to user
-#include <user/kinterface.h>
+#include <kinterface.h>
 
 /**
  * @brief Sleep syscall used to make a process sleep.

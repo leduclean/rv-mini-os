@@ -1,9 +1,9 @@
 #include <stdint.h>
 
-#include <user/apps.h>
-#include <user/thread.h>
-
+#include "apps.h"
+#include "syscall.h"
 #include "test.h"
+#include "thread.h"
 
 #define STACK_SIZE 1024
 

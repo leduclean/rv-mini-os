@@ -9,6 +9,7 @@
 #include <asm/cpu.h>
 #include <asm/trap.h>
 
+#include <kernel/elf.h>
 #include <kernel/file.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
@@ -19,7 +20,6 @@
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
 #include <user/kinterface.h>
-#include <user/user_entry.h>
 
 #define MAX_PROC 32
 
@@ -131,6 +131,7 @@ static inline process_t *_alloc_squeletton(const char *name, priority prior,
 	proc->parent = parent;
 	proc->priority = prior;
 	proc->pid = proc_table.next_pid++;
+	proc->tgid = proc->pid;
 	proc->state = NEW;
 
 	return proc;
@@ -167,7 +168,7 @@ static void _kproc_launcher(void)
 /** @brief Create the idle process and make it active. */
 static int _init_idle(void)
 {
-	process_t *p = process_spawn(process_idle, "idle", IDLE, false);
+	process_t *p = process_kthread(process_idle, "idle", IDLE);
 	if (!p) {
 		return -1;
 	}
@@ -301,34 +302,47 @@ static void copy_fds(process_t *child, const process_t *parent, bool clone)
 	}
 }
 
-process_t *process_spawn(void code(void), const char *name, priority prior,
-			 bool user)
+static int load_elf_image(process_t *p, const uintptr_t elf)
+{
+	int res = elf_verify_file_format(elf);
+	if (res < 0) {
+		return -1;
+	}
+
+	if (mmap_uimage(p) != 0) {
+		return -1;
+	}
+
+	res = elf_map(p->root_ptable, elf);
+	if (res < 0) {
+		vpage_tree_free(p->root_ptable);
+		return -1;
+	}
+
+	return 0;
+}
+
+process_t *process_start_userland(const uintptr_t user_elf, const char *name,
+				  priority prior)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = _alloc_squeletton(name, prior, user, process_active());
+	process_t *p = _alloc_squeletton(name, prior, true, process_active());
 	if (!p) {
 		goto err_restore_irq;
 	}
 
-	p->code = code;
-	p->tgid = p->pid;
-	if (p->pid == 0) {
-		p->ctx.ra = (uintptr_t)code;
-	} else {
-		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = user ? (uintptr_t)trap_return_to_user
-				 : (uintptr_t)_kproc_launcher;
+	p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
+	p->ctx.ra = (uintptr_t)trap_return_to_user;
+
+	int res = load_elf_image(p, user_elf);
+	if (res < 0) {
+		goto err_free_proc;
 	}
 
-	if (user) {
-		if (mmap_uimage(p) != 0) {
-			goto err_free_proc;
-		}
-		tframe_init(p->tframe_pa, p->root_ptable,
-			    (unsigned long)&p->kstack[KSTACK_SIZE]);
-		tframe_start(p->tframe_pa, user_entry_point, (void *)USTACK);
-		tframe_set_arg(p->tframe_pa, 0, (unsigned long)code);
-	}
+	tframe_init(p->tframe_pa, p->root_ptable,
+		    (unsigned long)&p->kstack[KSTACK_SIZE]);
+	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf),
+		     (void *)USTACK);
 
 	copy_fds(p, process_active(), false);
 	_activate_process(p);
@@ -338,6 +352,32 @@ process_t *process_spawn(void code(void), const char *name, priority prior,
 err_free_proc:
 	free(p);
 	p = NULL;
+err_restore_irq:
+	irq_restore(state);
+	return p;
+}
+
+process_t *process_kthread(void code(void), const char *name, priority prior)
+{
+	irq_flags_t state = irq_save();
+	process_t *p = _alloc_squeletton(name, prior, false, process_active());
+	if (!p) {
+		goto err_restore_irq;
+	}
+
+	p->code = code;
+	if (p->pid == 0) {
+		p->ctx.ra = (uintptr_t)code;
+	} else {
+		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
+		p->ctx.ra = (uintptr_t)_kproc_launcher;
+	}
+
+	copy_fds(p, process_active(), false);
+	_activate_process(p);
+	irq_restore(state);
+	return p;
+
 err_restore_irq:
 	irq_restore(state);
 	return p;
@@ -436,33 +476,32 @@ process_t *process_fork(process_t *parent)
 	return process_clone(parent, NULL, NULL, NULL, 0);
 }
 
-int process_exec(process_t *p, void code(void))
+int process_exec(process_t *p, const uintptr_t elf)
 {
+	int res;
+
 	if (!p->user) {
 		panic("Process exec on non user is not supported");
 	}
+
 	// Save the state
 	irq_flags_t state = irq_save();
 	pte_t *old_ptable = p->root_ptable;
 	tframe_t *old_tframe = p->tframe_pa;
 
-	int res = 0;
-	res = mmap_uimage(p);
+	res = load_elf_image(p, elf);
 	if (res < 0) {
 		goto err_restore_old_state;
 	}
 
-	p->code = code;
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
-	tframe_start(p->tframe_pa, user_entry_point, (void *)USTACK);
-	tframe_set_arg(p->tframe_pa, 0, (unsigned long)code);
 
 	// Once all has worked free all the old ressources.
 	vpage_tree_free(old_ptable);
 	irq_restore(state);
 
-	return res;
+	return 0;
 
 err_restore_old_state:
 	p->root_ptable = old_ptable;
@@ -470,21 +509,6 @@ err_restore_old_state:
 	irq_restore(state);
 	return res;
 }
-
-int8_t process_spawn_foreground(void code(void), const char *name,
-				priority prior, bool user)
-{
-	process_t *child = process_spawn(code, name, prior, user);
-	if (!child) {
-		return -1;
-	}
-	uint8_t pid = child->pid;
-	// Wait for the child to terminate.
-	// FIX: It's weird that there is some
-	// syscall here.
-	sys_waitpid(child->pid);
-	return pid;
-};
 
 int process_give_fd(process_t *p, struct file *f)
 {

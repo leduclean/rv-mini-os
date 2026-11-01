@@ -3,12 +3,14 @@
 #include <asm/cpu.h>
 #include <asm/trap.h>
 
-#include <kernel/cmd_registry.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 
+#include "kernel/file.h"
+#include "kernel/inode.h"
 #include "kernel/vpages.h"
+#include "user/kinterface.h"
 
 uint8_t sys_getpid(void)
 {
@@ -40,26 +42,23 @@ int8_t sys_clone(void *entry, void *args, void *stack, unsigned long flags)
 int sys_exec(const char *path, char *const argv[])
 {
 	//TODO: handle argv
+
 	(void)argv;
-	process_t *p = process_active();
+	(void)path;
+	// process_t *p = process_active();
+	//
+	// // Copy the virtual uaddres to a kernel buffer
+	// char kpath[MAXNAME];
+	// vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
+	//    // Read only the content because elf file is copied before being executed
+	// struct file *f = file_open(kpath, O_R);
+	// if (!f) {
+	// 	return -1;
+	// }
+	//
+	//    char file
 
-	// Copy the virtual uaddres to a kernel buffer
-	char kpath[MAXNAME];
-	vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
-
-	// Look up in the process registry
-	const cmd_desc_t *matched = cmd_lookup(kpath);
-	if (!matched) {
-		printf("Unknown path entered. Please refer to `help`.\n");
-		return -1;
-	}
-
-	int res;
-	res = process_exec(p, matched->cmd.prog.fn);
-	if (res < 0) {
-		return res;
-	}
-
+	//TODO: stub befor fs link with elf
 	return 0;
 }
 

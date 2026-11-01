@@ -148,14 +148,6 @@ int mmap_uimage(process_t *p)
 
 	pte_t *root = p->root_ptable;
 
-	// The whole code is identity mapped for now.
-	res = vpage_map_user_range(root, _user_start, _user_start,
-				   _user_end - _user_start,
-				   PTE_X | PTE_R | PTE_G);
-	if (res < 0) {
-		goto err_free_tree;
-	}
-
 	// This is not U page because we will go back to user page
 	// in S mode before the sret returns to user mode.
 	res = vpage_map_range(root, (void *)TRAMPOLINE, _trampoline_start,

@@ -152,7 +152,7 @@ static void _fill_rx_buff_daemon(void)
 
 int uart_spawn_daemons(void)
 {
-	if (!process_spawn(_fill_rx_buff_daemon, "uart rx daem", HIGH, false)) {
+	if (!process_kthread(_fill_rx_buff_daemon, "uart rx daem", HIGH)) {
 		return -1;
 	}
 	return 0;

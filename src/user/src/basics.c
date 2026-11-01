@@ -6,10 +6,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <user/apps.h>
-#include <user/kinterface.h>
-#include <user/syscall.h>
+#include <kinterface.h>
 
+#include "apps.h"
+#include "syscall.h"
 #include "test.h"
 
 #define SLEEP_TIME 2
@@ -17,6 +17,7 @@
 void sleep_call(void)
 {
 	sleep(SLEEP_TIME);
+	TEST_SUCCESS();
 }
 
 void fork_test(void)

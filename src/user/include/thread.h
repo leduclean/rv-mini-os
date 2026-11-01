@@ -1,8 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-#include <user/syscall.h>
-
 // We just copy the clone flags for now
 #define CLONE_VM (1 << 0)
 

@@ -1,5 +1,4 @@
-# TODO: Since this is specific to riscv asm maybe it should resid on the arch/riscv/
-.section .user_text,"ax",@progbits
+.section .text,"ax",@progbits
 .global usyscall
 
 # long usyscall(long n, long a, long b, long c, long d, long e, long f)

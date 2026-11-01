@@ -178,7 +178,7 @@ static inline void process_reap(process_t *proc)
 int process_init(void);
 
 /**
- * @brief Spawn a process and admit it in the scheduler.
+ * @brief Spawn a kthread and admit it in the scheduler.
  *
  * @param code Entry point of the process.
  * @param name Name of the process, truncated to MAXNAME - 1 chars.
@@ -187,20 +187,19 @@ int process_init(void);
  * @return Pointer to the spawned process, NULL if the table is full or the
  * allocation failed.
  */
-process_t *process_spawn(void code(void), const char *name, priority prior,
-			 bool user);
+process_t *process_kthread(void code(void), const char *name, priority prior);
 
 /**
- * @brief Spawn a child process and block until it terminates.
+ * @brief Creates the first userland task.
  *
- * @param code Entry point of the child.
- * @param name Name of the child, truncated to MAXNAME - 1 chars.
- * @param prior Priority of the child.
- * @param user User mode process flag.
- * @return Pid of the child, -1 if the spawn failed.
+ * @param user_elf Elf file of the executed user code.
+ * @param name Task name.
+ * @param prior Priority of this userland program.
+ * @return Pointer to the spawned task, NULL if the table is full or the
+ * allocation failed.
  */
-int8_t process_spawn_foreground(void code(void), const char *name,
-				priority prior, bool user);
+process_t *process_start_userland(const uintptr_t elf, const char *name,
+				  priority prior);
 
 /**
  * @brief Clone a proccess with granularity on which to copy or not.
@@ -229,10 +228,10 @@ process_t *process_fork(process_t *parent);
  * memory map.
  *
  * @param p A pointer to the process to replace.
- * @param code The code to the newly executed program.
+ * @param elf Elf file of a newly executed program.
  * @return 0 on SUCCESS, error code < 0 on FAILURE.
  */
-int process_exec(process_t *p, void code(void));
+int process_exec(process_t *p, const uintptr_t elf);
 
 /**
  * @brief Attribute a in-task file descriptor number to a file descriptor.

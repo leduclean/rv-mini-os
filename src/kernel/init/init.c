@@ -18,8 +18,12 @@
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/process.h>
-#include <kernel/shell.h>
 #include <kernel/time.h>
+
+/**
+ * @brief User elf included via user_app.S.
+ */
+extern char _user_elf_start[];
 
 /**
  * @brief Handle all the blocking initialization.
@@ -38,8 +42,9 @@ static void init(void)
 		panic("[FAILURE] Console map has failed");
 	}
 
-	if (!process_spawn(shell_run, "shell", NORMAL, false)) {
-		printf("[FAILURE]: failed to spawn shell \n");
+	if (!process_start_userland((uintptr_t)_user_elf_start, "User",
+				    NORMAL)) {
+		printf("[FAILURE]: failed to enter userland\n");
 	}
 }
 
@@ -91,8 +96,8 @@ static void init(void)
 		panic("[FAILURE] Uart daemon spawn has failed");
 	}
 
-	if (!process_spawn(init, "init", NORMAL, false)) {
-		printf("[FAILURE]: failed to spawn shell \n");
+	if (!process_kthread(init, "init", NORMAL)) {
+		printf("[FAILURE]: failed to spawn init kthread \n");
 	}
 
 	process_idle();

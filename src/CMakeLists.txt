@@ -19,7 +19,6 @@ add_executable(
     $<TARGET_OBJECTS:kernel_core>
     $<TARGET_OBJECTS:kernel_drivers>
     $<TARGET_OBJECTS:lib>
-    $<TARGET_OBJECTS:user> # TODO: drop once user.elf is loaded
 )
 
 set(KERNEL_LINK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.ld)
@@ -45,6 +44,22 @@ target_link_options(
 )
 
 set(USER_LINK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/user/user.ld)
+add_executable(user.elf $<TARGET_OBJECTS:user>)
+set_target_properties(
+    user.elf
+    PROPERTIES
+        LINK_DEPENDS
+            ${USER_LINK_FILE}
+)
+
+target_link_options(
+    user.elf
+    PRIVATE
+        -T${USER_LINK_FILE}
+        -nostdlib
+        -static
+)
+
 set(QEMU qemu-system-riscv64)
 
 # Create Disk Image

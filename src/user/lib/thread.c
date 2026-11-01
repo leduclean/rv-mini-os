@@ -1,7 +1,8 @@
+#include "thread.h"
+
 #include <stdint.h>
 
-#include <user/syscall.h>
-#include <user/thread.h>
+#include "syscall.h"
 
 void thread_entry(thread_entry_t *wrap)
 {

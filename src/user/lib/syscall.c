@@ -1,11 +1,12 @@
 //TODO: would be cool to generate stub via SYSCALLS(X_STUB)
+
+#include "syscall.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
-#include <lib/types.h>
-
-#include <kernel/syscall_def.h>
-#include <user/syscall.h>
+#include <kinterface.h>
+#include <syscall_def.h>
 
 extern unsigned long usyscall(unsigned long n, unsigned long a, unsigned long b,
 			      unsigned long c, unsigned long d, unsigned long e,

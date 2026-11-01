@@ -82,11 +82,11 @@ static void _tick_daemon(void)
 
 int time_spawn_daemons(void)
 {
-	if (!process_spawn(_clock_daemon, "clock daemon", HIGH, false)) {
+	if (!process_kthread(_clock_daemon, "clock daemon", HIGH)) {
 		return -1;
 	}
 
-	if (!process_spawn(_tick_daemon, "tick daemon", HIGH, false)) {
+	if (!process_kthread(_tick_daemon, "tick daemon", HIGH)) {
 		return -1;
 	}
 

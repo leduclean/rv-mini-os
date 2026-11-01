@@ -22,18 +22,6 @@ SECTIONS {
         . = ALIGN(PAGE_SIZE);
     } > ram
 
-    /* TODO: drop once user.elf is loaded. User code, mapped U in every process. */
-    .user_text ALIGN(PAGE_SIZE) : {
-        _user_start = .;
-        *(.user_text.init)
-        *(.user_text)
-        *(.user_text.*)
-        *user.dir/*(.text .text.*)
-        *user.dir/*(.rodata .rodata.*)
-        . = ALIGN(PAGE_SIZE);
-        _user_end = .;
-    } > ram
-
     /* Trampoline shared section*/
     .trampoline ALIGN(PAGE_SIZE) : {
         _trampoline_start = . ;
