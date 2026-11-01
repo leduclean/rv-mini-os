@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#include "apps.h"
+#include "cmd_registry.h"
 #include "syscall.h"
 #include "test.h"
 #include "thread.h"
@@ -13,7 +13,7 @@ void thread(void *args)
 	(*i)++;
 }
 
-void thread_test(void)
+void cmd_thread_test([[maybe_unused]] char *const argv[])
 {
 	int i = 0;
 

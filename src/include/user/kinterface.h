@@ -12,6 +12,8 @@
  */
 typedef __PTRDIFF_TYPE__ ssize_t;
 
+#define DISPLAY_WIDTH 1024
+#define MAX_DISPLAY_COLS (DISPLAY_WIDTH / 8)
 /** 
 * @name Open syscall flags.
 * @{*/
@@ -42,3 +44,5 @@ typedef __PTRDIFF_TYPE__ ssize_t;
 #define SEEK_CUR (1 << 1) /**< File offset set to its location + offset. */
 #define SEEK_END (1 << 2) /**< File offset set to size of the file + offset. */
 /** @} */
+
+#define EXEC_MAX_ARGS 7 /**< Max number of exec() arguments. */

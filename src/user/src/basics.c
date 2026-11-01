@@ -9,19 +9,19 @@
 #include <kinterface.h>
 #include <string.h>
 
-#include "apps.h"
+#include "cmd_registry.h"
 #include "syscall.h"
 #include "test.h"
 
 #define SLEEP_TIME 2
 
-void sleep_call(void)
+void cmd_sleep_call([[maybe_unused]] char *const argv[])
 {
 	sleep(SLEEP_TIME);
 	TEST_SUCCESS();
 }
 
-void fork_test(void)
+void cmd_fork_test([[maybe_unused]] char *const argv[])
 {
 	// volatile: the compiler must really store it on the user stack, which
 	// is the page fork() just marked copy on write.
@@ -43,7 +43,7 @@ void fork_test(void)
 	TEST_SUCCESS();
 }
 
-void fork_exec_test(void)
+void cmd_fork_exec_test([[maybe_unused]] char *const argv[])
 {
 	int8_t pid;
 	pid = fork();
@@ -71,7 +71,7 @@ void fork_exec_test(void)
 	TEST_SUCCESS();
 }
 
-void exec_test(void)
+void cmd_exec_test([[maybe_unused]] char *const argv[])
 {
 	int8_t res;
 	res = exec("sleep_call", NULL);
@@ -80,7 +80,7 @@ void exec_test(void)
 	}
 }
 
-void segfault_test(void)
+void cmd_segfault_test([[maybe_unused]] char *const argv[])
 {
 	int8_t res;
 
@@ -101,7 +101,7 @@ void segfault_test(void)
 
 #define FS_TEST_FILE "/path/to/test"
 
-void fs_io_test(void)
+void cmd_fs_io_test([[maybe_unused]] char *const argv[])
 {
 	int8_t res;
 	const char writen[] = "test\n";
@@ -136,7 +136,7 @@ void fs_io_test(void)
 	close(fd);
 }
 
-void fs_close_test(void)
+void cmd_fs_close_test([[maybe_unused]] char *const argv[])
 {
 	int8_t res;
 	char sink[10];
@@ -159,7 +159,7 @@ void fs_close_test(void)
 	TEST_SUCCESS();
 }
 
-void fs_seek_test(void)
+void cmd_fs_seek_test([[maybe_unused]] char *const argv[])
 {
 	int64_t off;
 
@@ -196,7 +196,7 @@ void fs_seek_test(void)
 	TEST_SUCCESS();
 }
 
-void stream_test(void)
+void cmd_stream_test([[maybe_unused]] char *const argv[])
 {
 	int8_t res;
 	char ubuf[1];

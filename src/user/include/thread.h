@@ -1,9 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-// We just copy the clone flags for now
-#define CLONE_VM (1 << 0)
-
 // This is statically defined for now
 typedef struct thread_entry {
 	void (*fn)(void *args);

@@ -1,7 +1,8 @@
-#include "apps.h"
+#include <stddef.h>
+
+#include "shell.h"
 
 int main(void)
 {
-	sleep_call();
-	return 0;
+	return sh();
 }

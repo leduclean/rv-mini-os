@@ -1,4 +1,5 @@
-#include "kinterface.h"
+#include <kinterface.h>
+
 #include "syscall.h"
 
 void console_putbytes(const char *s, int len)
