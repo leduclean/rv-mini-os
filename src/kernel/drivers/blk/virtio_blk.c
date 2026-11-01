@@ -3,11 +3,11 @@
 
 #include <lib/bit.h>
 
-#include <asm/board.h>
-#include <asm/cpu.h>
+#include <arch/board.h>
+#include <arch/cpu.h>
 
 #include <drivers/pci.h>
-#include <drivers/plic.h>
+#include <arch/plic.h>
 #include <drivers/virtio_blk.h>
 
 #include <kernel/mmap.h>

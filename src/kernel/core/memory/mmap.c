@@ -1,10 +1,10 @@
 #include <lib/stdio.h>
 
-#include <asm/asm_defs.h>
-#include <asm/board.h>
-#include <asm/csr.h>
-#include <asm/mmu.h>
-#include <asm/trap.h>
+#include <arch/asm_defs.h>
+#include <arch/board.h>
+#include <arch/csr.h>
+#include <arch/mmu.h>
+#include <arch/trap.h>
 
 #include <kernel/ldsym.h>
 #include <kernel/mmap.h>

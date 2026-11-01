@@ -2,10 +2,10 @@
 
 #include <lib/stdio.h>
 
-#include <asm/board.h>
-#include <asm/mmio.h>
+#include <arch/board.h>
+#include <lib/mmio.h>
 
-#include <drivers/plic.h>
+#include <arch/plic.h>
 #include <drivers/uart.h>
 
 #include <kernel/scheduler.h>

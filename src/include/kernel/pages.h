@@ -9,7 +9,7 @@
 #include <lib/bit.h>
 #include <lib/string.h>
 
-#include <asm/asm_defs.h>
+#include <arch/asm_defs.h>
 
 /**
  * @brief Gets the number associated with an address of a page.

@@ -5,8 +5,8 @@
 #include <lib/container.h>
 #include <lib/stdio.h>
 
-#include <asm/cpu.h>
-#include <asm/trap.h>
+#include <arch/cpu.h>
+#include <arch/trap.h>
 
 #include <kernel/mmap.h>
 #include <kernel/process.h>

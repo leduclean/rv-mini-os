@@ -10,7 +10,7 @@ add_subdirectory(user)
 add_subdirectory(kernel/core)
 add_subdirectory(kernel/drivers)
 add_subdirectory(kernel/init)
-add_subdirectory(arch/riscv)
+add_subdirectory(arch)
 
 add_executable(
     kernel.bin
@@ -21,7 +21,7 @@ add_executable(
     $<TARGET_OBJECTS:lib>
 )
 
-set(KERNEL_LINK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/arch/riscv/ld/kernel.ld)
+set(KERNEL_LINK_FILE ${CMAKE_CURRENT_SOURCE_DIR}/arch/ld/kernel.ld)
 set_target_properties(
     kernel.bin
     PROPERTIES

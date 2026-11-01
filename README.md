@@ -61,7 +61,7 @@ A bare-metal operating system kernel targeting **RISC-V 64-bit** (QEMU `virt` ma
 
 ```
 src/
-├── arch/riscv/        # RISC-V specific: boot, trap handler, UART, IRQ, linker scripts
+├── arch/              # RISC-V specific: boot, trap handler, UART, IRQ, linker scripts
 ├── kernel/
 │   ├── core/          # Scheduler, process, shell, sync primitives, time
 │   └── init/          # Kernel entry point

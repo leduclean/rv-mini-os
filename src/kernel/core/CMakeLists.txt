@@ -5,5 +5,4 @@ target_include_directories(
     kernel_core
     PRIVATE
         ${CMAKE_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/arch/riscv/include # <asm/...>
 )

@@ -4,7 +4,7 @@
 #include <lib/string.h>
 #include <user/kinterface.h>
 
-#include <asm/cpu.h>
+#include <arch/cpu.h>
 
 #include <drivers/console.h>
 #include <drivers/uart.h>

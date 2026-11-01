@@ -5,10 +5,9 @@
 #include <lib/string.h>
 #include <lib/tinyalloc.h>
 
-#include <asm/asm_defs.h>
-#include <asm/cpu.h>
-#include <asm/trap.h>
-
+#include <arch/asm_defs.h>
+#include <arch/cpu.h>
+#include <arch/trap.h>
 #include <kernel/elf.h>
 #include <kernel/file.h>
 #include <kernel/mmap.h>

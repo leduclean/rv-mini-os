@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <asm/board.h>
-#include <asm/mmio.h>
+#include <arch/board.h>
+#include <lib/mmio.h>
 
 #include <drivers/pci.h>
 

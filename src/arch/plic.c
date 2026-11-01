@@ -1,13 +1,13 @@
 #include <stdint.h>
 
-#include <asm/board.h>
-#include <asm/cpu.h>
-#include <asm/csr.h>
-#include <asm/mmio.h>
+#include <arch/cpu.h>
+#include <arch/csr.h>
+#include <lib/mmio.h>
 
 #include <drivers/uart.h>
 #include <drivers/virtio_blk.h>
 
+#include <arch/board.h>
 #include <kernel/time.h>
 
 /* Register map offsets, named after the RISC-V PLIC spec "Memory Map" */

@@ -3,7 +3,7 @@
 #include <lib/clist.h>
 #include <lib/container.h>
 
-#include <asm/cpu.h>
+#include <arch/cpu.h>
 
 #include <kernel/process.h>
 #include <kernel/scheduler.h>

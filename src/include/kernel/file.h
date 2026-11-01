@@ -10,7 +10,7 @@
 
 #include <user/kinterface.h>
 
-#include <asm/asm_defs.h>
+#include <arch/asm_defs.h>
 
 #define FILE_DEV_CONSOLE 0 /* Define the dev_id of the console */
 

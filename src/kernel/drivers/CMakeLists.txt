@@ -4,5 +4,4 @@ target_include_directories(
     kernel_drivers
     PRIVATE
         ${CMAKE_SOURCE_DIR}/include
-        $<TARGET_PROPERTY:arch_riscv,INTERFACE_INCLUDE_DIRECTORIES> # Get arch riscv includes
 )

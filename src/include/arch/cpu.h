@@ -7,7 +7,7 @@
 
 #include <lib/stdio.h>
 
-#include <asm/csr.h>
+#include <arch/csr.h>
 
 /**
  * @brief Memory barrier for IO DMA coherency.

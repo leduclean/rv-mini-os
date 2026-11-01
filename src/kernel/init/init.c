@@ -5,11 +5,11 @@
 #include <lib/stdio.h>
 #include <lib/tinyalloc.h>
 
-#include <asm/cpu.h>
-#include <asm/trap.h>
+#include <arch/cpu.h>
+#include <arch/trap.h>
 
 #include <drivers/console.h>
-#include <drivers/plic.h>
+#include <arch/plic.h>
 #include <drivers/uart.h>
 #include <drivers/virtio_blk.h>
 

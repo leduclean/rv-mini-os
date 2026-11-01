@@ -1,6 +1,6 @@
 #include <lib/stdio.h>
 
-#include <asm/csr.h>
+#include <arch/csr.h>
 
 #include <drivers/console.h>
 

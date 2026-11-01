@@ -5,8 +5,8 @@
 #include <lib/font.h>
 #include <lib/string.h>
 
-#include <asm/board.h>
-#include <asm/mmio.h>
+#include <arch/board.h>
+#include <lib/mmio.h>
 
 #include <drivers/console.h>
 #include <drivers/pci.h>

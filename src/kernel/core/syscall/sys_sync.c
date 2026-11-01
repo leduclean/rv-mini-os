@@ -9,13 +9,8 @@
 #include <lib/clist.h>
 #include <lib/container.h>
 
-#include <asm/cpu.h>
-
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
-#include <kernel/syscall.h>
-
-#include "asm/trap.h"
 
 int8_t sys_wait(void)
 {

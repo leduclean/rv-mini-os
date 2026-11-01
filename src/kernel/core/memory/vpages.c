@@ -4,8 +4,8 @@
 
 #include <lib/string.h>
 
-#include <asm/asm_defs.h>
-#include <asm/mmu.h>
+#include <arch/asm_defs.h>
+#include <arch/mmu.h>
 
 #include <kernel/mmap.h>
 #include <kernel/pages.h>

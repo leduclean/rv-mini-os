@@ -1,7 +1,7 @@
 #include <stdint.h>
 
-#include <asm/cpu.h>
-#include <asm/trap.h>
+#include <arch/cpu.h>
+#include <arch/trap.h>
 
 #include <kernel/process.h>
 #include <kernel/scheduler.h>

@@ -1,4 +1,4 @@
-#include <asm/csr.h>
+#include <arch/csr.h>
 
 #include <kernel/memory.h>
 

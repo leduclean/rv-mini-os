@@ -4,7 +4,7 @@
 #include <lib/container.h>
 #include <lib/string.h>
 
-#include <asm/cpu.h>
+#include <arch/cpu.h>
 
 #include <kernel/mutex.h>
 #include <kernel/process.h>

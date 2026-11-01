@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "asm/cpu.h"
+#include <arch/cpu.h>
 
 typedef struct {
 	// We use uint because riscv atomics use word or double word.

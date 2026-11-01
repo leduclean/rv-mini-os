@@ -5,7 +5,7 @@
 
 #include <lib/stdio.h>
 
-#include <asm/cpu.h>
+#include <arch/cpu.h>
 
 #include <kernel/process.h>
 

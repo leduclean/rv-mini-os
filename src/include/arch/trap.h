@@ -6,7 +6,7 @@
 #pragma once
 #include <stdint.h>
 
-#include <asm/asm_defs.h>
+#include <arch/asm_defs.h>
 
 #include <kernel/ldsym.h>
 

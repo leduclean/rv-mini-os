@@ -2,12 +2,12 @@
 
 #include <lib/stdio.h>
 
-#include <asm/asm_defs.h>
-#include <asm/cpu.h>
-#include <asm/csr.h>
-#include <asm/trap.h>
+#include <arch/asm_defs.h>
+#include <arch/cpu.h>
+#include <arch/csr.h>
+#include <arch/trap.h>
 
-#include <drivers/plic.h>
+#include <arch/plic.h>
 
 #include <kernel/mmap.h>
 #include <kernel/process.h>

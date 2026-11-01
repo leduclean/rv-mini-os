@@ -8,7 +8,7 @@ file(GLOB C_SRCS CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/*.c)
 add_library(
     arch_riscv
     OBJECT
-    ${CRT0_SRC} # crt0 en premier
+    ${CRT0_SRC} # crt0 in first
     ${OTHER_ASM_SRCS}
     ${C_SRCS}
 )
@@ -16,7 +16,6 @@ add_library(
 target_include_directories(
     arch_riscv
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include # <asm/...>
         ${CMAKE_SOURCE_DIR}/include
 )
 

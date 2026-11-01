@@ -3,8 +3,8 @@
 #include <lib/clist.h>
 #include <lib/stdio.h>
 
-#include <asm/asm_defs.h>
-#include <asm/cpu.h>
+#include <arch/asm_defs.h>
+#include <arch/cpu.h>
 
 #include <kernel/ldsym.h>
 #include <kernel/pages.h>

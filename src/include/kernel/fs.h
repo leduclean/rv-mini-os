@@ -6,7 +6,7 @@
 
 #include <user/kinterface.h>
 
-#include <asm/asm_defs.h>
+#include <arch/asm_defs.h>
 
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
 

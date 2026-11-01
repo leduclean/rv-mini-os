@@ -9,11 +9,10 @@
 
 #include <lib/clist.h>
 
-#include <asm/trap.h>
-
 #include <kernel/fs.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
+#include <arch/trap.h>
 
 #define MAXNAME 16 ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.

@@ -1,4 +1,4 @@
-#include <asm/csr.h>
+#include <arch/csr.h>
 .text
 .globl enter_kernel, delegate_traps
 
