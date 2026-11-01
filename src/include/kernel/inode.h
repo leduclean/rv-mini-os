@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #include <lib/container.h>
-#include <lib/types.h>
+#include <user/kinterface.h>
 
 #include <kernel/mutex.h>
 

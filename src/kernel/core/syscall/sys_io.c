@@ -2,7 +2,7 @@
 #include <stdint.h>
 
 #include <lib/string.h>
-#include <lib/types.h>
+#include <user/kinterface.h>
 
 #include <asm/cpu.h>
 

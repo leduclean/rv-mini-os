@@ -5,6 +5,13 @@
 
 #pragma once
 
+/*
+ * size_t and ptrdiff_t come from the compiler's freestanding <stddef.h>.
+ * ssize_t is POSIX, so GCC does not provide it: it is the signed counterpart
+ * of size_t, which __PTRDIFF_TYPE__ gives us on every sane target.
+ */
+typedef __PTRDIFF_TYPE__ ssize_t;
+
 /** 
 * @name Open syscall flags.
 * @{*/

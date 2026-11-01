@@ -1,5 +1,10 @@
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "kinterface.h"
+
 /* @brief Centralized syscalls definition.
  *
  * This is used to preprocess enum variant, function

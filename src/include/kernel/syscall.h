@@ -7,9 +7,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <lib/types.h>
+#include <user/kinterface.h>
 
-#include <kernel/syscall_def.h>
+#include <user/syscall_def.h>
 
 #define SYS_BUFFER_SIZE \
 	(1 << 10) /**< Max kernel buffer size use for syscall op. */

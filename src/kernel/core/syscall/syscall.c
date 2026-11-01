@@ -5,7 +5,7 @@
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
-#include <kernel/syscall_def.h>
+#include <user/syscall_def.h>
 
 typedef long (*syscall_fn)(unsigned long, unsigned long, unsigned long,
 			   unsigned long, unsigned long, unsigned long);

@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <lib/types.h>
+#include <user/kinterface.h>
 
 typedef unsigned long pte_t;
 typedef uint32_t ppn_t;

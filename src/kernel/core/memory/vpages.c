@@ -11,7 +11,7 @@
 #include <kernel/pages.h>
 #include <kernel/vpages.h>
 
-#include "lib/types.h"
+#include <user/kinterface.h>
 
 /* Sv39 indirection levels */
 #define LEVELS 3

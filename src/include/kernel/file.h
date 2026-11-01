@@ -8,7 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <lib/types.h>
+#include <user/kinterface.h>
 
 #include <asm/asm_defs.h>
 

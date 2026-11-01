@@ -23,7 +23,7 @@
 #include <kernel/mutex.h>
 
 #include "kernel/vpages.h"
-#include "lib/types.h"
+#include <user/kinterface.h>
 
 #define INODE_CACHE_SIZE 64
 #define INODES_PER_BLK (FS_BLK_SIZE / sizeof(struct dinode))
