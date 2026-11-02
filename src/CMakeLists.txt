@@ -61,8 +61,6 @@ target_link_options(
 )
 target_link_libraries(user.elf ulib)
 
-set(QEMU qemu-system-riscv64)
-
 set(DISK_SIZE_M 8)
 set(MKFS ${CMAKE_BINARY_DIR}/mkfs)
 add_custom_command(
@@ -88,6 +86,7 @@ add_custom_command(
     DEPENDS
         ${MKFS}
 )
+
 set(QEMU_DISK_OPTS
     -drive
     file=${DISK_IMG},if=none,format=raw,id=disk0
@@ -142,6 +141,8 @@ set(QEMU_DEBUGT_OPTS
     qemu.log
     ${QEMU_RUN_GUI_OPTS}
 )
+
+set(QEMU qemu-system-riscv64)
 
 add_custom_target(
     run
