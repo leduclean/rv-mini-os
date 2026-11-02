@@ -6,11 +6,9 @@
 
 #include <arch/asm_defs.h>
 #include <arch/mmu.h>
-
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/vpages.h>
-
 #include <user/kinterface.h>
 
 /* Sv39 indirection levels */
@@ -194,7 +192,7 @@ int vpage_unmmap(pte_t *root, void *va)
 		return -1;
 	}
 
-	unsigned long *page = _get_next_lvl_pte(*leaf);
+	void *page = _get_next_lvl_pte(*leaf);
 	page_put(page);
 	*leaf = 0;
 	mmu_flush_tlb();
@@ -205,33 +203,6 @@ int vpage_unmmap(pte_t *root, void *va)
 static inline uint32_t get_flags(pte_t pte)
 {
 	return pte & PTE_FLAGS_MASK;
-}
-
-static inline void set_cow(pte_t *leaf)
-{
-	if (!(*leaf & PTE_W)) {
-		return;
-	}
-	*leaf &= ~PTE_W;
-	*leaf |= PTE_COW;
-
-	void *page = (void *)_get_next_lvl_pte(*leaf);
-	page_get(page);
-	return;
-}
-
-static inline void unset_cow(pte_t *leaf)
-{
-	if (!(*leaf & PTE_COW)) {
-		return;
-	}
-	*leaf &= ~PTE_COW;
-	*leaf |= PTE_W;
-
-	void *page = (void *)_get_next_lvl_pte(*leaf);
-	page_put(page);
-
-	return;
 }
 
 static inline void *_get_pa_from_va(pte_t *root, const void *va,
@@ -322,18 +293,15 @@ ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max)
 
 int vpage_handle_cow(pte_t *root, const void *va)
 {
-	int res;
-
 	pte_t *leaf = walk_leaf(root, va);
 	if (!leaf || !(*leaf & PTE_COW)) {
-		res = -1;
-		goto out;
+		return -1;
 	}
 
 	void *page = (void *)(_get_next_lvl_pte(*leaf));
 	void *page_va = (void *)((unsigned long)va & ~OFFSET_MASK);
 
-	// Fast path
+	// Fast path no copy
 	if (page_get_ref_count(page) == 1) {
 		// We are the last that has access to this page
 		*leaf &= ~PTE_COW;
@@ -344,25 +312,17 @@ int vpage_handle_cow(pte_t *root, const void *va)
 
 	void *new_page = page_alloc();
 	if (!new_page) {
-		res = -1;
-		goto out;
+		return -1;
 	}
 
 	page_copy(new_page, page);
-	unset_cow(leaf);
-
-	res = vpage_map(root, page_va, new_page, get_flags(*leaf));
-	if (res < 0) {
-		goto err_free_page;
-	}
+	*leaf = (page_get_num(new_page) << PTE_PPN_SHIFT) |
+		(get_flags(*leaf) & ~PTE_COW) | PTE_W;
+	// Drop the reference to the original page
+	page_put(page);
 
 	mmu_update_va(page_va);
 	return 0;
-
-err_free_page:
-	page_put(new_page);
-out:
-	return res;
 }
 
 static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
@@ -385,19 +345,20 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 			}
 
 		} else {
-			// leaf level
+			// leaf level get a reference to the page
 			void *page = _get_next_lvl_pte(pte);
-
-			// Set up CoW on every writable page
-			// else than TRAPFRAME
 			if (child_va != TRAPFRAME) {
+				// Set cow on writable page.
 				if (pte & PTE_W) {
-					set_cow(&src[i]);
+					src[i] = (src[i] & ~PTE_W) | PTE_COW;
 				}
+
+				page_get(page);
 
 				res = vpage_map(dst, (void *)child_va, page,
 						get_flags(src[i]));
 				if (res < 0) {
+					page_put(page);
 					return res;
 				}
 			}
