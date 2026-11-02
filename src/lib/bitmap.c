@@ -16,7 +16,7 @@ int bm_find_first_zero(const void *buf, uint32_t bit_size)
 			continue;
 		}
 		int bit_idx = __builtin_ctzll(~qword);
-		return bit_idx;
+		return bit_idx + qw * bit_in_64;
 	}
 
 	return -1;
