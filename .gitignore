@@ -8,3 +8,5 @@
 build*/
 .python-version
 compile_commands.json
+__cmake_systeminformation/
+*__pycache__*
