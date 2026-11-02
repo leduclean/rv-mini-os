@@ -18,7 +18,6 @@
 void cmd_fs_io_test([[maybe_unused]] int argc,
 		    [[maybe_unused]] char *const argv[])
 {
-	int8_t res;
 	const char writen[] = "test\n";
 	char readed[sizeof(writen)];
 
@@ -27,24 +26,11 @@ void cmd_fs_io_test([[maybe_unused]] int argc,
 		TEST_ERROR("open failed: %d", fd);
 	}
 
-	res = write(fd, writen, sizeof(writen));
-	if (res < 0) {
-		TEST_ERROR("write failed: %d", res);
-	}
+	TEST_ASSERT_EQ(sizeof(writen), write(fd, writen, sizeof(writen)));
 
-	int64_t off = seek(fd, 0, SEEK_SET);
-	if (off != 0) {
-		TEST_ERROR("seek to 0 returned %ld", off);
-	}
-
-	res = read(fd, readed, sizeof(readed));
-	if (res < 0) {
-		TEST_ERROR("read failed: %d", res);
-	}
-
-	if (strcmp(writen, readed) != 0) {
-		TEST_ERROR("read back \"%s\", expected \"%s\"", readed, writen);
-	}
+	TEST_ASSERT_EQ(0, seek(fd, 0, SEEK_SET));
+	TEST_ASSERT_EQ(sizeof(readed), read(fd, readed, sizeof(readed)));
+	TEST_ASSERT_EQ_STR(writen, readed);
 
 	TEST_SUCCESS();
 
@@ -62,10 +48,7 @@ void cmd_fs_close_test([[maybe_unused]] int argc,
 		TEST_ERROR("close on unopened fd succeeded");
 	}
 
-	res = close(STDIN);
-	if (res < 0) {
-		TEST_ERROR("close stdin failed: %d", res);
-	}
+	TEST_ASSERT_EQ(0, close(STDIN));
 
 	res = read(STDIN, sink, sizeof(sink));
 	if (res == 0) {
@@ -85,27 +68,10 @@ void cmd_fs_seek_test([[maybe_unused]] int argc,
 		TEST_ERROR("open failed: %d", fd);
 	}
 
-	off = seek(fd, -10, SEEK_SET);
-	if (off != -EINVAL) {
-		TEST_ERROR("seek -10 SET returned %ld, expected %d", off,
-			   -EINVAL);
-	}
-
-	off = seek(fd, 10, SEEK_SET);
-	if (off != 10) {
-		TEST_ERROR("seek 10 SET returned %ld, expected 10", off);
-	}
-
-	off = seek(fd, -10, SEEK_CUR);
-	if (off != 0) {
-		TEST_ERROR("seek -10 CUR returned %ld, expected 0", off);
-	}
-
-	off = seek(fd, -10, SEEK_CUR);
-	if (off != -EINVAL) {
-		TEST_ERROR("seek -10 CUR returned %ld, expected %d", off,
-			   -EINVAL);
-	}
+	TEST_ASSERT_EQ(-EINVAL, seek(fd, -10, SEEK_SET));
+	TEST_ASSERT_EQ(10, seek(fd, 10, SEEK_SET));
+	TEST_ASSERT_EQ(0, seek(fd, -10, SEEK_CUR));
+	TEST_ASSERT_EQ(-EINVAL, seek(fd, -10, SEEK_CUR));
 
 	off = seek(fd, 10, SEEK_END);
 	if (off < 0) {

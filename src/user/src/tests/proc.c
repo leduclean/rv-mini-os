@@ -34,12 +34,43 @@ void cmd_fork_test([[maybe_unused]] int argc,
 		TEST_ERROR("fork failed: %d", res);
 	}
 
-	// First write after the fork: this store is what faults, on both sides.
-	marker = (res == 0) ? 1 : 2;
+	if (res == 0) {
+		// First write after the fork: this store must fault and give the
+		// child its own copy of the page.
+		marker = 1;
+		TEST_ASSERT_EQ(1, marker);
+		exit(0);
+	}
 
-	// Read back through the stack. Each side must see its own value: if the
-	// page were still shared, both would sleep the same amount of time.
-	sleep(marker);
+	// The child has exited: if the page were still shared, its write
+	// would be visible here.
+	waitpid(res);
+	TEST_ASSERT_EQ(0, marker);
+
+	// Parent side of the copy on write: its own first write must stick.
+	marker = 2;
+	TEST_ASSERT_EQ(2, marker);
+
+	TEST_SUCCESS();
+}
+
+/**
+ * @name Test constant for exec tests.
+ * @{
+ */
+#define TEST_ARGC 5 /**< Number of expected argc */
+#define TEST_ARGV                                              \
+	{ "exec_success", "test", "is", "a", "success", NULL } \
+	/**< Given and expected argv. */
+/** @} */
+
+void cmd_exec_success(int argc, char *const argv[])
+{
+	char *const argv_test[EXEC_MAX_ARGS] = TEST_ARGV;
+	TEST_ASSERT_EQ(TEST_ARGC, argc);
+	for (int i = 0; i < argc; i++) {
+		TEST_ASSERT_EQ_STR(argv_test[i], argv[i]);
+	}
 
 	TEST_SUCCESS();
 }
@@ -53,31 +84,22 @@ void cmd_fork_exec_test([[maybe_unused]] int argc,
 		TEST_ERROR("fork failed: %d", pid);
 	}
 	if (pid == 0) {
-		char func[15] = "sleep_call";
-		// Exec a child process
-		pid = exec(func, NULL);
+		char *const argv_test[EXEC_MAX_ARGS] = TEST_ARGV;
+		pid = exec(argv[0], argv_test);
 		if (pid < 0) {
 			TEST_ERROR("exec failed: %d", pid);
 		}
 	} else {
 		waitpid(pid);
-		char ubuf[27] = "[TEST] fork exec success \n";
-
-		int res;
-		res = write(1, ubuf, 27);
-		if (res < 0) {
-			TEST_ERROR("write failed: %d", res);
-		}
 	}
-
-	TEST_SUCCESS();
 }
 
 void cmd_exec_test([[maybe_unused]] int argc,
 		   [[maybe_unused]] char *const argv[])
 {
 	int8_t res;
-	res = exec("sleep_call", NULL);
+	char *const argv_test[EXEC_MAX_ARGS] = TEST_ARGV;
+	res = exec(argv[0], argv_test);
 	if (res < 0) {
 		TEST_ERROR("exec failed: %d", res);
 	}

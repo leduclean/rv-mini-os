@@ -19,6 +19,8 @@
 	X(sleep_test, "Sleep user system call test", "sleep_call")            \
 	X(fork_test, "Test the page table copy with CoW", "fork_test")        \
 	X(exec_test, "Exec the sleep_call app", "exec_test")                  \
+	X(exec_success, "Exec image load by an exec test",                    \
+	  "(standalone exec has no sense)")                                   \
 	X(fork_exec_test, "Fork then exec in the child", "fork_exec_test")    \
 	X(fs_io_test, "Read write roundtrip", "fs_io_test")                   \
 	X(fs_close_test, "Test close behavior on a fd", "fs_close_test")      \

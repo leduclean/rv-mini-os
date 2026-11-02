@@ -1,9 +1,10 @@
+#include "thread.h"
+
 #include <stdint.h>
 
 #include "cmd_registry.h"
 #include "syscall.h"
 #include "test.h"
-#include "thread.h"
 
 #define STACK_SIZE 1024
 
@@ -30,9 +31,6 @@ void cmd_thread_test([[maybe_unused]] int argc,
 
 	thread_join(tid);
 
-	if (i == 1) {
-		TEST_SUCCESS();
-	} else {
-		TEST_ERROR("i = %d, expected 1", i);
-	}
+	TEST_ASSERT_EQ(1, i);
+	TEST_SUCCESS();
 }
