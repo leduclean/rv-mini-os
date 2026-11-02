@@ -22,13 +22,12 @@
 #include <kernel/fs.h>
 #include <kernel/inode.h>
 #include <kernel/mutex.h>
+#include <user/kinterface.h>
 
 #include "kernel/vpages.h"
-#include <user/kinterface.h>
 
 #define INODE_CACHE_SIZE 64
 #define INODES_PER_BLK (FS_BLK_SIZE / sizeof(struct dinode))
-#define INODE_NB (FS_NB_INODE * INODES_PER_BLK)
 
 static spinlock_t cache_lock = SPINLOCK_UNLOCKED;
 static struct inode islots[INODE_CACHE_SIZE];
@@ -36,34 +35,15 @@ static clist_node_t icache = CLIST_NODE_INITIALIZER(icache);
 
 static inline int _get_blk(uint32_t id)
 {
-	return FS_INODE_TABLE_START + id / INODES_PER_BLK;
+	return sb.itab_start + id / INODES_PER_BLK;
 }
 static inline int _get_tab_idx(uint32_t id)
 {
 	return id % INODES_PER_BLK;
 }
 
-static int _reserve_first_inode()
-{
-
-	uint32_t blkno = FS_INODE_BM_START;
-	struct cblk *blk = bcache_read(blkno);
-	if (!blk) {
-		return -EIO;
-	}
-	bm_set_bit(blk->buf, 0);
-	bcache_mark_dirty(blk);
-	bcache_release(blk);
-	return 0;
-};
-
 int inode_init(void)
 {
-	int res = _reserve_first_inode();
-	if (res < 0) {
-		return res;
-	}
-
 	struct inode *curr;
 	for (int i = 0; i < INODE_CACHE_SIZE; i++) {
 		curr = &islots[i];
@@ -78,23 +58,21 @@ int inode_init(void)
 
 static int32_t _ibm_alloc(void)
 {
-	uint32_t nb_ibm = fs_get_nb_ibm();
-	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
-
-	for (uint32_t i = 0; i < nb_ibm; i++) {
-		uint32_t bm_blk_no = FS_INODE_BM_START + i;
+	for (uint32_t i = 0; i < sb.nb_ibm; i++) {
+		uint32_t bm_blk_no = sb.ibm_start + i;
 
 		struct cblk *bm_blk = bcache_read(bm_blk_no);
 		if (!bm_blk) {
 			return -EIO;
 		}
 
-		int bit_idx = bm_find_first_zero(bm_blk->buf, bm_bit_per_blk);
+		int bit_idx =
+			bm_find_first_zero(bm_blk->buf, FS_BM_BITS_PER_BLK);
 		if (bit_idx >= 0) {
 			bm_set_bit(bm_blk->buf, bit_idx);
 			bcache_mark_dirty(bm_blk);
 			bcache_release(bm_blk);
-			return bit_idx + (i * bm_bit_per_blk);
+			return bit_idx + (i * FS_BM_BITS_PER_BLK);
 		}
 
 		bcache_release(bm_blk);
@@ -103,21 +81,25 @@ static int32_t _ibm_alloc(void)
 	return -ENOSPC;
 }
 
+static inline uint32_t nb_inodes(void)
+{
+	return sb.nb_itab * INODES_PER_BLK;
+}
+
 static int32_t _ibm_free(uint32_t id)
 {
-	if (id >= INODE_NB) {
+	if (id >= nb_inodes()) {
 		return -EINVAL;
 	}
 
-	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
-	uint32_t bm_blk_no = FS_INODE_BM_START + id / bm_bit_per_blk;
+	uint32_t bm_blk_no = sb.ibm_start + id / FS_BM_BITS_PER_BLK;
 
 	struct cblk *bm_blk = bcache_read(bm_blk_no);
 	if (!bm_blk) {
 		return -EIO;
 	}
 
-	int bit_idx = id % bm_bit_per_blk;
+	int bit_idx = id % FS_BM_BITS_PER_BLK;
 	bm_clear_bit(bm_blk->buf, bit_idx);
 
 	bcache_mark_dirty(bm_blk);

@@ -63,13 +63,30 @@ target_link_libraries(user.elf ulib)
 
 set(QEMU qemu-system-riscv64)
 
+set(DISK_SIZE_M 8)
+set(MKFS ${CMAKE_BINARY_DIR}/mkfs)
+add_custom_command(
+    OUTPUT
+        ${MKFS}
+    COMMAND
+        cc -std=c23 -I${CMAKE_SOURCE_DIR}/include -DDISK_SIZE_M=${DISK_SIZE_M}
+        -o ${MKFS} ${CMAKE_SOURCE_DIR}/tools/mkfs.c
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/tools/mkfs.c
+        ${CMAKE_SOURCE_DIR}/include/kernel/fs_layout.h
+)
+
 # Create Disk Image
 set(DISK_IMG ${CMAKE_BINARY_DIR}/disk.raw)
 add_custom_command(
     OUTPUT
         ${DISK_IMG}
     COMMAND
-        qemu-img create -f raw ${DISK_IMG} 8M
+        qemu-img create -f raw ${DISK_IMG} ${DISK_SIZE_M}M
+    COMMAND
+        ${MKFS} ${DISK_IMG}
+    DEPENDS
+        ${MKFS}
 )
 set(QEMU_DISK_OPTS
     -drive

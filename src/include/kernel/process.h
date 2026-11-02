@@ -16,7 +16,6 @@
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
 
-#define MAXNAME STACK_ALIGN ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
 #define NOFILE 16 /**< Number of file descriptor */
 

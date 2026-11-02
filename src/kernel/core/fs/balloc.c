@@ -10,23 +10,22 @@
 
 static int32_t _bbm_alloc(void)
 {
-	uint32_t nb_bmblk = fs_get_nb_dbm();
-	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
-
-	for (uint32_t i = 0; i < nb_bmblk; i++) {
-		uint32_t bm_blk_no = FS_BLK_BM_START + i;
+	for (uint32_t i = 0; i < sb.nb_dbm; i++) {
+		uint32_t bm_blk_no = sb.dbm_start + i;
 
 		struct cblk *bm_blk = bcache_read(bm_blk_no);
 		if (!bm_blk) {
 			return -EIO;
 		}
 
-		int bit_idx = bm_find_first_zero(bm_blk->buf, bm_bit_per_blk);
+		int bit_idx = bm_find_first_zero(bm_blk->buf,
+						 FS_BM_BITS_PER_BLK);
 		if (bit_idx >= 0) {
 			bm_set_bit(bm_blk->buf, bit_idx);
 			bcache_mark_dirty(bm_blk);
 			bcache_release(bm_blk);
-			return bit_idx + (i * bm_bit_per_blk) + FS_DATA_START;
+			return bit_idx + (i * FS_BM_BITS_PER_BLK) +
+			       sb.data_start;
 		}
 
 		bcache_release(bm_blk);
@@ -38,20 +37,20 @@ static int32_t _bbm_alloc(void)
 static int _bbm_free(uint32_t blkno)
 {
 	// Only data block free are allowed
-	if (!fs_blk_is_data_blk(blkno)) {
+	if (blkno < sb.data_start ||
+	    blkno >= sb.data_start + sb.nb_dblk) {
 		return -EINVAL;
 	}
 
-	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
-	int idx = blkno - FS_DATA_START;
-	uint32_t bm_blk_no = FS_BLK_BM_START + idx / bm_bit_per_blk;
+	int idx = blkno - sb.data_start;
+	uint32_t bm_blk_no = sb.dbm_start + idx / FS_BM_BITS_PER_BLK;
 
 	struct cblk *bm_blk = bcache_read(bm_blk_no);
 	if (!bm_blk) {
 		return -EIO;
 	}
 
-	int bit_idx = idx % bm_bit_per_blk;
+	int bit_idx = idx % FS_BM_BITS_PER_BLK;
 	bm_clear_bit(bm_blk->buf, bit_idx);
 
 	bcache_mark_dirty(bm_blk);
@@ -70,7 +69,6 @@ int32_t balloc(void)
 		_bbm_free(blkno);
 		return -EIO;
 	}
-
 
 	memset(b->buf, 0, FS_BLK_SIZE);
 	bcache_mark_dirty(b);

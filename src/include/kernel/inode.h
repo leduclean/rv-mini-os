@@ -11,36 +11,12 @@
 
 #include <lib/container.h>
 
+#include <kernel/fs_layout.h>
 #include <kernel/mutex.h>
 #include <user/kinterface.h>
 
-enum inode_type : uint8_t {
-	INODE_FREE,
-	INODE_DIRECTORY,
-	INODE_FILE,
-	INODE_SPECIAL_FILE,
-	INODE_DEVICE,
-};
-
-#define DINODE_DIR_ADDR 12
 #define DINODE_INDIR_ADDR (FS_BLK_SIZE / sizeof(uint32_t))
 #define MAX_FILE_SIZE (DINODE_DIR_ADDR + DINODE_INDIR_ADDR) * FS_BLK_SIZE
-/**
- * @class dinode
- * @brief In disk node.
- *
- */
-struct dinode {
-	uint32_t size;
-	enum inode_type type;
-	uint8_t dev_id; /* INODE_DEVICE */
-	uint32_t nblink;
-	uint32_t dirblkno[DINODE_DIR_ADDR];
-	uint32_t indir;
-};
-
-static_assert(FS_BLK_SIZE % sizeof(struct dinode) == 0,
-	      "dinode must divide block");
 
 /**
  * @class inode

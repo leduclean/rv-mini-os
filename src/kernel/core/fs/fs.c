@@ -6,51 +6,15 @@
 
 #include <kernel/bcache.h>
 #include <kernel/fs.h>
+#include <kernel/fs_layout.h>
 #include <kernel/inode.h>
 #include <kernel/process.h>
 #include <user/kinterface.h>
 
-// Stub structure for now
-struct fs_meta superblock = {
-	.nb_blk = FS_NB_BLK,
-	.blk_size = FS_BLK_SIZE,
-	.nb_ibm = FS_NB_IBM,
-	.nb_inode = FS_NB_INODE,
-
-	.nb_dblk = FS_NB_DBLK,
-	.nb_dbm = FS_NB_DBM,
-};
-
-uint32_t fs_get_bm_bits_per_blk(void)
-{
-	return superblock.blk_size * CHAR_BIT;
-}
-
-uint32_t fs_get_nb_dbm(void)
-{
-	return superblock.nb_dbm;
-}
-
-uint32_t fs_get_nb_ibm(void)
-{
-	return superblock.nb_ibm;
-}
-
-bool fs_blk_is_data_blk(int blkno)
-{
-	return FS_DATA_START <= blkno &&
-	       blkno < FS_DATA_START + superblock.nb_dblk;
-}
-
 /**
- * @class dirent
- * @brief Directory entry descriptor.
- *
+ * @brief Structure filled at spawn reading the superblock.
  */
-struct dirent {
-	char name[MAXNAME];
-	uint32_t inum;
-};
+struct fs_meta sb;
 
 #define MAX_DIR_ENTRY (MAX_FILE_SIZE / sizeof(struct dirent))
 
@@ -58,26 +22,59 @@ struct dirent {
  * @brief Root directory inode.
  */
 struct inode *root;
-static inline int alloc_root(void)
+
+static int set_root(void)
 {
-	root = inode_create(INODE_DIRECTORY);
-	if (IS_ERR(root)) {
-		return PTR_ERR(root);
+	root = inode_get(FS_ROOT_INODE_ID);
+	inode_lock(root);
+	if (root->content.type != INODE_DIRECTORY) {
+		inode_unlock(root);
+		return -EIO;
+	}
+	inode_unlock(root);
+	return 0;
+}
+
+static inline int check_format(void)
+{
+	int res = 0;
+	struct cblk *blk = bcache_read(FS_SUPERBLK);
+	if (!blk) {
+		res = -EIO;
+		goto out;
 	}
 
-	return 0;
+	memcpy((void *)&sb, blk->buf, sizeof(sb));
+
+	if (sb.magic != FS_MAGIC_NUMBER) {
+		res = -EIO;
+		goto out;
+	}
+
+	if (sb.blk_size != FS_BLK_SIZE) {
+		res = -EIO;
+		goto out;
+	}
+
+out:
+	bcache_release(blk);
+	return res;
 }
 
 int fs_init(void)
 {
 	int res;
-
 	bcache_init();
+	res = check_format();
+	if (res < 0) {
+		return res;
+	}
 	res = inode_init();
 	if (res < 0) {
 		return res;
 	}
-	res = alloc_root();
+
+	res = set_root();
 	if (res < 0) {
 		return res;
 	}
