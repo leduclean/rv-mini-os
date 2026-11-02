@@ -6,14 +6,13 @@
 #include <lib/stdio.h>
 #include <lib/tinyalloc.h>
 
-#include <arch/cpu.h>
-#include <arch/trap.h>
-
 #include <drivers/console.h>
-#include <arch/plic.h>
 #include <drivers/uart.h>
 #include <drivers/virtio_blk.h>
 
+#include <arch/cpu.h>
+#include <arch/plic.h>
+#include <arch/trap.h>
 #include <kernel/fs.h>
 #include <kernel/memory.h>
 #include <kernel/mmap.h>
@@ -62,12 +61,16 @@ static void init(void)
 
 	res = console_init();
 	if (res < 0) {
-		panic("[FAILURE] Console init map has failed");
+		if (res != -ENODEV) {
+			panic("[FAILURE] Console init map has failed");
+		}
 	}
 
 	res = virtio_blk_init();
 	if (res < 0) {
-		panic("[FAILURE] Virtio blk driver init has failed");
+		if (res != -ENODEV) {
+			panic("[FAILURE] Virtio blk driver init has failed");
+		}
 	}
 
 	ta_init(_kheap_start, _kheap_end, TA_HEAP_BLOCK, TA_BLOCK_SPLIT,
@@ -103,7 +106,6 @@ static void init(void)
 	if (IS_ERR(process_kthread(init, "init", NORMAL))) {
 		printf("[FAILURE]: failed to spawn init kthread \n");
 	}
-
 
 	process_idle();
 }

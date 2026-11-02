@@ -163,6 +163,8 @@ static ssize_t console_read([[maybe_unused]] struct file *f, char *ubuf,
 int console_init(void)
 {
 	int res;
+	file_map_dev_cb(FILE_DEV_CONSOLE, console_write, console_read);
+
 	res = _config_pcie();
 	if (res < 0) {
 		return res;
@@ -171,8 +173,6 @@ int console_init(void)
 	if (res < 0) {
 		return res;
 	}
-
-	file_map_dev_cb(FILE_DEV_CONSOLE, console_write, console_read);
 	return 0;
 };
 
@@ -300,7 +300,6 @@ static int _set_cursor(int row, int col)
 	if (row < 0)
 		return -EINVAL;
 
-
 	// Update
 	cursor_row = row;
 	cursor_col = col;
@@ -417,6 +416,10 @@ void console_putbytes(const char *s, int len)
 
 void console_display_top_right(const char *s, int len)
 {
+	if (!driver.fb_base) {
+		return;
+	}
+
 	if (len > MAX_COLS) {
 		s += len - MAX_COLS; // remove remaining text
 		len = MAX_COLS;
