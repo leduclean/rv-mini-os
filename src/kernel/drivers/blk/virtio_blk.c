@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include <lib/bit.h>
+#include <lib/err.h>
 
 #include <arch/board.h>
 #include <arch/cpu.h>
@@ -122,7 +123,7 @@ static int _set_notify_addr(uint16_t notify_off)
 		(struct virtio_pci_notify_cap *)_get_virtio_cap(
 			&driver.dev, VIRTIO_PCI_CAP_NOTIFY_CFG);
 	if (!notify_cap) {
-		return -1;
+		return -ENODEV;
 	}
 
 	uintptr_t bar_addr;
@@ -146,7 +147,7 @@ static int _set_irq_addr(void)
 	volatile struct virtio_pci_cap *cap = _get_virtio_cap(
 		&driver.dev, VIRTIO_PCI_CAP_ISR_CFG);
 	if (!cap) {
-		return -1;
+		return -ENODEV;
 	}
 
 	uintptr_t bar_addr;
@@ -186,13 +187,13 @@ static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 	int n = cfg->queue_size;
 
 	if (n == 0) {
-		return -1;
+		return -ENODEV;
 	}
 	driver.vq.num = n;
 
 	uint64_t addr = (uint64_t)page_alloc();
 	if (!addr) {
-		return -1;
+		return -ENOMEM;
 	}
 
 	addr = ALIGN_UP(addr, VIRTQ_DESC_ALIGN);
@@ -239,7 +240,7 @@ static int _setup_features(volatile struct virtio_pci_common_cfg *cfg)
 	cfg->device_status |= VIRTIO_STATUS_FEATURES_OK;
 
 	if (!(cfg->device_status & VIRTIO_STATUS_FEATURES_OK)) {
-		return -1;
+		return -ENODEV;
 	}
 
 	return 0;
@@ -253,7 +254,7 @@ static int _config_common(void)
 	struct virtio_pci_cap *cap_cfg = _get_virtio_cap(
 		&driver.dev, VIRTIO_PCI_CAP_COMMON_CFG);
 	if (!cap_cfg) {
-		return -1;
+		return -ENODEV;
 	}
 
 	res = pci_bar_addr(&driver.dev, cap_cfg->bar, &bar_addr);
@@ -298,15 +299,17 @@ static int _config_pci(void)
 	int res;
 	struct pci_device dev;
 
-	if (!pci_find_device(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEV_ID, &dev)) {
-		return -1;
+	res = pci_find_device(VIRTIO_VENDOR_ID, VIRTIO_BLK_DEV_ID, &dev);
+	if (res < 0) {
+		return res;
 	}
 	// All virtio structures live in the BAR pointed by the caps.
 	struct virtio_pci_cap *cap_cfg = _get_virtio_cap(
 		&dev, VIRTIO_PCI_CAP_COMMON_CFG);
 	if (!cap_cfg) {
-		return -1;
+		return -ENODEV;
 	}
+
 
 	int64_t size = pci_get_bar_size(&dev, cap_cfg->bar);
 	if (size < 0) {

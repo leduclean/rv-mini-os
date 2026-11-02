@@ -5,7 +5,9 @@
  * @brief Alloc a free block in the disk bitmap loading it in the cache.
  * @note The returned block is set to 0.
  *
- * @return blkno of the block on SUCCESS, -1 on FAILURE.
+ * @return The block number.
+ * @retval -ENOSPC Disk full.
+ * @retval -EIO Disk failure.
  */
 int32_t balloc(void);
 
@@ -15,7 +17,10 @@ int32_t balloc(void);
  * @warning ONLY data block free are allowed.
  *
  * @param blkno The block number of the data block to free.
- * @return 0 on SUCCESS, -1 if you are trying to free a non data
- * block or if the bitmap is inacessible.
+ * @retval 0 Success.
+ * @retval -EINVAL @p blkno is not a data block.
+ * @retval -EIO Disk failure.
+
+
  */
 int bfree(uint32_t blkno);

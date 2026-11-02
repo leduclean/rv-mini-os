@@ -14,7 +14,8 @@ extern char _trampoline_start[], _trampoline_end[];
  * @brief Allocate the kernel page table tree and switch to kernel page table.
  * 
  * @note The corresponding satp is accessible via @ref mmap_kernel_satp.
- * @return 0 if sucess, error code < 0 on failure.
+ * @retval 0 Success.
+ * @retval -ENOMEM Out of memory.
  */
 int mmap_kernel(void);
 
@@ -23,7 +24,8 @@ int mmap_kernel(void);
  *
  * @param addr Addr of the memory mapped address space.
  * @param size The size of the mapped address.
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -ENOMEM Out of memory.
  */
 int iommap_kernel(void *addr, size_t size);
 
@@ -34,7 +36,9 @@ int iommap_kernel(void *addr, size_t size);
  * vpage_tree_free(p->root_ptable) frees everything.
  *
  * @param p A pointer to the owner process.
- * @return 0 if sucess, error code < 0 on failure.
+ * @retval 0 Success.
+ * @retval -EINVAL @p p is not a user process.
+ * @retval -ENOMEM Out of memory.
  */
 int mmap_uspace(process_t *p);
 
@@ -47,7 +51,8 @@ int mmap_uspace(process_t *p);
  * to free the tree by yourself.
  *
  * @param p A pointer to the owner process.
- * @return 0 if sucess, error code < 0 on failure.
+ * @retval 0 Success.
+ * @retval -Exxx See mmap_uspace().
  */
 int mmap_uimage(process_t *p);
 

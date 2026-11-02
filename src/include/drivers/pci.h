@@ -20,10 +20,11 @@ struct pci_cap {
  * @param vendor_id Vendor id of the device.
  * @param device_id Device id. 
  * @param out_dev The structure to fill.
- * @return True if finded else false.
+ * @retval 0 Success.
+ * @retval -ENODEV No device matches.
  */
-bool pci_find_device(uint16_t vendor_id, uint16_t device_id,
-		     struct pci_device *out_dev);
+int pci_find_device(uint16_t vendor_id, uint16_t device_id,
+		    struct pci_device *out_dev);
 
 /**
  * @brief Enable the device MMIO.
@@ -44,7 +45,10 @@ void pci_set_master(struct pci_device *dev);
  *
  * @param dev Device descriptor.
  * @param n BAR number (0 to PCI_BAR_COUNT - 1).
- * @return BAR address space size on success, -1 if n is invalid, the BAR is I/O or unimplemented.
+ * @return The BAR size.
+ * @retval -EINVAL @p n is out of range or the BAR is unimplemented.
+ * @retval -EIO The BAR is I/O.
+
  */
 int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n);
 
@@ -56,7 +60,9 @@ int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n);
  * @param dev Device descriptor.
  * @param n BAR number (0 to 5).
  * @param addr Physical address, MUST be aligned on the BAR size.
- * @return 0 on success, -1 if n is invalid, the BAR is I/O or unimplemented.
+ * @retval 0 Success.
+ * @retval -EINVAL @p n is out of range.
+ * @retval -EIO The BAR is I/O.
  */
 int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr);
 
@@ -66,8 +72,11 @@ int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr);
  * @param dev Device descriptor.
  * @param n BAR number (0 to 5).
  * @param addr[out] The BAR physical address.
- * @return 0 on success, -1 if n is invalid or the BAR is I/O.
+ * @retval 0 Success.
+ * @retval -EINVAL @p n is out of range.
+ * @retval -EIO The BAR is I/O.
  */
+
 int pci_bar_addr(const struct pci_device *dev, uint8_t n, uint64_t *addr);
 
 /**

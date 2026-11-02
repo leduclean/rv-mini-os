@@ -12,6 +12,7 @@
 #include <stdint.h>
 
 #include <lib/bitmap.h>
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <drivers/virtio_blk.h>
@@ -48,7 +49,7 @@ static int _reserve_first_inode()
 	uint32_t blkno = FS_INODE_BM_START;
 	struct cblk *blk = bcache_read(blkno);
 	if (!blk) {
-		return -1;
+		return -EIO;
 	}
 	bm_set_bit(blk->buf, 0);
 	bcache_mark_dirty(blk);
@@ -85,7 +86,7 @@ static int32_t _ibm_alloc(void)
 
 		struct cblk *bm_blk = bcache_read(bm_blk_no);
 		if (!bm_blk) {
-			return -1;
+			return -EIO;
 		}
 
 		int bit_idx = bm_find_first_zero(bm_blk->buf, bm_bit_per_blk);
@@ -99,13 +100,13 @@ static int32_t _ibm_alloc(void)
 		bcache_release(bm_blk);
 	}
 
-	return -1;
+	return -ENOSPC;
 }
 
 static int32_t _ibm_free(uint32_t id)
 {
 	if (id >= INODE_NB) {
-		return -1;
+		return -EINVAL;
 	}
 
 	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
@@ -113,7 +114,7 @@ static int32_t _ibm_free(uint32_t id)
 
 	struct cblk *bm_blk = bcache_read(bm_blk_no);
 	if (!bm_blk) {
-		return -1;
+		return -EIO;
 	}
 
 	int bit_idx = id % bm_bit_per_blk;
@@ -224,7 +225,7 @@ int inode_lock(struct inode *i)
 		struct cblk *tab_blk = bcache_read(_get_blk(i->id));
 		if (!tab_blk) {
 			mutex_unlock(&i->m);
-			return -1;
+			return -EIO;
 		}
 		struct dinode *tab_entry = (struct dinode *)tab_blk->buf;
 		int idx = _get_tab_idx(i->id);
@@ -245,7 +246,7 @@ static inline int _mark_dirty_locked(struct inode *i)
 {
 	struct cblk *tab_blk = bcache_read(_get_blk(i->id));
 	if (!tab_blk) {
-		return -1;
+		return -EIO;
 	}
 
 	struct dinode *tab_entry = (struct dinode *)tab_blk->buf;
@@ -290,7 +291,7 @@ static int _release_indir_locked(struct inode *i)
 	// One indirection lvl
 	struct cblk *indir_blk = bcache_read(i->content.indir);
 	if (!indir_blk) {
-		return -1;
+		return -EIO;
 	}
 
 	uint32_t *content = (uint32_t *)indir_blk->buf;
@@ -328,11 +329,12 @@ static inline int32_t _get_indir_blk(struct inode *i, uint32_t nth)
 	// One indirection lvl
 	struct cblk *indir_blk = bcache_read(i->content.indir);
 	if (!indir_blk) {
-		return -1;
+		return -EIO;
 	}
 
 	uint32_t *content = (uint32_t *)indir_blk->buf;
 	uint32_t blkno = content[nth];
+
 	if (blkno == 0) {
 		blkno = balloc();
 		if (blkno < 0) {
@@ -350,7 +352,7 @@ int32_t _get_data_locked(struct inode *i, uint32_t nth)
 {
 	int32_t res;
 	if (nth >= DINODE_DIR_ADDR + DINODE_INDIR_ADDR) {
-		return -1;
+		return -EFBIG;
 	}
 
 	if (nth < DINODE_DIR_ADDR) {
@@ -402,17 +404,19 @@ struct inode *inode_create(enum inode_type type)
 {
 	int32_t id = _ibm_alloc();
 	if (id < 0) {
-		return NULL;
+		return ERR_PTR(id);
 	}
 	struct inode *i = inode_get(id);
-	if (inode_lock(i) < 0) {
+	int res = inode_lock(i);
+	if (res < 0) {
 		goto err_put;
 	}
 
 	i->content.type = type;
 	i->content.nblink = 1;
 
-	if (_mark_dirty_locked(i) < 0) {
+	res = _mark_dirty_locked(i);
+	if (res < 0) {
 		// Failed to update node entry
 		_clear_valid_locked(i);
 		goto err_unlock;
@@ -426,7 +430,7 @@ err_unlock:
 err_put:
 	inode_put(i);
 	_ibm_free(id);
-	return NULL;
+	return ERR_PTR(res);
 }
 
 void inode_put(struct inode *i)
@@ -464,8 +468,11 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
 
 	//NOTE: We allow file size extension when writing but not more than
 	// the MAX_FILE_SIZE.
-	if (offset > i->content.size || (offset + count) > MAX_FILE_SIZE) {
-		return -1;
+	if (offset > i->content.size) {
+		return -EINVAL;
+	}
+	if (offset + count > MAX_FILE_SIZE) {
+		return -EFBIG;
 	}
 
 	size_t done, m;
@@ -483,7 +490,7 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
 
 		struct cblk *dblk = bcache_read(dblkno);
 		if (!dblk) {
-			res = -1;
+			res = -EIO;
 			goto out;
 		}
 
@@ -518,7 +525,7 @@ ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
 {
 	//NOTE: read cannot read out of range of the current content
 	if (offset + count > i->content.size) {
-		return -1;
+		return -EINVAL;
 	}
 
 	int res = 0;
@@ -536,10 +543,11 @@ ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
 
 		struct cblk *dblk = bcache_read(dblkno);
 		if (!dblk) {
-			res = -1;
+			res = -EIO;
 			goto out;
 		}
 		if (user_src) {
+
 			pte_t *root = process_active()->root_ptable;
 			res = vpage_copyout(root, dst, dblk->buf + blk_off, m);
 			if (res < 0) {

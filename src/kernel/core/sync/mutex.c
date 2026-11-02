@@ -2,6 +2,8 @@
 
 #include <lib/clist.h>
 #include <lib/container.h>
+#include <lib/err.h>
+
 #include <lib/string.h>
 
 #include <arch/cpu.h>
@@ -33,7 +35,7 @@ static int _mutex_trylock_unlocked(mutex_t *m)
 {
 	if (m->locked) {
 		// Already locked
-		return -1;
+		return -EBUSY;
 	}
 
 	// If not locked take the ownership.
@@ -57,7 +59,7 @@ void mutex_lock(mutex_t *m)
 {
 	spinlock_lock(&m->lock);
 
-	if (_mutex_trylock_unlocked(m) == -1) {
+	if (_mutex_trylock_unlocked(m) < 0) {
 		scheduler_block_on_locked(&m->wq, &m->lock);
 		return;
 	}

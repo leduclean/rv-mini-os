@@ -2,10 +2,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <arch/board.h>
+#include <lib/err.h>
 #include <lib/mmio.h>
 
 #include <drivers/pci.h>
+
+#include <arch/board.h>
 
 #include "pci_regs.h"
 
@@ -53,8 +55,8 @@ static inline bool _has_cap_linked_list(uint32_t dev_ecam)
 	return true;
 }
 
-bool pci_find_device(uint16_t vendor_id, uint16_t device_id,
-		     struct pci_device *out_dev)
+int pci_find_device(uint16_t vendor_id, uint16_t device_id,
+		    struct pci_device *out_dev)
 {
 	for (uint32_t dev = 0; dev <= 31; dev++) {
 		uintptr_t ecam_addr = _pci_make_ecam_addr(0, dev, 0, 0);
@@ -76,11 +78,11 @@ bool pci_find_device(uint16_t vendor_id, uint16_t device_id,
 							   PCI_CAP_PTR) &
 						   ~PCI_CAP_RESERVED;
 			}
-			return true;
+			return 0;
 		}
 	}
 
-	return false;
+	return -ENODEV;
 }
 
 void pci_enable_device(struct pci_device *dev)
@@ -110,7 +112,7 @@ static inline bool _pci_bar_is_64(uint32_t bar)
 int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n)
 {
 	if (n >= PCI_BAR_COUNT) {
-		return -1;
+		return -EINVAL;
 	}
 
 	uint32_t ecam_addr = dev->ecam_addr;
@@ -118,7 +120,7 @@ int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n)
 	uint32_t bar = _pci_read_config32(ecam_addr, reg);
 
 	if (bar & PCI_BAR_IO) {
-		return -1;
+		return -EIO;
 	}
 
 	_pci_write_config32(ecam_addr, reg, 0xFFFFFFFF);
@@ -126,14 +128,14 @@ int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n)
 	if (mask == 0) {
 		_pci_write_config32(ecam_addr, reg, bar);
 		// BAR not unimplemented
-		return -1;
+		return -EINVAL;
 	}
 	_pci_write_config32(ecam_addr, reg, bar);
 
 	if (_pci_bar_is_64(bar)) {
 		if (n == PCI_BAR_COUNT - 1) {
 			// Need at least two bar for 64 bits bar.
-			return -1;
+			return -EINVAL;
 		}
 
 		uint32_t reg_hi = _pci_bar_reg(n + 1);
@@ -154,15 +156,16 @@ int64_t pci_get_bar_size(struct pci_device *dev, uint8_t n)
 int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
 {
 	if (n >= PCI_BAR_COUNT) {
-		return -1;
+		return -EINVAL;
 	}
+
 
 	uint32_t ecam_addr = dev->ecam_addr;
 	uint32_t reg = _pci_bar_reg(n);
 	uint32_t bar = _pci_read_config32(ecam_addr, reg);
 
 	if (bar & PCI_BAR_IO) {
-		return -1;
+		return -EIO;
 	}
 
 	_pci_write_config32(ecam_addr, reg, (uint32_t)addr);
@@ -170,7 +173,7 @@ int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
 	if (_pci_bar_is_64(bar)) {
 		if (n == PCI_BAR_COUNT - 1) {
 			// Need at least two bar for 64 bits bar.
-			return -1;
+			return -EINVAL;
 		}
 
 		_pci_write_config32(ecam_addr, _pci_bar_reg(n + 1),
@@ -183,18 +186,18 @@ int pci_set_bar(struct pci_device *dev, uint8_t n, uint64_t addr)
 int pci_bar_addr(const struct pci_device *dev, uint8_t n, uint64_t *addr)
 {
 	if (n >= PCI_BAR_COUNT) {
-		return -1;
+		return -EINVAL;
 	}
 
 	uint32_t bar = _pci_read_config32(dev->ecam_addr, _pci_bar_reg(n));
 	if (bar & PCI_BAR_IO) {
-		return -1;
+		return -EIO;
 	}
 
 	uint64_t res = bar & ~PCI_BAR_FLAG_MASK;
 	if (_pci_bar_is_64(bar)) {
 		if (n == PCI_BAR_COUNT - 1) {
-			return -1;
+			return -EINVAL;
 		}
 		res |= (uint64_t)_pci_read_config32(dev->ecam_addr,
 						    _pci_bar_reg(n + 1))

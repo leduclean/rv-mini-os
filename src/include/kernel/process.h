@@ -174,7 +174,8 @@ static inline void process_reap(process_t *proc)
 /**
  * @brief Init the process table, the scheduler queues and the idle process.
  *
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -Exxx See process_kthread().
  * */
 int process_init(void);
 
@@ -185,8 +186,9 @@ int process_init(void);
  * @param name Name of the process, truncated to MAXNAME - 1 chars.
  * @param prior Priority of the process.
  * @param user User mode process flag.
- * @return Pointer to the spawned process, NULL if the table is full or the
- * allocation failed.
+ * @return The spawned process.
+ * @retval ERR_PTR(-EAGAIN) Process table full.
+ * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
 process_t *process_kthread(void code(void), const char *name, priority prior);
 
@@ -196,8 +198,8 @@ process_t *process_kthread(void code(void), const char *name, priority prior);
  * @param user_elf Elf file of the executed user code.
  * @param name Task name.
  * @param prior Priority of this userland program.
- * @return Pointer to the spawned task, NULL if the table is full or the
- * allocation failed.
+ * @return The spawned task.
+ * @retval ERR_PTR(-Exxx) See process_kthread(), process_exec().
  */
 process_t *process_start_userland(const uintptr_t elf, const char *name,
 				  priority prior);
@@ -209,7 +211,10 @@ process_t *process_start_userland(const uintptr_t elf, const char *name,
  * @param entry The entry point of the child, NEEDED if @CLONE_VM is set.
  * @param ustack A new stack, NEEDED if @CLONE_VM is set.
  * @param flags  Flags to specify which element to copy. 
- * @return A pointer to the new task.
+ * @return The child.
+ * @retval ERR_PTR(-EINVAL) CLONE_VM without @p entry or @p stack.
+ * @retval ERR_PTR(-EAGAIN) Process table full.
+ * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
 process_t *process_clone(process_t *parent, void *entry, void *args,
 			 void *stack, unsigned long flags);
@@ -220,7 +225,8 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
  * @warning This function is syscall only, you can't call it from 
  * a non user parent.
  *
- * @return The child process or NULL if failed.
+ * @return The child.
+ * @retval ERR_PTR(-Exxx) See process_clone().
  */
 process_t *process_fork(process_t *parent);
 
@@ -231,7 +237,12 @@ process_t *process_fork(process_t *parent);
  * @param p A pointer to the process to replace.
  * @param elf Elf file of a newly executed program.
  * @param argv User argument to execute the elf file.
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -ENOEXEC Bad elf.
+ * @retval -E2BIG More than EXEC_MAX_ARGS arguments.
+ * @retval -EFAULT Bad user address.
+ * @retval -ENAMETOOLONG An argument exceeds MAXNAME.
+ * @retval -ENOMEM Out of memory.
  */
 int process_exec(process_t *p, const uintptr_t elf, char *const argv[]);
 
@@ -240,7 +251,8 @@ int process_exec(process_t *p, const uintptr_t elf, char *const argv[]);
  *
  * @param p Pointer to the task to attribute fd.
  * @param f Pointer to the file descriptor structure.
- * @return The fd number on SUCCESS, -1 on FAILURE.
+ * @return The fd number.
+ * @retval -EMFILE Fd table full.
  */
 int process_give_fd(process_t *p, struct file *f);
 
@@ -256,7 +268,8 @@ struct file *process_get_fd(const process_t *p, int fd);
  * @brief Release the file descriptor owned by the task.
  *
  * @param fd The file descriptor.
- * @return 0 on SUCCESS, -1 if fd is not a open file descriptor. 
+ * @retval 0 Success.
+ * @retval -EBADF @p fd is not open.
  */
 int process_release_fd(process_t *p, int fd);
 
@@ -264,7 +277,10 @@ int process_release_fd(process_t *p, int fd);
  * @brief Map the console in the process file descriptor.
  *
  * @param p A pointer to the first task mapped.
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
- * @pre fs_init() should be called before this function.
+ * @retval 0 Success.
+ * @retval -Exxx See fs_mknod(), file_open().
+
+ * @pre fs_init()
+ should be called before this function.
  */
 int process_map_console(process_t *p);

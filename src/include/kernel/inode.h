@@ -10,9 +10,9 @@
 #include <stdint.h>
 
 #include <lib/container.h>
-#include <user/kinterface.h>
 
 #include <kernel/mutex.h>
+#include <user/kinterface.h>
 
 enum inode_type : uint8_t {
 	INODE_FREE,
@@ -64,14 +64,19 @@ struct inode {
 /**
  * @brief Init the inode cache structure and bitmap.
  *
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -EIO Disk failure.
  */
 int inode_init(void);
 
 /**
  * @brief Scan the bitmap looking for a free inode entry.
  *
- * @param type Return the new corresponding inode with it content type updated.
+ * @param type Content type of the new inode.
+ *
+ * @return The new inode.
+ * @retval ERR_PTR(-ENOSPC) No free inode.
+ * @retval ERR_PTR(-EIO) Disk failure.
  */
 struct inode *inode_create(enum inode_type type);
 
@@ -79,6 +84,7 @@ struct inode *inode_create(enum inode_type type);
  * @brief Get a reference to the inode number @p id
  *
  * @param id Node id wanted.
+ *
  * @return The obtained structure, content might be undefined, please use
  * inode_lock() before using content.
  * @post inode_put() MUST be called after each inode_get()
@@ -99,7 +105,9 @@ void inode_put(struct inode *i);
  * @note If the content is not valid, it will fetch from the disk.
  *
  * @param i A pointer to the inode to lock.
- * @return 0 on SUCCESS, error code < 0 if disk fetch failed.
+ *
+ * @retval 0 Success.
+ * @retval -EIO Disk failure.
  * @post inode_unlock on @i should be called after using the content.
  */
 int inode_lock(struct inode *i);
@@ -110,7 +118,9 @@ int inode_lock(struct inode *i);
  * @note If the content is not valid, it will fetch from the disk.
  *
  * @param i A pointer to the inode to lock.
- * @return 0 on SUCCESS, error code < 0 if disk fetch failed.
+ *
+ * @retval 0 Success.
+ * @retval -EIO Disk failure.
  * @pre A call to this function follows an inode_lock() call on @i 
  */
 void inode_unlock(struct inode *i);
@@ -121,7 +131,9 @@ void inode_unlock(struct inode *i);
  * Must be called after any change to @c i->content, before inode_unlock().
  *
  * @param i The inode.
- * @return 0 on SUCCESS, error code < 0 if the inode table block could not be read.
+ *
+ * @retval 0 Success.
+ * @retval -EIO Disk failure.
  * @pre @c i->m held (inode_lock()).
  */
 int inode_mark_dirty(struct inode *i);
@@ -136,7 +148,13 @@ int inode_mark_dirty(struct inode *i);
  * @param src Pointer to the src buffer to write.
  * @param offset The offset in the data content.
  * @param n The number of bytes to write.
- * @return The number of bytes written, error code < 0 if no data written.
+ *
+ * @return Number of bytes written.
+ * @retval -EINVAL @p offset is past the end of file.
+ * @retval -EFBIG The file would grow past MAX_FILE_SIZE.
+ * @retval -ENOSPC Disk full.
+ * @retval -EIO Disk failure.
+ * @retval -EFAULT Bad user address.
  *
  * @pre You must hold the content lock via inode_lock()
  */
@@ -151,7 +169,11 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
  * @param dst Pointer to the buffer to read in.
  * @param offset The offset in the data content.
  * @param n The number of bytes to read.
- * @return The number of bytes read, error code < 0 if no data read.
+ *
+ * @return Number of bytes read.
+ * @retval -EINVAL Range past the end of file.
+ * @retval -EIO Disk failure.
+ * @retval -EFAULT Bad user address.
  *
  * @pre You must hold the content lock via inode_lock()
  */

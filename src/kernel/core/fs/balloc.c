@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #include <lib/bitmap.h>
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <kernel/balloc.h>
@@ -17,7 +18,7 @@ static int32_t _bbm_alloc(void)
 
 		struct cblk *bm_blk = bcache_read(bm_blk_no);
 		if (!bm_blk) {
-			return -1;
+			return -EIO;
 		}
 
 		int bit_idx = bm_find_first_zero(bm_blk->buf, bm_bit_per_blk);
@@ -31,14 +32,14 @@ static int32_t _bbm_alloc(void)
 		bcache_release(bm_blk);
 	}
 
-	return -1;
+	return -ENOSPC;
 }
 
 static int _bbm_free(uint32_t blkno)
 {
 	// Only data block free are allowed
 	if (!fs_blk_is_data_blk(blkno)) {
-		return -1;
+		return -EINVAL;
 	}
 
 	uint32_t bm_bit_per_blk = fs_get_bm_bits_per_blk();
@@ -47,7 +48,7 @@ static int _bbm_free(uint32_t blkno)
 
 	struct cblk *bm_blk = bcache_read(bm_blk_no);
 	if (!bm_blk) {
-		return -1;
+		return -EIO;
 	}
 
 	int bit_idx = idx % bm_bit_per_blk;
@@ -62,13 +63,14 @@ int32_t balloc(void)
 {
 	int32_t blkno = _bbm_alloc();
 	if (blkno < 0)
-		return -1;
+		return blkno;
 
 	struct cblk *b = bcache_read(blkno);
 	if (!b) {
 		_bbm_free(blkno);
-		return -1;
+		return -EIO;
 	}
+
 
 	memset(b->buf, 0, FS_BLK_SIZE);
 	bcache_mark_dirty(b);

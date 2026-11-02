@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <kernel/bcache.h>
@@ -60,8 +61,8 @@ struct inode *root;
 static inline int alloc_root(void)
 {
 	root = inode_create(INODE_DIRECTORY);
-	if (!root) {
-		return -1;
+	if (IS_ERR(root)) {
+		return PTR_ERR(root);
 	}
 
 	return 0;
@@ -88,7 +89,7 @@ static int dir_add_entry(struct inode *dir, const char *name, uint32_t inum)
 {
 	int len = strlen(name) + 1;
 	if (len > MAXNAME) {
-		return -1;
+		return -ENAMETOOLONG;
 	}
 
 	struct dirent entry;
@@ -111,8 +112,6 @@ out:
 	return res;
 }
 
-#define ENOENT 2 /**< Path error when a requested entry doesn't exists */
-
 static int dir_lookup(struct inode *dir, const char *name, struct inode **i)
 {
 	int res;
@@ -123,7 +122,7 @@ static int dir_lookup(struct inode *dir, const char *name, struct inode **i)
 
 	if (dir->content.type != INODE_DIRECTORY) {
 		inode_unlock(dir);
-		return -1;
+		return -ENOTDIR;
 	}
 
 	struct dirent entry;
@@ -139,7 +138,7 @@ static int dir_lookup(struct inode *dir, const char *name, struct inode **i)
 		if (strncmp(entry.name, name, MAXNAME) == 0) {
 			*i = inode_get(entry.inum);
 			if (!*i) {
-				res = -1;
+				res = -EIO;
 				goto out;
 			} else {
 				res = 0;
@@ -161,12 +160,13 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 {
 	size_t len = strlen(path);
 	if (len < 1) {
-		return NULL;
+		return ERR_PTR(-EINVAL);
 	}
 
 	if (path[0] != '/') {
-		return NULL;
+		return ERR_PTR(-EINVAL);
 	}
+
 
 	char kpath[FS_MAX_PATH];
 	strcpy(kpath, path);
@@ -186,7 +186,8 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 							       ? INODE_DIRECTORY
 							       : leaf_type;
 				struct inode *created = inode_create(type);
-				if (created == NULL) {
+				if (IS_ERR(created)) {
+					res = PTR_ERR(created);
 					goto err_release_curr;
 				}
 				res = dir_add_entry(curr, token, created->id);
@@ -210,19 +211,20 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 
 err_release_curr:
 	inode_put(curr);
-	return NULL;
+	return ERR_PTR(res);
 }
 
 int fs_mknod(const char *path, int dev_id)
 {
 	struct inode *i = fs_inode_from_path(path, O_CREAT, INODE_DEVICE);
-	if (!i) {
-		return -1;
+	if (IS_ERR(i)) {
+		return PTR_ERR(i);
 	}
 	int res = inode_lock(i);
 	if (res < 0) {
-		return -1;
+		return res;
 	}
+
 	i->content.dev_id = dev_id;
 	inode_mark_dirty(i);
 	inode_unlock(i);

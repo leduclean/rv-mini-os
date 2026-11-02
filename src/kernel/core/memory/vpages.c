@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <arch/asm_defs.h>
@@ -96,7 +97,7 @@ err_release_prv:
 			page_put(alloc_tables[lvl]);
 	}
 
-	return -1;
+	return -ENOMEM;
 }
 
 static inline bool _is_a_next_lvl_ptr(pte_t pte)
@@ -154,7 +155,7 @@ int vpage_map_range(pte_t *root, void *va, void *pa, size_t size,
 		int res = vpage_map(root, vaddr + off, paddr + off, flags);
 
 		if (res < 0) {
-			return -1;
+			return res;
 		}
 	}
 
@@ -189,7 +190,7 @@ int vpage_unmmap(pte_t *root, void *va)
 {
 	pte_t *leaf = walk_leaf(root, va);
 	if (!leaf) {
-		return -1;
+		return -EINVAL;
 	}
 
 	void *page = _get_next_lvl_pte(*leaf);
@@ -230,7 +231,7 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 {
 	void *pa = _get_pa_from_va(root, va, PTE_V | PTE_U | PTE_R);
 	if (!pa) {
-		return -1;
+		return -EFAULT;
 	}
 
 	memcpy(dst, pa, count);
@@ -243,7 +244,7 @@ ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 	const char *pa = _get_pa_from_va(root, (void *)va,
 					 PTE_V | PTE_U | PTE_R);
 	if (!pa) {
-		return -1;
+		return -EFAULT;
 	}
 
 	// The clamp is what keeps strnlen inside the mapped page.
@@ -255,7 +256,7 @@ ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 	size_t size = strnlen(pa, n);
 	if (size == n) {
 		// No terminator symbol
-		return -1;
+		return -ENAMETOOLONG;
 	}
 
 	memcpy(dst, pa, size + 1);
@@ -266,7 +267,7 @@ int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
 {
 	void *pa = _get_pa_from_va(root, va, PTE_V | PTE_U | PTE_W);
 	if (!pa) {
-		return -1;
+		return -EFAULT;
 	}
 
 	memcpy(pa, src, count);
@@ -278,13 +279,13 @@ ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max)
 {
 	char *pa = _get_pa_from_va(root, (void *)va, PTE_V | PTE_U | PTE_W);
 	if (!pa) {
-		return -1;
+		return -EFAULT;
 	}
 
 	size_t size = strnlen(src, max);
 	if (size == max) {
 		// No terminator symbol
-		return -1;
+		return -ENAMETOOLONG;
 	}
 
 	memcpy(pa, src, size + 1);
@@ -295,7 +296,7 @@ int vpage_handle_cow(pte_t *root, const void *va)
 {
 	pte_t *leaf = walk_leaf(root, va);
 	if (!leaf || !(*leaf & PTE_COW)) {
-		return -1;
+		return -EFAULT;
 	}
 
 	void *page = (void *)(_get_next_lvl_pte(*leaf));
@@ -312,7 +313,7 @@ int vpage_handle_cow(pte_t *root, const void *va)
 
 	void *new_page = page_alloc();
 	if (!new_page) {
-		return -1;
+		return -ENOMEM;
 	}
 
 	page_copy(new_page, page);
@@ -370,8 +371,9 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 int vpage_tree_copy(pte_t *dst, pte_t *src)
 {
 	if (!dst || !src) {
-		return -1;
+		return -EINVAL;
 	}
+
 	int res;
 	res = _copy_level(dst, src, LEVELS - 1, 0);
 	if (res < 0) {

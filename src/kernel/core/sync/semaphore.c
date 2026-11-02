@@ -1,6 +1,8 @@
 #include <stdint.h>
 
 #include <lib/clist.h>
+#include <lib/err.h>
+
 #include <lib/container.h>
 
 #include <arch/cpu.h>
@@ -21,7 +23,7 @@ void sem_init(semaphore_t *sem, int val)
 static int _sem_try_take_unlocked(semaphore_t *sem)
 {
 	if (sem->count <= 0) {
-		return -1;
+		return -EAGAIN;
 	}
 	sem->count--;
 	return 0;

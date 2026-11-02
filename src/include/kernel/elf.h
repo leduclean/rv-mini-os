@@ -9,7 +9,8 @@
  * @brief Verify the header of the elf file.
  *
  * @param file Pointer to the file.
- * @return 0 on success, error code < 0 on failure.
+ * @retval 0 Success.
+ * @retval -ENOEXEC Not a riscv64 little-endian executable.
  */
 int elf_verify_file_format(const uintptr_t file);
 
@@ -18,7 +19,11 @@ int elf_verify_file_format(const uintptr_t file);
  *
  * @param root The root of the page table tree.
  * @param file The elf file memory location.
- * @return 0 on successfull computation, error code < 0 on failure.
+ * @retval 0 Success.
+ * @retval -ENOEXEC Bad program header.
+ * @retval -ENOMEM Out of memory.
+
+
  */
 int elf_map(pte_t *root, const uintptr_t file);
 

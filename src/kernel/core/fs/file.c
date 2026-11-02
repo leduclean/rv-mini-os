@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <kernel/file.h>
@@ -71,7 +72,7 @@ static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
 
 	struct inode *i = inode_get(f->inum);
 	if (!i) {
-		res = -1;
+		res = -EIO;
 		goto err;
 	}
 	res = inode_lock(i);
@@ -105,7 +106,7 @@ static ssize_t file_read(struct file *f, char *ubuf, size_t count)
 	ssize_t readed;
 	struct inode *i = inode_get(f->inum);
 	if (!i) {
-		res = -1;
+		res = -EIO;
 		goto err;
 	}
 	res = inode_lock(i);
@@ -128,7 +129,8 @@ err:
 	return res;
 }
 
-static void link_dev_cb(struct file *f, int dev_id)
+static void link_dev_cb
+(struct file *f, int dev_id)
 {
 	f->r_op = dev_map[dev_id].r_op;
 	f->w_op = dev_map[dev_id].w_op;
@@ -138,12 +140,13 @@ struct file *file_open(const char *path, unsigned long flags)
 {
 	int res;
 	struct inode *i = fs_inode_from_path(path, flags, INODE_FILE);
-	if (!i) {
-		return NULL;
+	if (IS_ERR(i)) {
+		return ERR_PTR(PTR_ERR(i));
 	}
 
 	struct file *f = file_alloc();
 	if (!f) {
+		res = -ENFILE;
 		goto err_release_inode;
 	}
 
@@ -170,7 +173,7 @@ struct file *file_open(const char *path, unsigned long flags)
 
 err_release_inode:
 	inode_put(i);
-	return NULL;
+	return ERR_PTR(res);
 }
 
 int64_t file_seek(struct file *f, int64_t offset, int whence)
@@ -196,12 +199,13 @@ int64_t file_seek(struct file *f, int64_t offset, int whence)
 
 		break;
 	default:
-		return -1;
+		return -EINVAL;
 	}
 
 	if (next < 0) {
-		return -1;
+		return -EINVAL;
 	}
+
 
 	f->off = next;
 	return next;

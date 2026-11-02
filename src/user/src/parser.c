@@ -1,6 +1,8 @@
 #include "parser.h"
 
+#include <err.h>
 #include <string.h>
+
 
 #include "syscall.h"
 
@@ -9,7 +11,7 @@ ssize_t parser_scan_line(char *line, size_t max_size)
 	size_t i = 0;
 
 	if (!max_size)
-		return -1;
+		return -EINVAL;
 
 	for (;;) {
 		char c;

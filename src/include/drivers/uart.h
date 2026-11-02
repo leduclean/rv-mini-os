@@ -39,6 +39,9 @@ void uart_read(char *c);
 /**
  * @brief Spawn Uart daemons.
  *
- * @param 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -Exxx See process_kthread().
+
+
  */
 int uart_spawn_daemons(void);

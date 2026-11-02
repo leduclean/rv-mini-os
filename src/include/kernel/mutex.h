@@ -57,7 +57,10 @@ void mutex_lock(mutex_t *m);
  * @brief Try to take the ownership of a mutex without blocking.
  *
  * @param m Mutex to lock.
- * @return 0 if the ownership was taken, -1 if it is already locked.
+ * @retval 0 Ownership taken.
+ * @retval -EBUSY Already locked.
+
+
  */
 int mutex_trylock(mutex_t *m);
 

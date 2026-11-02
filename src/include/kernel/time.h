@@ -27,6 +27,9 @@ void time_irq_handler(void);
 /**
  * @brief Spawn timer daemons.
  *
- * @return 0 on SUCCESS, error code < 0 on FAILURE. 
+ * @retval 0 Success.
+ * @retval -Exxx See process_kthread().
+
+
  */
 int time_spawn_daemons(void);

@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include <lib/clist.h>
+#include <lib/err.h>
 #include <lib/string.h>
 #include <lib/tinyalloc.h>
 
@@ -112,18 +113,20 @@ static inline void _init_process_queues(process_t *proc)
  * @param prior Priority of the proc.
  * @param user User proc flag.
  * @param parent Parent of the proc.
- * @return NULL on failure, else the new allocated proc structure.
+ * @return The new proc.
+ * @retval ERR_PTR(-EAGAIN) Process table full.
+ * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
 static inline process_t *_alloc_squeletton(const char *name, priority prior,
 					   bool user, process_t *parent)
 {
 	if (proc_table.active_process >= MAX_PROC) {
-		return NULL; // Error already max processus launched
+		return ERR_PTR(-EAGAIN);
 	}
 
 	process_t *proc = calloc(1, sizeof(process_t));
 	if (!proc) {
-		return NULL;
+		return ERR_PTR(-ENOMEM);
 	}
 
 	_init_process_queues(proc);
@@ -171,8 +174,8 @@ static void _kproc_launcher(void)
 static int _init_idle(void)
 {
 	process_t *p = process_kthread(process_idle, "idle", IDLE);
-	if (!p) {
-		return -1;
+	if (IS_ERR(p)) {
+		return PTR_ERR(p);
 	}
 	active = p;
 	active->state = RUNNING;
@@ -308,17 +311,18 @@ static int load_elf_image(process_t *p, const uintptr_t elf)
 {
 	int res = elf_verify_file_format(elf);
 	if (res < 0) {
-		return -1;
+		return res;
 	}
 
-	if (mmap_uimage(p) != 0) {
-		return -1;
+	res = mmap_uimage(p);
+	if (res < 0) {
+		return res;
 	}
 
 	res = elf_map(p->root_ptable, elf);
 	if (res < 0) {
 		vpage_tree_free(p->root_ptable);
-		return -1;
+		return res;
 	}
 
 	return 0;
@@ -347,7 +351,7 @@ static int get_argc(pte_t *old_ptable, char *const argv[], char *argv_k[])
 		argc++;
 	}
 
-	return -1;
+	return -E2BIG;
 }
 
 static int transfer_argv(pte_t *old_ptable, pte_t *new_ptable,
@@ -358,7 +362,7 @@ static int transfer_argv(pte_t *old_ptable, pte_t *new_ptable,
 	char *argv_k[EXEC_MAX_ARGS];
 	int argc = get_argc(old_ptable, argv, argv_k);
 	if (argc < 0) {
-		return -1;
+		return argc;
 	}
 
 	char *argv_tmp[EXEC_MAX_ARGS];
@@ -406,7 +410,7 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 {
 	irq_flags_t state = irq_save();
 	process_t *p = _alloc_squeletton(name, prior, true, process_active());
-	if (!p) {
+	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
 
@@ -435,7 +439,7 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 
 err_free_proc:
 	free(p);
-	p = NULL;
+	p = ERR_PTR(res);
 err_restore_irq:
 	irq_restore(state);
 	return p;
@@ -445,7 +449,7 @@ process_t *process_kthread(void code(void), const char *name, priority prior)
 {
 	irq_flags_t state = irq_save();
 	process_t *p = _alloc_squeletton(name, prior, false, process_active());
-	if (!p) {
+	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
 
@@ -474,10 +478,11 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 		panic("Only fork for user process is supported ");
 	}
 
+	int res = -ENOMEM;
 	irq_flags_t state = irq_save();
 	process_t *child = _alloc_squeletton(parent->name, parent->priority,
 					     parent->user, parent);
-	if (!child) {
+	if (IS_ERR(child)) {
 		goto err_restore_irq;
 	}
 
@@ -493,6 +498,7 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 		child->tgid = parent->tgid;
 
 		if (!stack || !entry) {
+			res = -EINVAL;
 			goto err_free_map;
 		}
 		tframe_start(t, entry, stack);
@@ -507,7 +513,8 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 		child->tgid = child->pid;
 
 		// CoW all the tree.
-		if (vpage_tree_copy(root, parent->root_ptable) < 0) {
+		res = vpage_tree_copy(root, parent->root_ptable);
+		if (res < 0) {
 			goto err_free_map;
 		}
 
@@ -519,8 +526,8 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 	}
 
 	// Map the trap frame into the table
-	int res = vpage_map(child->root_ptable, (void *)child->tframe_va, t,
-			    PTE_R | PTE_W);
+	res = vpage_map(child->root_ptable, (void *)child->tframe_va, t,
+			PTE_R | PTE_W);
 	if (res < 0) {
 		// t failed to get mapped so no in the tree yet
 		goto err_free_map;
@@ -549,7 +556,7 @@ err_free_tframe:
 	page_put(child->tframe_pa);
 err_free_proc:
 	free(child);
-	child = NULL;
+	child = ERR_PTR(res);
 err_restore_irq:
 	irq_restore(state);
 	return child;
@@ -610,7 +617,7 @@ int process_give_fd(process_t *p, struct file *f)
 		}
 	}
 
-	return -1;
+	return -EMFILE;
 }
 
 struct file *process_get_fd(const process_t *p, int fd)
@@ -625,8 +632,9 @@ int process_release_fd(process_t *p, int fd)
 {
 	struct file *f = p->fdtable[fd];
 	if (!f) {
-		return -1;
+		return -EBADF;
 	}
+
 	p->fdtable[fd] = NULL;
 	file_put(f);
 
@@ -642,15 +650,16 @@ int process_map_console(process_t *p)
 	}
 
 	f = file_open("/dev/console", O_W);
-	if (!f) {
-		return -1;
+	if (IS_ERR(f)) {
+		return PTR_ERR(f);
 	}
 	p->fdtable[STDOUT] = f;
 
 	f = file_open("/dev/console", O_R);
-	if (!f) {
-		return -1;
+	if (IS_ERR(f)) {
+		return PTR_ERR(f);
 	}
+
 	p->fdtable[STDIN] = f;
 
 	return 0;

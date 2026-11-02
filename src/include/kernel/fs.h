@@ -59,7 +59,9 @@ struct fs_meta {
 /**
  * @brief Init the file system.
  *
- * @return 0 on success, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -ENOSPC No free inode for the root.
+ * @retval -EIO Disk failure.
  */
 int fs_init(void);
 
@@ -85,7 +87,8 @@ bool fs_blk_is_data_blk(int blkno);
  *
  * @param path Path to the node.
  * @param dev_id The device id of the node.
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -Exxx See fs_inode_from_path().
  */
 int fs_mknod(const char *path, int dev_id);
 
@@ -99,6 +102,15 @@ enum inode_type : uint8_t;
  * @param path Path of the inode.
  * @param flags See the O_X flags of the kinterface header.
  * @param leaf_type Inode of the leaf type created if the flags contains O_CREAT
+ * @return The referenced inode.
+ * @retval ERR_PTR(-EINVAL) @p path is not absolute.
+ * @retval ERR_PTR(-ENOENT) A component is missing and O_CREAT is unset.
+ * @retval ERR_PTR(-ENOTDIR) A component is not a directory.
+ * @retval ERR_PTR(-ENAMETOOLONG) A component exceeds MAXNAME.
+ * @retval ERR_PTR(-ENOSPC) Disk full.
+ * @retval ERR_PTR(-EIO) Disk failure.
+
  */
+
 struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 				 enum inode_type leaf_type);

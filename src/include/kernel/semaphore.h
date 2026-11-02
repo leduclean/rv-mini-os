@@ -42,7 +42,10 @@ void sem_post(semaphore_t *sem);
  * @brief Take a ressource without blocking.
  *
  * @param sem Semaphore to take.
- * @return 0 if a ressource was taken, -1 if none was available.
+ * @retval 0 Ressource taken.
+ * @retval -EAGAIN None available.
+
+
  */
 int sem_try_take(semaphore_t *sem);
 

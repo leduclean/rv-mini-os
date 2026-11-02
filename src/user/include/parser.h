@@ -18,8 +18,10 @@
  * @param buf Buffer the line is written to, null terminated.
  * @param size Size of @p buf.
  * @return Length of the read line, without its null terminator.
+ * @retval -EINVAL @p max_size is 0.
  */
-ssize_t parser_scan_line(char *line, size_t max_size);
+ssize_t parser_scan_line
+(char *line, size_t max_size);
 
 /**
  * @brief If the last cmd argument is &, set background and drop that arg.

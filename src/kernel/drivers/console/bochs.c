@@ -2,16 +2,16 @@
 #include <stdint.h>
 
 #include <lib/bit.h>
+#include <lib/err.h>
 #include <lib/font.h>
-#include <lib/string.h>
-
-#include <arch/board.h>
 #include <lib/mmio.h>
+#include <lib/string.h>
 
 #include <drivers/console.h>
 #include <drivers/pci.h>
 #include <drivers/uart.h>
 
+#include <arch/board.h>
 #include <kernel/file.h>
 #include <kernel/fs.h>
 #include <kernel/mmap.h>
@@ -39,7 +39,9 @@ static struct bochs_driver driver;
 /**
  * @brief Config BAR and enable pci device.
  *
- * @return 0 on SUCCESS, -1 if the device was not found.
+ * @retval 0 Success.
+ * @retval -ENODEV Device missing.
+ * @retval -Exxx See pci_get_bar_size(), pci_set_bar().
  */
 static int _config_pcie(void)
 {
@@ -48,8 +50,9 @@ static int _config_pcie(void)
 	uint64_t map_addr;
 	struct pci_device dev;
 
-	if (!pci_find_device(BOCHS_VENDOR_ID, BOCHS_DEV_ID, &dev)) {
-		return -1;
+	res = pci_find_device(BOCHS_VENDOR_ID, BOCHS_DEV_ID, &dev);
+	if (res < 0) {
+		return res;
 	}
 
 	// Should go check all the cap
@@ -92,13 +95,14 @@ static int _config_pcie(void)
 /**
  * @brief Config the Bochs display resolution, depth and offsets.
  *
- * @return 0 on success, -1 if the device has a wrong type id.
+ * @retval 0 Success.
+ * @retval -ENODEV Wrong device type id.
  */
 static int _config_screen(void)
 {
 	// type id verification (12 MSB comparison)
 	if ((DISPI16(VBE_DISPI_INDEX_ID) & 0xFFF0) != VBE_DISPI_ID0) {
-		return -1; // Error wrong screen device type
+		return -ENODEV;
 	}
 	// Disconnect the screen for config
 	DISPI16(VBE_DISPI_INDEX_ENABLE) = 0;
@@ -123,7 +127,7 @@ static ssize_t console_write([[maybe_unused]] struct file *f, const char *ubuf,
 {
 	char kbuf[SYS_BUFFER_SIZE];
 	if (count > SYS_BUFFER_SIZE) {
-		return -1;
+		return -EINVAL;
 	}
 
 	int res = vpage_copyin(process_active()->root_ptable, kbuf, ubuf,
@@ -140,7 +144,7 @@ static ssize_t console_read([[maybe_unused]] struct file *f, char *ubuf,
 			    size_t count)
 {
 	if (count > SYS_BUFFER_SIZE) {
-		return -1;
+		return -EINVAL;
 	}
 	char kbuf[SYS_BUFFER_SIZE];
 	for (size_t i = 0; i < count; i++) {
@@ -178,12 +182,13 @@ int console_init(void)
  * @param x Column of the pixel, in pixels.
  * @param y Row of the pixel, in pixels.
  * @param color Color to write.
- * @return 0 on success, -1 if the pixel is out of range.
+ * @retval 0 Success.
+ * @retval -EINVAL Pixel out of range.
  */
 static int _pixel(uint32_t x, uint32_t y, uint32_t color)
 {
 	if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
-		return -1; // error out of range
+		return -EINVAL;
 	}
 	uint32_t (*const display_base)[DISPLAY_HEIGHT][DISPLAY_WIDTH] =
 		(uint32_t (*)[DISPLAY_HEIGHT][DISPLAY_WIDTH])driver.fb_base;
@@ -201,7 +206,8 @@ static int _pixel(uint32_t x, uint32_t y, uint32_t color)
  * @param c Character to draw.
  * @param color Color of the glyph.
  * @param bg_color Color of the background.
- * @return 0 on success, -1 if the char is out of range.
+ * @retval 0 Success.
+ * @retval -EINVAL Char out of range.
  */
 static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 		       uint32_t bg_color)
@@ -219,11 +225,12 @@ static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 			if ((uint8_t)tab[row_off] & (1 << c_off)) {
 				if (_pixel(col + c_off, row + row_off, color) !=
 				    0)
-					return -1;
+					return -EINVAL;
 			} else {
 				if (_pixel(col + c_off, row + row_off,
 					   bg_color) != 0)
-					return -1;
+
+					return -EINVAL;
 			}
 		}
 	}
@@ -279,7 +286,8 @@ static void _scroll(void)
  *
  * @param row New row of the cursor, in chars.
  * @param col New column of the cursor, in chars.
- * @return 0 on success, -1 if @p row is negative.
+ * @retval 0 Success.
+ * @retval -EINVAL @p row is negative.
  */
 static int _set_cursor(int row, int col)
 {
@@ -290,7 +298,8 @@ static int _set_cursor(int row, int col)
 	}
 
 	if (row < 0)
-		return -1; // Not Supported
+		return -EINVAL;
+
 
 	// Update
 	cursor_row = row;
@@ -415,7 +424,6 @@ void console_display_top_right(const char *s, int len)
 
 	uint8_t col = MAX_COLS - len;
 	for (int i = 0; i < len; i++) {
-		uart_putchar(s[i]);
 		_write_char(0, col + i, s[i], TEXT_COLOR, BG_COLOR);
 	}
 }

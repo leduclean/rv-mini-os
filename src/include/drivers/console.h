@@ -29,7 +29,11 @@ void console_putbytes(const char *s, int len);
  *
  * @note Configures the PCIe device then the Bochs display registers.
  *
- * @return 0 on success, -1 if the device was not found or has a wrong type.
+ * @retval 0 Success.
+ * @retval -ENODEV Device missing or of the wrong type.
+ * @retval -Exxx See pci_get_bar_size(), pci_set_bar().
+
+
  */
 int console_init(void);
 

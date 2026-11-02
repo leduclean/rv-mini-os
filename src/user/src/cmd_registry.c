@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 
+#include <err.h>
 #include <kinterface.h>
 #include <stdio.h>
 #include <string.h>
@@ -55,7 +56,7 @@ int cmd_get_desc(char *line, struct cmd_desc *desc)
 	int argc = parse_line(line, argv, EXEC_MAX_ARGS);
 
 	if (argc == 0) {
-		return -1;
+		return -EINVAL;
 	}
 
 	char *name = argv[0];
@@ -70,5 +71,6 @@ int cmd_get_desc(char *line, struct cmd_desc *desc)
 		}
 	}
 
-	return -1;
+	return -ENOENT;
 }
+

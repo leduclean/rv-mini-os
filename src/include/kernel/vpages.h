@@ -37,6 +37,8 @@ typedef uint32_t ppn_t;
  * @param va The virtual address to map.
  * @param pa The physical page address.
  * @param flags Memory access flags.
+ * @retval 0 Success.
+ * @retval -ENOMEM Out of memory.
  */
 int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags);
 
@@ -51,7 +53,8 @@ static inline int vpage_map_user(pte_t *root, const void *va, void *pa,
  *
  * @param root The root table of the page tree.
  * @param va The virtual address of the page to unmap.
- * @return 0 on SUCCESS, else -1 if the va isn't mapped.
+ * @retval 0 Success.
+ * @retval -EINVAL @p va isn't mapped.
  */
 int vpage_unmmap(pte_t *root, void *va);
 
@@ -66,6 +69,8 @@ int vpage_unmmap(pte_t *root, void *va);
  * @param pa The physical address.
  * @param size The size of the memory range to map.
  * @param flags Memory access flags.
+ * @retval 0 Success.
+ * @retval -ENOMEM Out of memory.
  */
 int vpage_map_range(pte_t *root, void *va, void *pa, size_t size,
 		    unsigned long flags);
@@ -91,7 +96,9 @@ void vpage_tree_free(pte_t *root);
  *
  * @param dst The destination root page directory.
  * @param src The source root page directory.
- * @return 0 on SUCCES else error code < 0.
+ * @retval 0 Success.
+ * @retval -EINVAL NULL table.
+ * @retval -ENOMEM Out of memory.
  */
 int vpage_tree_copy(pte_t *dst, pte_t *src);
 
@@ -104,7 +111,9 @@ int vpage_tree_copy(pte_t *dst, pte_t *src);
  *
  * @param root A pointer to the root page directory.
  * @param va The virtual address of the CoW page.
- * @return 0 on SUCCESS else error code < 0.
+ * @retval 0 Success.
+ * @retval -EFAULT @p va is not a CoW page.
+ * @retval -ENOMEM Out of memory.
  */
 int vpage_handle_cow(pte_t *root, const void *va);
 
@@ -115,7 +124,8 @@ int vpage_handle_cow(pte_t *root, const void *va);
  * @param dst The destination of the copy.
  * @param va The virtual address emitted by the process.
  * @param count The number of byte to copy.
- * @return 0 on SUCCESS else error code <0.
+ * @retval 0 Success.
+ * @retval -EFAULT Bad user address.
  */
 int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
 
@@ -126,7 +136,9 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count);
  * @param dst The kernel buffer destination of the copy.
  * @param va The virtual address emitted by a user process.
  * @param max The max number of char to copy.
- * @return number of byte copied on SUCCESS else error code < 0.
+ * @return Number of bytes copied, NUL included.
+ * @retval -EFAULT Bad user address.
+ * @retval -ENAMETOOLONG No NUL within @p max.
  */
 ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
 
@@ -137,7 +149,8 @@ ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max);
  * @param va The virtual address emitted by the process to copy on.
  * @param src The src buf to copy from.
  * @param count The number of byte to copy.
- * @return 0 on SUCCESS else error code <0.
+ * @retval 0 Success.
+ * @retval -EFAULT Bad user address.
  */
 int vpage_copyout(pte_t *root, void *va, const void *src, size_t count);
 
@@ -148,6 +161,9 @@ int vpage_copyout(pte_t *root, void *va, const void *src, size_t count);
  * @param va The virtual address emitted by a user process.
  * @param src The kernel buf to copy from. 
  * @param max The max number of char to copy.
- * @return number of byte copied on SUCCESS else error code < 0.
+ * @return Number of bytes copied, NUL included.
+ * @retval -EFAULT Bad user address.
+ * @retval -ENAMETOOLONG No NUL within @p max.
  */
-ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max);
+ssize_t vpage_copyoutstr(
+pte_t *root, char *va, const char *src, size_t max);

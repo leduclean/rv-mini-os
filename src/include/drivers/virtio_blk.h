@@ -16,7 +16,10 @@
 /**
  * @brief Init the virtio blk driver.
  *
- * @return 0 on SUCCESS, error code < 0 on FAILURE.
+ * @retval 0 Success.
+ * @retval -ENODEV Device missing or unusable.
+ * @retval -ENOMEM Out of memory.
+ * @retval -Exxx See pci_get_bar_size(), pci_set_bar().
  */
 int virtio_blk_init(void);
 
@@ -28,7 +31,9 @@ int virtio_blk_init(void);
  * @param sector The sector offset in 512 bytes block.
  * @param data A pointer to the used buffer.
  * @param size The size of the buffer.
- * @return The written len on SUCCESS, error code < 0 on FAILURE.
+ * @return The written len. Panics on device error.
+
+
  */
 int virtio_blk_request(uint8_t type, uint64_t sector, void *data,
 		       uint32_t size);

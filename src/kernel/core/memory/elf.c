@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/string.h>
 
 #include <kernel/elf.h>
@@ -82,23 +83,23 @@ int elf_verify_file_format(const uintptr_t file)
 	struct elf_hdr *hdr = (struct elf_hdr *)file;
 
 	if (memcmp(hdr->ident, ELF_MAGIC_STR, ELF_HDR_IDENT_MAG_NIDENT) != 0) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	if (hdr->ident[ELF_HDR_IDENT_CLASS] != ELF_HDR_IDENT_CLASS_64) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	if (hdr->ident[ELF_HDR_IDENT_DATA] != ELF_HDR_IDENT_DATA_2LSB) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	if (hdr->type != ELF_HDR_TYPE_EXEC) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	if (hdr->machine != ELF_HDR_MACHINE_RISCV) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	return 0;
@@ -108,10 +109,10 @@ static int load_phdr(uintptr_t file, struct elf_phdr *phdr[])
 {
 	struct elf_hdr *hdr = (struct elf_hdr *)file;
 	if (hdr->phdr_num == 0) {
-		return -1;
+		return -ENOEXEC;
 	}
 	if (hdr->phdr_size != sizeof(struct elf_phdr)) {
-		return -1;
+		return -ENOEXEC;
 	}
 
 	*phdr = (struct elf_phdr *)(file + (uintptr_t)hdr->phdroff);
@@ -164,7 +165,7 @@ static int map_phdr(pte_t *root, uintptr_t file, const struct elf_phdr *phdr)
 
 		void *page = page_alloc();
 		if (!page) {
-			return -1;
+			return -ENOMEM;
 		}
 
 		/* Copy the file content */
@@ -202,8 +203,9 @@ int elf_map(pte_t *root, const uintptr_t file)
 		}
 
 		if (!is_valid_phdr(&phdr_tab[i])) {
-			return -1;
+			return -ENOEXEC;
 		}
+
 
 		int res = map_phdr(root, file, &phdr_tab[i]);
 		if (res < 0) {

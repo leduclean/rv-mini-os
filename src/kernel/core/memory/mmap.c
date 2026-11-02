@@ -1,3 +1,4 @@
+#include <lib/err.h>
 #include <lib/stdio.h>
 
 #include <arch/asm_defs.h>
@@ -52,7 +53,7 @@ int mmap_kernel(void)
 	int res;
 	kroot = page_alloc();
 	if (!kroot) {
-		return -1;
+		return -ENOMEM;
 	}
 
 	res = vpage_map_range(kroot, (void *)_ram_start, (void *)_ram_start,
@@ -101,19 +102,19 @@ int mmap_uspace(process_t *p)
 {
 	int res;
 	if (!p->user) {
-		res = -1;
+		res = -EINVAL;
 		goto out;
 	}
 
 	pte_t *root = page_alloc();
 	if (!root) {
-		res = -1;
+		res = -ENOMEM;
 		goto out;
 	}
 
 	tframe_t *t = page_alloc();
 	if (!t) {
-		res = -1;
+		res = -ENOMEM;
 		goto err_free_tree;
 	}
 
@@ -161,9 +162,10 @@ int mmap_uimage(process_t *p)
 	// during a image mapping.
 	void *stack = page_alloc();
 	if (!stack) {
-		res = -1;
+		res = -ENOMEM;
 		goto err_free_tree;
 	}
+
 
 	res = vpage_map_user(root, (void *)USTACK_TOP, stack, PTE_R | PTE_W);
 	if (res < 0) {

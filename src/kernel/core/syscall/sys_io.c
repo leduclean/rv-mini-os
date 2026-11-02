@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/string.h>
 #include <user/kinterface.h>
 
@@ -29,8 +30,8 @@ int sys_open(const char *path, unsigned long flags)
 	}
 
 	struct file *f = file_open(kernel_path, flags);
-	if (!f) {
-		return -1;
+	if (IS_ERR(f)) {
+		return PTR_ERR(f);
 	}
 
 	int fd = process_give_fd(active, f);
@@ -46,11 +47,11 @@ ssize_t sys_write(int fd, const char *ubuf, size_t count)
 	process_t *active = process_active();
 	struct file *f = process_get_fd(active, fd);
 	if (!f) {
-		return -1;
+		return -EBADF;
 	}
 
 	if (!(f->mode & O_W)) {
-		return -1;
+		return -EBADF;
 	}
 	return f->w_op(f, ubuf, count);
 }
@@ -60,11 +61,11 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 	process_t *active = process_active();
 	struct file *f = process_get_fd(active, fd);
 	if (!f) {
-		return -1;
+		return -EBADF;
 	}
 
 	if (!(f->mode & O_R)) {
-		return -1;
+		return -EBADF;
 	}
 	return f->r_op(f, ubuf, count);
 }
@@ -80,8 +81,9 @@ int64_t sys_seek(int fd, int64_t offset, int whence)
 	process_t *active = process_active();
 	struct file *f = process_get_fd(active, fd);
 	if (!f) {
-		return -1;
+		return -EBADF;
 	}
 
 	return file_seek(f, offset, whence);
+
 }

@@ -36,6 +36,9 @@ struct file {
 
 /**
  * @brief Alloc a new file descriptor in the open file table.
+ *
+ * @return The file.
+ * @retval NULL Table full.
  */
 struct file *file_alloc(void);
 
@@ -52,6 +55,8 @@ void file_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op);
  * @brief Alloc an independant copy of a file descriptor.
  *
  * @param f The cloned file that has the same inode and the same mode. 
+ * @return The copy.
+ * @retval NULL Table full.
  */
 struct file *file_clone(const struct file *f);
 
@@ -73,8 +78,11 @@ void file_put(struct file *f);
 /**
  * @brief Kernel primitive to open a file and get the associate file structure.
  *
- * @param path The path of 
+ * @param path The path of the file.
  * @param flags @p Open System flags.
+ * @return The opened file.
+ * @retval ERR_PTR(-ENFILE) File table full.
+ * @retval ERR_PTR(-Exxx) See fs_inode_from_path().
  */
 struct file *file_open(const char *path, unsigned long flags);
 
@@ -84,6 +92,10 @@ struct file *file_open(const char *path, unsigned long flags);
  * @param f The file to seek in.
  * @param Offset offset to move.
  * @param whence From where to moove.
- * @return Resulting offset in bytes on SUCCESS, error code < 0 on FAILURE.
+ * @return The new offset.
+ * @retval -EINVAL Bad @p whence or negative resulting offset.
+ * @retval -EIO Disk failure.
+
+
  */
 int64_t file_seek(struct file *f, int64_t offset, int whence);

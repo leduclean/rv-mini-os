@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/stdio.h>
 #include <lib/tinyalloc.h>
 
@@ -42,9 +43,11 @@ static void init(void)
 		panic("[FAILURE] Console map has failed");
 	}
 
-	if (!process_start_userland((uintptr_t)_user_elf_start, "User",
-				    NORMAL)) {
-		printf("[FAILURE]: failed to enter userland\n");
+	process_t *p = process_start_userland((uintptr_t)_user_elf_start,
+					      "User", NORMAL);
+	if (IS_ERR(p)) {
+		printf("[FAILURE]: failed to enter userland (%ld)\n",
+		       PTR_ERR(p));
 	}
 }
 
@@ -74,6 +77,7 @@ static void init(void)
 	printf("[INFO] init proc \n");
 	process_init();
 	if (res < 0) {
+
 		panic("[FAILURE] Init proc has failed");
 	}
 
@@ -96,9 +100,10 @@ static void init(void)
 		panic("[FAILURE] Uart daemon spawn has failed");
 	}
 
-	if (!process_kthread(init, "init", NORMAL)) {
+	if (IS_ERR(process_kthread(init, "init", NORMAL))) {
 		printf("[FAILURE]: failed to spawn init kthread \n");
 	}
+
 
 	process_idle();
 }

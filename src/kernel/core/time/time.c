@@ -1,9 +1,10 @@
+#include <lib/err.h>
 #include <lib/stdio.h>
 
-#include <arch/csr.h>
 
 #include <drivers/console.h>
 
+#include <arch/csr.h>
 #include <kernel/scheduler.h>
 #include <kernel/semaphore.h>
 #include <kernel/time.h>
@@ -82,15 +83,18 @@ static void _tick_daemon(void)
 
 int time_spawn_daemons(void)
 {
-	if (!process_kthread(_clock_daemon, "clock daemon", HIGH)) {
-		return -1;
+	process_t *p = process_kthread(_clock_daemon, "clock daemon", HIGH);
+	if (IS_ERR(p)) {
+		return PTR_ERR(p);
 	}
 
-	if (!process_kthread(_tick_daemon, "tick daemon", HIGH)) {
-		return -1;
+	p = process_kthread(_tick_daemon, "tick daemon", HIGH);
+	if (IS_ERR(p)) {
+		return PTR_ERR(p);
 	}
 
 	return 0;
+
 }
 
 void time_init(void)

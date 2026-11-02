@@ -1,0 +1,63 @@
+/**
+ * @file
+ * @brief Error codes, shared by kernel and userland. Values match Linux.
+ */
+
+#pragma once
+
+#include <stdbool.h>
+
+#define EPERM 1 /**< Operation not permitted */
+#define ENOENT 2 /**< No such file or directory */
+#define ESRCH 3 /**< No such process */
+#define EINTR 4 /**< Interrupted system call */
+#define EIO 5 /**< I/O error */
+#define ENXIO 6 /**< No such device or address */
+#define E2BIG 7 /**< Argument list too long */
+#define ENOEXEC 8 /**< Exec format error */
+#define EBADF 9 /**< Bad file number */
+#define ECHILD 10 /**< No child processes */
+#define EAGAIN 11 /**< Try again */
+#define ENOMEM 12 /**< Out of memory */
+#define EACCES 13 /**< Permission denied */
+#define EFAULT 14 /**< Bad address */
+#define EBUSY 16 /**< Device or resource busy */
+#define EEXIST 17 /**< File exists */
+#define ENODEV 19 /**< No such device */
+#define ENOTDIR 20 /**< Not a directory */
+#define EISDIR 21 /**< Is a directory */
+#define EINVAL 22 /**< Invalid argument */
+#define ENFILE 23 /**< File table overflow */
+#define EMFILE 24 /**< Too many open files */
+#define ENOTTY 25 /**< Not a typewriter */
+#define EFBIG 27 /**< File too large */
+#define ENOSPC 28 /**< No space left on device */
+#define ESPIPE 29 /**< Illegal seek */
+#define EROFS 30 /**< Read-only file system */
+#define EMLINK 31 /**< Too many links */
+#define EPIPE 32 /**< Broken pipe */
+#define ERANGE 34 /**< Math result not representable */
+#define EDEADLK 35 /**< Resource deadlock would occur */
+#define ENAMETOOLONG 36 /**< File name too long */
+#define ENOSYS 38 /**< Invalid system call number */
+#define ENOTEMPTY 39 /**< Directory not empty */
+
+#define MAX_ERRNO 4095
+
+/** @brief Encode @p err (-Exxx) as a pointer. */
+static inline void *ERR_PTR(long err)
+{
+	return (void *)err;
+}
+
+/** @brief Decode the -Exxx held by @p ptr. */
+static inline long PTR_ERR(const void *ptr)
+{
+	return (long)ptr;
+}
+
+/** @brief True if @p ptr holds an error code. */
+static inline bool IS_ERR(const void *ptr)
+{
+	return (unsigned long)ptr >= (unsigned long)-MAX_ERRNO;
+}

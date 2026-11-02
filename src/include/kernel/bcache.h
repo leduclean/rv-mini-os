@@ -47,6 +47,8 @@ struct cblk *bcache_getblk(uint32_t blkno);
  * to the corresponding block but on MISS it will fetch to the disk.
  *
  * @param blkno The block number to read.
+ * @return The locked block.
+ * @retval NULL Disk failure, callers report -EIO.
  */
 struct cblk *bcache_read(uint32_t blkno);
 
@@ -65,7 +67,10 @@ void bcache_mark_dirty(struct cblk *blk);
  * @param blk The dirty block.
  *
  * @note Calling this functino on a non dirty block will just led to unchanged state.
- * @return 0 on SUCCESS, error code < 0 if the disk request failed.
+ * @retval 0 Success.
+ * @retval -Exxx See virtio_blk_request().
+
+
  * @pre @p blk obtained by bcache_getblk()/bcache_read(), not yet released.*
  */
 int bcache_sync(struct cblk *blk);

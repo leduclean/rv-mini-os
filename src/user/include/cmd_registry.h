@@ -43,6 +43,9 @@ struct cmd_desc {
  *
  * @param line NUL-terminated line, tokenized in place.
  * @param[out] desc The description to fill.
- * @return 0 on SUCCESS, -1 on error.
+ * @retval 0 Success.
+ * @retval -EINVAL Empty line.
+ * @retval -ENOENT Unknown command.
+
  */
 int cmd_get_desc(char *line, struct cmd_desc *desc);

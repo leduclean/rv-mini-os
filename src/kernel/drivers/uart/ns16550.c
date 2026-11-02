@@ -1,5 +1,6 @@
 #include <stdint.h>
 
+#include <lib/err.h>
 #include <lib/stdio.h>
 
 #include <arch/board.h>
@@ -42,7 +43,7 @@ static inline int _buffer_full(uart_ring_buffer_t *b)
 static inline int _buffer_put(uart_ring_buffer_t *b, char c)
 {
 	if (_buffer_full(b)) {
-		return -1;
+		return -ENOSPC;
 	}
 
 	b->buf[b->head] = c;
@@ -152,10 +153,13 @@ static void _fill_rx_buff_daemon(void)
 
 int uart_spawn_daemons(void)
 {
-	if (!process_kthread(_fill_rx_buff_daemon, "uart rx daem", HIGH)) {
-		return -1;
+	process_t *p = process_kthread(_fill_rx_buff_daemon, "uart rx daem",
+				       HIGH);
+	if (IS_ERR(p)) {
+		return PTR_ERR(p);
 	}
 	return 0;
+
 }
 
 void uart_read(char *c)
