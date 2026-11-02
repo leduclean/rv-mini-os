@@ -14,7 +14,7 @@
 
 #define SLEEP_TIME 2
 
-void cmd_sleep_call([[maybe_unused]] int argc,
+void cmd_sleep_test([[maybe_unused]] int argc,
 		    [[maybe_unused]] char *const argv[])
 {
 	sleep(SLEEP_TIME);

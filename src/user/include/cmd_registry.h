@@ -14,9 +14,9 @@
  */
 #define CMD_LIST(X)                                                           \
 	X(help, "Show all the commands", "help")                              \
-	X(sleep_call, "Sleep user system call test", "sleep_call")            \
 	X(segfault, "Segfault handling", "segfault")                          \
 	X(stream, "Stream console input back with read/write", "stream_test") \
+	X(sleep_test, "Sleep user system call test", "sleep_call")            \
 	X(fork_test, "Test the page table copy with CoW", "fork_test")        \
 	X(exec_test, "Exec the sleep_call app", "exec_test")                  \
 	X(fork_exec_test, "Fork then exec in the child", "fork_exec_test")    \
