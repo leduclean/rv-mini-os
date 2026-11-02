@@ -1,22 +1,23 @@
 #pragma once
 
+#include <stdio.h>
+
 /**
  * @brief Prints the test success message.
  */
-#define TEST_SUCCESS()                                                   \
-	do {                                                             \
-		write(STDOUT, "[TEST] ", 7);                             \
-		write(STDOUT, __func__, __builtin_strlen(__func__));     \
-		write(STDOUT, " SUCCESS \n", sizeof(" SUCCESS \n") - 1); \
+#define TEST_SUCCESS()                                    \
+	do {                                              \
+		printf("[TEST] %s SUCCESS \n", __func__); \
 	} while (0)
 
 /**
- * @brief Prints the test error message.
+ * @brief Prints the test error message and exits.
  */
-#define TEST_ERROR()                                                 \
-	do {                                                         \
-		write(STDOUT, "[TEST] ", 7);                         \
-		write(STDOUT, __func__, __builtin_strlen(__func__)); \
-		write(STDOUT, " ERROR \n", sizeof(" ERROR \n") - 1); \
-		exit_group(1);                                       \
+#define TEST_ERROR(...)                                               \
+	do {                                                          \
+		printf("[TEST] %s ERROR %s:%d: ", __func__, __FILE__, \
+		       __LINE__);                                     \
+		printf(__VA_ARGS__);                                  \
+		printf("\n");                                         \
+		exit_group(1);                                        \
 	} while (0)

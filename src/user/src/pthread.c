@@ -33,6 +33,6 @@ void cmd_thread_test([[maybe_unused]] int argc,
 	if (i == 1) {
 		TEST_SUCCESS();
 	} else {
-		TEST_ERROR();
+		TEST_ERROR("i = %d, expected 1", i);
 	}
 }
