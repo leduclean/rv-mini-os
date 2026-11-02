@@ -4,9 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <user/kinterface.h>
-
 #include <arch/asm_defs.h>
+#include <user/kinterface.h>
 
 #define FS_BLK_SIZE PAGE_SIZE /**< Hardcoded convention */
 
@@ -103,13 +102,14 @@ enum inode_type : uint8_t;
  * @param flags See the O_X flags of the kinterface header.
  * @param leaf_type Inode of the leaf type created if the flags contains O_CREAT
  * @return The referenced inode.
+ *
  * @retval ERR_PTR(-EINVAL) @p path is not absolute.
  * @retval ERR_PTR(-ENOENT) A component is missing and O_CREAT is unset.
  * @retval ERR_PTR(-ENOTDIR) A component is not a directory.
  * @retval ERR_PTR(-ENAMETOOLONG) A component exceeds MAXNAME.
  * @retval ERR_PTR(-ENOSPC) Disk full.
- * @retval ERR_PTR(-EIO) Disk failure.
-
+ * @retval ERR_PTR(-EIO) Disk failure.A
+ * @post You MUST call @p inode_put() on the obtained inode.
  */
 
 struct inode *fs_inode_from_path(const char *path, unsigned long flags,

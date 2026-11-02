@@ -112,6 +112,7 @@ out:
 	return res;
 }
 
+/* @warning You obtain a reference of the inode that MUST be inode_put(). */
 static int dir_lookup(struct inode *dir, const char *name, struct inode **i)
 {
 	int res;
@@ -167,7 +168,6 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 		return ERR_PTR(-EINVAL);
 	}
 
-
 	char kpath[FS_MAX_PATH];
 	strcpy(kpath, path);
 
@@ -222,6 +222,7 @@ int fs_mknod(const char *path, int dev_id)
 	}
 	int res = inode_lock(i);
 	if (res < 0) {
+		inode_put(i);
 		return res;
 	}
 
