@@ -2,15 +2,11 @@
 
 #include <arch/cpu.h>
 #include <arch/trap.h>
-
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 
-#include "kernel/file.h"
-#include "kernel/inode.h"
-#include "kernel/vpages.h"
-#include "user/kinterface.h"
+extern char _user_elf_start[];
 
 uint8_t sys_getpid(void)
 {
@@ -45,9 +41,9 @@ int sys_exec(const char *path, char *const argv[])
 
 	(void)argv;
 	(void)path;
-	// process_t *p = process_active();
-	//
-	// // Copy the virtual uaddres to a kernel buffer
+	process_t *p = process_active();
+
+	// Copy the virtual uaddres to a kernel buffer
 	// char kpath[MAXNAME];
 	// vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
 	//    // Read only the content because elf file is copied before being executed
@@ -56,10 +52,8 @@ int sys_exec(const char *path, char *const argv[])
 	// 	return -1;
 	// }
 	//
-	//    char file
-
-	//TODO: stub befor fs link with elf
-	return 0;
+	//TODO: stub before fs mkfs
+	return process_exec(p, (uintptr_t)_user_elf_start, argv);
 }
 
 void sys_exit(uint8_t code)

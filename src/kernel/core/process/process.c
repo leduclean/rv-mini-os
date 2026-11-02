@@ -20,6 +20,9 @@
 #include <kernel/waitqueue.h>
 #include <user/kinterface.h>
 
+#include "arch/abi.h"
+#include "lib/bit.h"
+
 #define MAX_PROC 32
 
 /** @brief Process table. */
@@ -321,6 +324,83 @@ static int load_elf_image(process_t *p, const uintptr_t elf)
 	return 0;
 }
 
+static int get_argc(pte_t *old_ptable, char *const argv[], char *argv_k[])
+{
+	int res;
+	int argc = 0;
+
+	if (!argv) {
+		return argc;
+	}
+
+	while (argc < EXEC_MAX_ARGS) {
+		res = vpage_copyin(old_ptable, &argv_k[argc], &argv[argc],
+				   sizeof(*argv_k));
+		if (res < 0) {
+			return res;
+		}
+
+		if (!argv_k[argc]) {
+			return argc;
+		}
+
+		argc++;
+	}
+
+	return -1;
+}
+
+static int transfer_argv(pte_t *old_ptable, pte_t *new_ptable,
+			 char *const argv[], uintptr_t *out_sp)
+{
+	ssize_t len;
+	uintptr_t sp = USTACK;
+	char *argv_k[EXEC_MAX_ARGS];
+	int argc = get_argc(old_ptable, argv, argv_k);
+	if (argc < 0) {
+		return -1;
+	}
+
+	char *argv_tmp[EXEC_MAX_ARGS];
+	argv_tmp[argc] = NULL;
+
+	char arg[MAXNAME];
+	for (int i = argc - 1; i >= 0; i--) {
+		len = vpage_copyinstr(old_ptable, arg, argv_k[i], MAXNAME);
+		if (len < 0) {
+			return len;
+		}
+
+		sp = ALIGN_DOWN(sp - len, STACK_ALIGN);
+
+		len = vpage_copyoutstr(new_ptable, (char *)sp, arg, len);
+		if (len < 0) {
+			return len;
+		}
+		argv_tmp[i] = (char *)sp;
+	}
+
+	/* Align sp to copy argv */
+	size_t argv_size = (argc + 1) * sizeof(argv_tmp[0]);
+	sp = ALIGN_DOWN(sp - argv_size, STACK_ALIGN);
+
+	/* Copy back argc */
+	int res = vpage_copyout(new_ptable, (void *)sp, argv_tmp, argv_size);
+	if (res < 0) {
+		return res;
+	}
+
+	/* Then copy the new argv table pointers */
+	sp = ALIGN_DOWN(sp - sizeof(argc), STACK_ALIGN);
+	res = vpage_copyout(new_ptable, (void *)sp, &argc, sizeof(argc));
+	if (res < 0) {
+		return res;
+	}
+
+	*out_sp = sp;
+	return 0;
+}
+
 process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 				  priority prior)
 {
@@ -338,10 +418,15 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 		goto err_free_proc;
 	}
 
+	uintptr_t sp;
+	res = transfer_argv(NULL, p->root_ptable, NULL, &sp);
+	if (res < 0) {
+		goto err_free_proc;
+	}
+
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
-	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf),
-		     (void *)USTACK);
+	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf), (void *)sp);
 
 	copy_fds(p, process_active(), false);
 	_activate_process(p);
@@ -475,7 +560,7 @@ process_t *process_fork(process_t *parent)
 	return process_clone(parent, NULL, NULL, NULL, 0);
 }
 
-int process_exec(process_t *p, const uintptr_t elf)
+int process_exec(process_t *p, const uintptr_t elf, char *const argv[])
 {
 	int res;
 
@@ -493,8 +578,15 @@ int process_exec(process_t *p, const uintptr_t elf)
 		goto err_restore_old_state;
 	}
 
+	uintptr_t sp;
+	res = transfer_argv(old_ptable, p->root_ptable, argv, &sp);
+	if (res < 0) {
+		goto err_restore_old_state;
+	}
+
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
+	tframe_start(p->tframe_pa, (void *)elf_get_entry(elf), (void *)sp);
 
 	// Once all has worked free all the old ressources.
 	vpage_tree_free(old_ptable);

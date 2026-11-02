@@ -7,10 +7,8 @@
 #include <stdint.h>
 
 #include <arch/asm_defs.h>
-
 #include <kernel/ldsym.h>
-
-#include "kernel/vpages.h"
+#include <kernel/vpages.h>
 
 // Forward declaration
 typedef struct process process_t;

@@ -1,5 +1,5 @@
-.section .text.init,"ax",@progbits
-.globl _start
+    .section .text.init,"ax",@progbits
+    .globl _start
 
 _start:
     la t0, _bss_start
@@ -12,6 +12,8 @@ loop:
     addi t0, t0, 8
     j loop
 end_loop:
+    lw a0, 0(sp)
+    addi a1, sp, 16
     call main
     call exit_group
     

@@ -9,12 +9,13 @@
 
 #include <lib/clist.h>
 
+#include <arch/abi.h>
+#include <arch/trap.h>
 #include <kernel/fs.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
-#include <arch/trap.h>
 
-#define MAXNAME 16 ///< Size of the process name buffer, in bytes.
+#define MAXNAME STACK_ALIGN ///< Size of the process name buffer, in bytes.
 #define KSTACK_SIZE 512 ///< Size of a process stack, in 64 bits words.
 #define NOFILE 16 /**< Number of file descriptor */
 
@@ -228,9 +229,10 @@ process_t *process_fork(process_t *parent);
  *
  * @param p A pointer to the process to replace.
  * @param elf Elf file of a newly executed program.
+ * @param argv User argument to execute the elf file.
  * @return 0 on SUCCESS, error code < 0 on FAILURE.
  */
-int process_exec(process_t *p, const uintptr_t elf);
+int process_exec(process_t *p, const uintptr_t elf, char *const argv[]);
 
 /**
  * @brief Attribute a in-task file descriptor number to a file descriptor.
