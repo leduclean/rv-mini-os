@@ -32,7 +32,7 @@ int sh(void)
 				printf("Shell: Failed to fork \n");
 				return res;
 			} else if (pid == 0) {
-				printf("executing %s \n", cmd.argv[0]);
+				printf("%s\n", cmd.argv[0]);
 				res = exec(cmd.argv[0], cmd.argv);
 				if (res < 0) {
 					printf("Shell: Failed to exec \n");

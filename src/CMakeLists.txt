@@ -174,3 +174,17 @@ add_custom_target(
         ${DISK_IMG}
     USES_TERMINAL
 )
+
+set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../tests)
+add_custom_target(
+    integration
+    COMMAND
+        ${CMAKE_COMMAND} -E env
+        "OS_QEMU_CMD=${QEMU};${QEMU_RUN_OPTS};-kernel;$<TARGET_FILE:kernel.bin>"
+        uv run --project ${TESTS_DIR} pytest ${TESTS_DIR}/integration
+    DEPENDS
+        kernel.bin
+        ${DISK_IMG}
+    USES_TERMINAL
+    VERBATIM
+)
