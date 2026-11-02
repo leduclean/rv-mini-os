@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "cmd_registry.h"
+#include "err.h"
 #include "syscall.h"
 #include "test.h"
 
@@ -85,8 +86,9 @@ void cmd_fs_seek_test([[maybe_unused]] int argc,
 	}
 
 	off = seek(fd, -10, SEEK_SET);
-	if (off != -1) {
-		TEST_ERROR("seek -10 SET returned %ld, expected -1", off);
+	if (off != -EINVAL) {
+		TEST_ERROR("seek -10 SET returned %ld, expected %d", off,
+			   -EINVAL);
 	}
 
 	off = seek(fd, 10, SEEK_SET);
@@ -100,8 +102,9 @@ void cmd_fs_seek_test([[maybe_unused]] int argc,
 	}
 
 	off = seek(fd, -10, SEEK_CUR);
-	if (off != -1) {
-		TEST_ERROR("seek -10 CUR returned %ld, expected -1", off);
+	if (off != -EINVAL) {
+		TEST_ERROR("seek -10 CUR returned %ld, expected %d", off,
+			   -EINVAL);
 	}
 
 	off = seek(fd, 10, SEEK_END);
