@@ -26,26 +26,16 @@
 	  "stream_test")                                                   \
 	X(thread_test, "Test the thread api", "thread_test")
 
-typedef void (*cmd_func_t)(char *const argv[]);
+typedef void (*cmd_func_t)(int argc, char *const argv[]);
 
-#define X_DECL(n, d, u) void cmd_##n(char *const argv[]);
+#define X_DECL(n, d, u) void cmd_##n(int argc, char *const argv[]);
 CMD_LIST(X_DECL)
 #undef X_DECL
 
-struct cmd_desc {
-	cmd_func_t f;
-	char *const argv[EXEC_MAX_ARGS];
-	bool background;
-};
-
 /**
- * @brief Parse and run a command line.
+ * @brief Find a command by name.
  *
- * @param line NUL-terminated line, tokenized in place.
- * @param[out] desc The description to fill.
- * @retval 0 Success.
- * @retval -EINVAL Empty line.
- * @retval -ENOENT Unknown command.
-
+ * @param name The command name.
+ * @return The command, or NULL if unknown.
  */
-int cmd_get_desc(char *line, struct cmd_desc *desc);
+cmd_func_t cmd_find(char *const name);

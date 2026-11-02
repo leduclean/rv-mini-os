@@ -20,8 +20,17 @@
  * @return Length of the read line, without its null terminator.
  * @retval -EINVAL @p max_size is 0.
  */
-ssize_t parser_scan_line
-(char *line, size_t max_size);
+ssize_t parser_scan_line(char *line, size_t max_size);
+
+/**
+ * @brief Parse a @p line into a an argv and return the associated argc.
+ *
+ * @param line Line to parse.
+ * @param argv[out] Argv to fill.
+ * @param max_args The max args of argv.
+ * @return argc.
+ */
+int parse_line(char *line, char *argv[], int max_args);
 
 /**
  * @brief If the last cmd argument is &, set background and drop that arg.

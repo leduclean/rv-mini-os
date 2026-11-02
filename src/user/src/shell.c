@@ -19,9 +19,16 @@ int sh(void)
 	for (;;) {
 		printf("(shell) ");
 		if (parser_scan_line(line, MAX_DISPLAY_COLS) != 0) {
-			struct cmd_desc cmd = { 0 };
-			res = cmd_get_desc(line, &cmd);
-			if (res < 0) {
+			char *argv[EXEC_MAX_ARGS];
+			int argc = parse_line(line, argv, EXEC_MAX_ARGS);
+			bool bg = parser_is_bg(&argc, argv);
+			if (argc == 0) {
+				printf("Please enter a command.\n");
+				continue;
+			}
+
+			cmd_func_t f = cmd_find(argv[0]);
+			if (!f) {
 				printf("Command not found, Please refer to help.\n");
 				continue;
 			}
@@ -30,19 +37,18 @@ int sh(void)
 			if (pid < 0) {
 				res = pid;
 				printf("Shell: Failed to fork \n");
-				return res;
+				exit_group(1);
 			} else if (pid == 0) {
-				printf("%s\n", cmd.argv[0]);
-				res = exec(cmd.argv[0], cmd.argv);
+				res = exec(argv[0], argv);
 				if (res < 0) {
 					printf("Shell: Failed to exec \n");
-					return res;
+					exit_group(1);
 				}
 			} else {
-				if (!cmd.background) {
+				if (!bg) {
 					res = waitpid(pid);
 					if (res < 0) {
-						return res;
+						exit_group(1);
 					}
 				}
 			}

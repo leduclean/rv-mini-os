@@ -13,7 +13,8 @@ void thread(void *args)
 	(*i)++;
 }
 
-void cmd_thread_test([[maybe_unused]] char *const argv[])
+void cmd_thread_test([[maybe_unused]] int argc,
+		     [[maybe_unused]] char *const argv[])
 {
 	int i = 0;
 
