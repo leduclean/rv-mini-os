@@ -5,6 +5,7 @@
 
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include <lib/clist.h>
@@ -37,7 +38,7 @@ typedef struct ctx {
 } ctx_t;
 
 /* ctxt.S hardcodes these offsets, keep both in sync. */
-_Static_assert(__builtin_offsetof(ctx_t, s) == 2 * 8, "ctxt.S offsets stale");
+static_assert(offsetof(ctx_t, s) == 2 * 8, "ctxt.S offsets stale");
 
 /** @brief Scheduling priorities, sorted decremental (HIGH is the highest). */
 typedef enum { HIGH = 0, NORMAL, LOW, IDLE, PRIORITY_COUNT } priority;

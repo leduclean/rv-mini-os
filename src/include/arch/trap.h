@@ -4,6 +4,7 @@
  */
 
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 
 #include <arch/asm_defs.h>
@@ -42,17 +43,14 @@ typedef struct pt_regs {
 } pt_regs_t;
 
 /* trampoline.S hardcodes these offsets, keep both in sync. */
-_Static_assert(sizeof(pt_regs_t) == 33 * 8, "trampoline.S frame size stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, a) == 2 * 8,
-	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, t) == 10 * 8,
-	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, s) == 17 * 8,
-	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, sepc) == 29 * 8,
-	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(pt_regs_t, sstatus) == 31 * 8,
-	       "trampoline.S offsets stale");
+static_assert(sizeof(pt_regs_t) == 33 * 8, "trampoline.S frame size stale");
+static_assert(offsetof(pt_regs_t, a) == 2 * 8, "trampoline.S offsets stale");
+static_assert(offsetof(pt_regs_t, t) == 10 * 8, "trampoline.S offsets stale");
+static_assert(offsetof(pt_regs_t, s) == 17 * 8, "trampoline.S offsets stale");
+static_assert(offsetof(pt_regs_t, sepc) == 29 * 8,
+	      "trampoline.S offsets stale");
+static_assert(offsetof(pt_regs_t, sstatus) == 31 * 8,
+	      "trampoline.S offsets stale");
 
 typedef struct tframe {
 	pt_regs_t saved_regs;
@@ -60,10 +58,10 @@ typedef struct tframe {
 	unsigned long ksatp;
 } tframe_t;
 
-_Static_assert(__builtin_offsetof(tframe_t, kstack) == 33 * 8,
-	       "trampoline.S offsets stale");
-_Static_assert(__builtin_offsetof(tframe_t, ksatp) == 34 * 8,
-	       "trampoline.S offsets stale");
+static_assert(offsetof(tframe_t, kstack) == 33 * 8,
+	      "trampoline.S offsets stale");
+static_assert(offsetof(tframe_t, ksatp) == 34 * 8,
+	      "trampoline.S offsets stale");
 
 /**
  * @brief Bind the trap frame @p t to its owner.
