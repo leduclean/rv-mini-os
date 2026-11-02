@@ -12,6 +12,6 @@ def os_shell():
     ).split(";")
     # NOTE: every test shares ${DISK_IMG}, copy it into tmp_path if tests start writing to disk
     qemu = pexpect.spawn(cmd[0], cmd[1:], encoding="utf-8", timeout=10)
-    os_shell.expect_exact("(shell) ")
+    qemu.expect_exact("(shell) ")
     yield qemu
     qemu.close(force=True)
