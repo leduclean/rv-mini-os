@@ -5,10 +5,8 @@
 #include <arch/asm_defs.h>
 #include <arch/cpu.h>
 #include <arch/csr.h>
-#include <arch/trap.h>
-
 #include <arch/plic.h>
-
+#include <arch/trap.h>
 #include <kernel/mmap.h>
 #include <kernel/process.h>
 #include <kernel/scheduler.h>
@@ -150,13 +148,13 @@ void usertrap(void)
 		switch (scause) {
 		case ECALL_UMODE:
 			t->sepc += 4;
-			t->a[0] = syscall_dispatch(t->a[7], t->a[0], t->a[1],
-						   t->a[2], t->a[3], t->a[4],
-						   t->a[5]);
+			p->tframe_pa->saved_regs.a[0] = syscall_dispatch(
+				t->a[7], t->a[0], t->a[1], t->a[2], t->a[3],
+				t->a[4], t->a[5]);
 			break;
 		case STORE_PAGE_FAULT: {
-			printf("[Kernel/INFO]: CoW fault on 0x%lx (pid %d)\n",
-			       stval, p->pid);
+			// printf("[Kernel/INFO]: CoW fault on 0x%lx (pid %d)\n",
+			//        stval, p->pid);
 			if (vpage_handle_cow(p->root_ptable, (void *)stval) ==
 			    0) {
 				break;
