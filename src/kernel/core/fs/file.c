@@ -12,7 +12,7 @@
 #define FILE_MAX_NUM 100 /**< Max number of open files. */
 static struct file ftable[FILE_MAX_NUM] = { 0 };
 
-struct file *file_alloc(void)
+static struct file *file_alloc(void)
 {
 	for (int i = 0; i < FILE_MAX_NUM; i++) {
 		if (ftable[i].refcnt == 0) {
@@ -27,9 +27,11 @@ struct file *file_clone(const struct file *f)
 {
 	struct file *new = file_alloc();
 	if (!new) {
-		return new;
+		return NULL;
 	}
 	*new = *f;
+	/* Add a reference to the inode */
+	new->i = inode_get(f->i->id);
 	new->refcnt = 1;
 
 	return new;
@@ -38,7 +40,7 @@ struct file *file_clone(const struct file *f)
 void file_put(struct file *f)
 {
 	if (f->refcnt-- == 1) {
-		inode_put(inode_get(f->inum));
+		inode_put(f->i);
 	}
 }
 
@@ -69,15 +71,11 @@ static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
 {
 	int res;
 	ssize_t written;
+	struct inode *i = f->i;
 
-	struct inode *i = inode_get(f->inum);
-	if (!i) {
-		res = -EIO;
-		goto err;
-	}
 	res = inode_lock(i);
 	if (res < 0) {
-		goto err_put_inode;
+		return -EIO;
 	}
 
 	written = inode_write(i, true, ubuf, f->off, count);
@@ -94,9 +92,6 @@ static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
 
 err_release_inode:
 	inode_unlock(i);
-err_put_inode:
-	inode_put(i);
-err:
 	return res;
 }
 
@@ -104,14 +99,11 @@ static ssize_t file_read(struct file *f, char *ubuf, size_t count)
 {
 	int res;
 	ssize_t readed;
-	struct inode *i = inode_get(f->inum);
-	if (!i) {
-		res = -EIO;
-		goto err;
-	}
+	struct inode *i = f->i;
+
 	res = inode_lock(i);
 	if (res < 0) {
-		goto err_put_inode;
+		return -EIO;
 	}
 
 	readed = inode_read(i, true, ubuf, f->off, count);
@@ -123,14 +115,10 @@ static ssize_t file_read(struct file *f, char *ubuf, size_t count)
 	res = readed;
 err_release_inode:
 	inode_unlock(i);
-err_put_inode:
-	inode_put(i);
-err:
 	return res;
 }
 
-static void link_dev_cb
-(struct file *f, int dev_id)
+static void link_dev_cb(struct file *f, int dev_id)
 {
 	f->r_op = dev_map[dev_id].r_op;
 	f->w_op = dev_map[dev_id].w_op;
@@ -164,7 +152,7 @@ struct file *file_open(const char *path, unsigned long flags)
 
 	inode_unlock(i);
 
-	f->inum = i->id;
+	f->i = i;
 	f->mode = flags & O_MODE_MASK;
 	f->off = 0;
 	f->refcnt = 1;
@@ -187,16 +175,13 @@ int64_t file_seek(struct file *f, int64_t offset, int whence)
 		next = f->off + offset;
 		break;
 	case SEEK_END:
-		struct inode *i = inode_get(f->inum);
+		struct inode *i = f->i;
 		int res = inode_lock(i);
 		if (res < 0) {
-			inode_put(i);
 			return res;
 		}
 		next = i->content.size + offset;
 		inode_unlock(i);
-		inode_put(i);
-
 		break;
 	default:
 		return -EINVAL;
@@ -205,7 +190,6 @@ int64_t file_seek(struct file *f, int64_t offset, int whence)
 	if (next < 0) {
 		return -EINVAL;
 	}
-
 
 	f->off = next;
 	return next;

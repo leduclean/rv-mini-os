@@ -1,6 +1,10 @@
 /**
  * @file
  * @brief Define the file kernel API of the fs.
+ *
+ * A file reference is acquired with file_open() or file_clone(), shared with
+ * file_get() and dropped with file_put(). The last file_put() releases the
+ * inode.
  */
 #pragma once
 
@@ -8,9 +12,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <user/kinterface.h>
-
 #include <arch/asm_defs.h>
+#include <user/kinterface.h>
 
 #define FILE_DEV_CONSOLE 0 /* Define the dev_id of the console */
 
@@ -26,7 +29,7 @@ typedef ssize_t (*read_cb)(struct file *f, char *buf, size_t count);
  */
 struct file {
 	uint32_t refcnt; /**< Fork process keep might keep the same fd. */
-	uint32_t inum; /**< Inode number of the file */
+	struct inode *i; /**< Inode of the file */
 	int64_t off; /** Should never be < 0 */
 	uint8_t mode;
 
@@ -35,21 +38,15 @@ struct file {
 };
 
 /**
- * @brief Alloc a new file descriptor in the open file table.
+ * @brief Kernel primitive to open a file and get the associate file structure.
  *
- * @return The file.
- * @retval NULL Table full.
+ * @param path The path of the file.
+ * @param flags @p Open System flags.
+ * @return The opened file.
+ * @retval ERR_PTR(-ENFILE) File table full.
+ * @retval ERR_PTR(-Exxx) See fs_inode_from_path().
  */
-struct file *file_alloc(void);
-
-/**
- * @brief Map a device to it's callback read and write function.
- *
- * @param dev_id The device id.
- * @param w_op Write callback.
- * @param r_op Read callback.
- */
-void file_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op);
+struct file *file_open(const char *path, unsigned long flags);
 
 /**
  * @brief Alloc an independant copy of a file descriptor.
@@ -71,20 +68,11 @@ struct file *file_get(struct file *f);
 /**
  * @brief Put a reference to a file, typically called on a close() routine.
  *
+ * The inode reference is also released if the file is not owned anymore.
+ *
  * @param f A pointer to the reference of the file to release.
  */
 void file_put(struct file *f);
-
-/**
- * @brief Kernel primitive to open a file and get the associate file structure.
- *
- * @param path The path of the file.
- * @param flags @p Open System flags.
- * @return The opened file.
- * @retval ERR_PTR(-ENFILE) File table full.
- * @retval ERR_PTR(-Exxx) See fs_inode_from_path().
- */
-struct file *file_open(const char *path, unsigned long flags);
 
 /**
  * @brief Move the read write file offset.
@@ -95,7 +83,14 @@ struct file *file_open(const char *path, unsigned long flags);
  * @return The new offset.
  * @retval -EINVAL Bad @p whence or negative resulting offset.
  * @retval -EIO Disk failure.
-
-
  */
 int64_t file_seek(struct file *f, int64_t offset, int whence);
+
+/**
+ * @brief Map a device to it's callback read and write function.
+ *
+ * @param dev_id The device id.
+ * @param w_op Write callback.
+ * @param r_op Read callback.
+ */
+void file_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op);
