@@ -31,7 +31,7 @@ struct file *file_clone(const struct file *f)
 	}
 	*new = *f;
 	/* Add a reference to the inode */
-	new->i = inode_get(f->i->id);
+	new->i = inode_get(f->i->ino);
 	new->refcnt = 1;
 
 	return new;

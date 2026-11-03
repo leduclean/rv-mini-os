@@ -33,9 +33,14 @@ static spinlock_t cache_lock = SPINLOCK_UNLOCKED;
 static struct inode islots[INODE_CACHE_SIZE];
 static clist_node_t icache = CLIST_NODE_INITIALIZER(icache);
 
-static inline int get_blk(uint32_t id)
+static inline int32_t get_itab_blkno(uint32_t ino)
 {
-	return sb.itab_start + id / INODES_PER_BLK;
+	uint32_t tab_blkno = sb.itab_start + ino / INODES_PER_BLK;
+	if (tab_blkno >= sb.nb_itab + sb.itab_start) {
+		return -EINVAL;
+	}
+
+	return tab_blkno;
 }
 static inline int get_tab_idx(uint32_t id)
 {
@@ -52,7 +57,7 @@ int inode_init(void)
 	struct inode *curr;
 	for (int i = 0; i < INODE_CACHE_SIZE; i++) {
 		curr = &islots[i];
-		curr->id = UINT32_MAX;
+		curr->ino = UINT32_MAX;
 		mutex_init(&curr->m);
 		clist_init_node(&curr->node);
 		clist_push_front(&icache, &curr->node);
@@ -138,7 +143,7 @@ static int match_id_cb_locked(clist_node_t *node, void *args)
 {
 	uint32_t id = *(uint32_t *)args;
 	struct inode *i = container_of(node, struct inode, node);
-	int predicate = i->id == id;
+	int predicate = i->ino == id;
 	return predicate;
 }
 
@@ -202,7 +207,7 @@ struct inode *inode_get(uint32_t id)
 		panic("BUFFER OVERFLOW: buffer all used");
 	}
 
-	i->id = id;
+	i->ino = id;
 	i->refcnt = 1;
 	clear_valid_locked(i);
 
@@ -215,14 +220,18 @@ int inode_lock(struct inode *i)
 	mutex_lock(&i->m);
 	if (!is_valid_locked(i)) {
 
-		// Fetch content from disk
-		struct cblk *tab_blk = bcache_read(get_blk(i->id));
+		int32_t itab_blkno = get_itab_blkno(i->ino);
+		if (itab_blkno < 0) {
+			return itab_blkno;
+		}
+
+		struct cblk *tab_blk = bcache_read(itab_blkno);
 		if (!tab_blk) {
 			mutex_unlock(&i->m);
 			return -EIO;
 		}
 		struct dinode *tab_entry = (struct dinode *)tab_blk->buf;
-		int idx = get_tab_idx(i->id);
+		int idx = get_tab_idx(i->ino);
 		i->content = tab_entry[idx];
 
 		bcache_release(tab_blk);
@@ -238,13 +247,18 @@ void inode_unlock(struct inode *i)
 
 static inline int mark_dirty_locked(struct inode *i)
 {
-	struct cblk *tab_blk = bcache_read(get_blk(i->id));
+	int32_t itab_blkno = get_itab_blkno(i->ino);
+	if (itab_blkno < 0) {
+		return itab_blkno;
+	}
+
+	struct cblk *tab_blk = bcache_read(itab_blkno);
 	if (!tab_blk) {
 		return -EIO;
 	}
 
 	struct dinode *tab_entry = (struct dinode *)tab_blk->buf;
-	int idx = get_tab_idx(i->id);
+	int idx = get_tab_idx(i->ino);
 	tab_entry[idx] = i->content;
 	bcache_mark_dirty(tab_blk);
 	bcache_release(tab_blk);
@@ -445,7 +459,7 @@ void inode_put(struct inode *i)
 			if (mark_dirty_locked(i) < 0) {
 				panic("dirty failed");
 			}
-			ibm_free(i->id);
+			ibm_free(i->ino);
 			clear_valid_locked(i);
 		}
 

@@ -23,7 +23,7 @@ struct inode {
 
 	/** Protected by the @cache_lock */
 	int refcnt;
-	uint32_t id;
+	uint32_t ino;
 	clist_node_t node;
 
 	/* Provides exclusive access to 

@@ -26,7 +26,10 @@ struct inode *root;
 static int set_root(void)
 {
 	root = inode_get(FS_ROOT_INODE_ID);
-	inode_lock(root);
+	int res = inode_lock(root);
+	if (res < 0) {
+		return res;
+	}
 	if (root->content.type != INODE_DIRECTORY) {
 		inode_unlock(root);
 		return -EIO;
@@ -169,7 +172,7 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 	strcpy(kpath, path);
 
 	char *token = strtok(kpath, FS_PATH_DELIMITATOR);
-	struct inode *curr = inode_get(root->id);
+	struct inode *curr = inode_get(root->ino);
 
 	int res;
 	while (token != NULL) {
@@ -187,7 +190,7 @@ struct inode *fs_inode_from_path(const char *path, unsigned long flags,
 					res = PTR_ERR(created);
 					goto err_release_curr;
 				}
-				res = dir_add_entry(curr, token, created->id);
+				res = dir_add_entry(curr, token, created->ino);
 				if (res < 0) {
 					goto err_release_curr;
 				}
