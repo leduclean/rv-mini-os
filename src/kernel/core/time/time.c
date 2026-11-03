@@ -69,7 +69,7 @@ static void clock_daemon(void)
 }
 
 /**
- * @brief Kernel Daemon that handles a time tick ie wakes sleeping process
+ * @brief Kernel Daemon that handles a time tick ie wakes sleeping task
  * and preempt if needed.
  */
 static void tick_daemon(void)
@@ -83,12 +83,12 @@ static void tick_daemon(void)
 
 int time_spawn_daemons(void)
 {
-	process_t *p = process_kthread(clock_daemon, "clock daemon", HIGH);
+	task_t *p = task_kthread(clock_daemon, "clock daemon", HIGH);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);
 	}
 
-	p = process_kthread(tick_daemon, "tick daemon", HIGH);
+	p = task_kthread(tick_daemon, "tick daemon", HIGH);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);
 	}

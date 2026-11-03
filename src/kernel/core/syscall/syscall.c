@@ -4,7 +4,7 @@
 
 #include <arch/cpu.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 #include <user/syscall_def.h>

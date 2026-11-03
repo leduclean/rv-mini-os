@@ -5,7 +5,7 @@
 #include <lib/container.h>
 #include <lib/string.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/waitqueue.h>
 
 // Helpers for the waiting queue

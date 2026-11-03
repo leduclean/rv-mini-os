@@ -6,7 +6,7 @@
 
 #include <arch/asm_defs.h>
 #include <kernel/fs_layout.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <user/kinterface.h>
 
 #define FS_MAX_PATH \

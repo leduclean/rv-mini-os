@@ -7,7 +7,7 @@
 
 #include <arch/cpu.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/semaphore.h>
 #include <kernel/spinlock.h>
@@ -61,8 +61,8 @@ void sem_post(semaphore_t *sem)
 		// Directly give the ressource to a waiting thread
 		// without posting thre ressource
 		clist_node_t *node = wq_pop_head(&sem->wq);
-		process_t *proc = container_of(node, process_t, wait_node);
-		scheduler_ready_process(proc);
+		task_t *task = container_of(node, task_t, wait_node);
+		scheduler_ready_task(task);
 	} else {
 		// Post a ressource
 		sem->count++;

@@ -12,7 +12,7 @@
 #include <kernel/vpages.h>
 
 // Forward declaration
-typedef struct process process_t;
+typedef struct task task_t;
 
 #define USTACK_TOP (MAX_VA - 3 * PAGE_SIZE)
 #define USTACK (MAX_VA - 2 * PAGE_SIZE)

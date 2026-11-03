@@ -6,7 +6,7 @@
 
 #include <kernel/file.h>
 #include <kernel/inode.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <user/kinterface.h>
 
 #define FILE_MAX_NUM 100 /**< Max number of open files. */

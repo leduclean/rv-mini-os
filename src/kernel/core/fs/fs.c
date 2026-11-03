@@ -8,7 +8,7 @@
 #include <kernel/fs.h>
 #include <kernel/fs_layout.h>
 #include <kernel/inode.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <user/kinterface.h>
 
 /**

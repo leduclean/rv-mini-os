@@ -488,7 +488,7 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
 		}
 
 		if (user_src) {
-			pte_t *root = process_active()->root_ptable;
+			pte_t *root = task_active()->root_ptable;
 			res = vpage_copyin(root, dblk->buf + blk_off, src, m);
 			if (res < 0) {
 				bcache_release(dblk);
@@ -541,7 +541,7 @@ ssize_t inode_read(struct inode *i, bool user_src, char *dst, uint32_t offset,
 		}
 		if (user_src) {
 
-			pte_t *root = process_active()->root_ptable;
+			pte_t *root = task_active()->root_ptable;
 			res = vpage_copyout(root, dst, dblk->buf + blk_off, m);
 			if (res < 0) {
 				bcache_release(dblk);

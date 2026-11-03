@@ -4,7 +4,7 @@
 
 #include <arch/cpu.h>
 #include <arch/trap.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 
@@ -12,13 +12,13 @@ extern char _user_elf_start[];
 
 uint8_t sys_getpid(void)
 {
-	return process_active()->pid;
+	return task_active()->pid;
 }
 
 int8_t sys_fork(void)
 {
-	process_t *parent = process_active();
-	process_t *child = process_fork(parent);
+	task_t *parent = task_active();
+	task_t *child = task_fork(parent);
 	if (IS_ERR(child)) {
 		return PTR_ERR(child);
 	}
@@ -28,8 +28,8 @@ int8_t sys_fork(void)
 
 int8_t sys_clone(void *entry, void *args, void *stack, unsigned long flags)
 {
-	process_t *parent = process_active();
-	process_t *child = process_clone(parent, entry, args, stack, flags);
+	task_t *parent = task_active();
+	task_t *child = task_clone(parent, entry, args, stack, flags);
 	if (IS_ERR(child)) {
 		return PTR_ERR(child);
 	}
@@ -44,7 +44,7 @@ int sys_exec(const char *path, char *const argv[])
 
 	(void)argv;
 	(void)path;
-	process_t *p = process_active();
+	task_t *p = task_active();
 
 	// Copy the virtual uaddres to a kernel buffer
 	// char kpath[MAXNAME];
@@ -56,7 +56,7 @@ int sys_exec(const char *path, char *const argv[])
 	// }
 	//
 	//TODO: stub before fs mkfs
-	return process_exec(p, (uintptr_t)_user_elf_start, argv);
+	return task_exec(p, (uintptr_t)_user_elf_start, argv);
 }
 
 void sys_exit(uint8_t code)

@@ -153,7 +153,7 @@ static void fill_rx_buff_daemon(void)
 
 int uart_spawn_daemons(void)
 {
-	process_t *p = process_kthread(fill_rx_buff_daemon, "uart rx daem",
+	task_t *p = task_kthread(fill_rx_buff_daemon, "uart rx daem",
 				       HIGH);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);

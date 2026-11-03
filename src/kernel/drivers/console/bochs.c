@@ -15,7 +15,7 @@
 #include <kernel/file.h>
 #include <kernel/fs.h>
 #include <kernel/mmap.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/syscall.h>
 #include <kernel/vpages.h>
 
@@ -130,7 +130,7 @@ static ssize_t console_write([[maybe_unused]] struct file *f, const char *ubuf,
 		return -EINVAL;
 	}
 
-	int res = vpage_copyin(process_active()->root_ptable, kbuf, ubuf,
+	int res = vpage_copyin(task_active()->root_ptable, kbuf, ubuf,
 			       count);
 	if (res < 0) {
 		return res;
@@ -151,7 +151,7 @@ static ssize_t console_read([[maybe_unused]] struct file *f, char *ubuf,
 		uart_read(&kbuf[i]);
 	}
 
-	int res = vpage_copyout(process_active()->root_ptable, ubuf, kbuf,
+	int res = vpage_copyout(task_active()->root_ptable, ubuf, kbuf,
 				count);
 	if (res < 0) {
 		return res;

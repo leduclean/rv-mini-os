@@ -12,7 +12,7 @@
 
 #include <kernel/file.h>
 #include <kernel/inode.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 #include <kernel/vpages.h>
@@ -22,7 +22,7 @@ int sys_open(const char *path, unsigned long flags)
 {
 	char kernel_path[FS_MAX_PATH];
 
-	process_t *active = process_active();
+	task_t *active = task_active();
 	int res = vpage_copyinstr(active->root_ptable, kernel_path, path,
 				  FS_MAX_PATH);
 	if (res < 0) {
@@ -34,7 +34,7 @@ int sys_open(const char *path, unsigned long flags)
 		return PTR_ERR(f);
 	}
 
-	int fd = process_give_fd(active, f);
+	int fd = task_give_fd(active, f);
 	if (fd < 0) {
 		file_put(f);
 	}
@@ -44,8 +44,8 @@ int sys_open(const char *path, unsigned long flags)
 
 ssize_t sys_write(int fd, const char *ubuf, size_t count)
 {
-	process_t *active = process_active();
-	struct file *f = process_get_fd(active, fd);
+	task_t *active = task_active();
+	struct file *f = task_get_fd(active, fd);
 	if (!f) {
 		return -EBADF;
 	}
@@ -58,8 +58,8 @@ ssize_t sys_write(int fd, const char *ubuf, size_t count)
 
 ssize_t sys_read(int fd, char *ubuf, size_t count)
 {
-	process_t *active = process_active();
-	struct file *f = process_get_fd(active, fd);
+	task_t *active = task_active();
+	struct file *f = task_get_fd(active, fd);
 	if (!f) {
 		return -EBADF;
 	}
@@ -72,14 +72,14 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 
 int sys_close(int fd)
 {
-	process_t *active = process_active();
-	return process_release_fd(active, fd);
+	task_t *active = task_active();
+	return task_release_fd(active, fd);
 }
 
 int64_t sys_seek(int fd, int64_t offset, int whence)
 {
-	process_t *active = process_active();
-	struct file *f = process_get_fd(active, fd);
+	task_t *active = task_active();
+	struct file *f = task_get_fd(active, fd);
 	if (!f) {
 		return -EBADF;
 	}

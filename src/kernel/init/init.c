@@ -17,7 +17,7 @@
 #include <kernel/memory.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/time.h>
 
 /**
@@ -37,12 +37,12 @@ static void init(void)
 		panic("[FAILURE] File system init has failed");
 	}
 
-	res = process_map_console(process_active());
+	res = task_map_console(task_active());
 	if (res < 0) {
 		panic("[FAILURE] Console map has failed");
 	}
 
-	process_t *p = process_start_userland((uintptr_t)_user_elf_start,
+	task_t *p = task_start_userland((uintptr_t)_user_elf_start,
 					      "User", NORMAL);
 	if (IS_ERR(p)) {
 		printf("[FAILURE]: failed to enter userland (%ld)\n",
@@ -77,15 +77,15 @@ static void init(void)
 		TA_ALIGNMENT);
 	printf("[INFO] Tiny alloc initialized \n");
 
-	printf("[INFO] init proc \n");
-	process_init();
+	printf("[INFO] init task \n");
+	task_init();
 	if (res < 0) {
 
-		panic("[FAILURE] Init proc has failed");
+		panic("[FAILURE] Init task has failed");
 	}
 
-	/*WARNING: from here we are in the idle process.
-     * This process cannot sleep so if a task as io, use init() 
+	/*WARNING: from here we are in the idle task.
+     * This task cannot sleep so if a task as io, use init() 
      * task to do it. */
 	printf("[INFO] S irq enabled\n");
 	irq_enable_s();
@@ -103,11 +103,11 @@ static void init(void)
 		panic("[FAILURE] Uart daemon spawn has failed");
 	}
 
-	if (IS_ERR(process_kthread(init, "init", NORMAL))) {
+	if (IS_ERR(task_kthread(init, "init", NORMAL))) {
 		printf("[FAILURE]: failed to spawn init kthread \n");
 	}
 
-	process_idle();
+	task_idle();
 }
 
 extern void enter_kernel(void (*entry)(void));

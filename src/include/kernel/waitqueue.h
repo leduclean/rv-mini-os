@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief Queue of processes blocked on a same condition.
+ * @brief Queue of tasks blocked on a same condition.
  */
 
 #pragma once
@@ -8,10 +8,10 @@
 
 #include <lib/clist.h>
 
-/** @brief Forward declaration of the process control block. */
-typedef struct process process_t;
+/** @brief Forward declaration of the task control block. */
+typedef struct task task_t;
 
-/** @brief Wait queue, a clist of process wait nodes. */
+/** @brief Wait queue, a clist of task wait nodes. */
 typedef struct wait_queue {
 	clist_node_t head; ///< Head sentinel of the waiting nodes clist.
 } wait_queue_t;
@@ -38,7 +38,7 @@ const clist_node_t *wq_peek_head(wait_queue_t *wq);
  * @brief Append a node at the end of a wait queue.
  *
  * @param wq Wait queue to append to.
- * @param node Wait node of the process to enqueue.
+ * @param node Wait node of the task to enqueue.
  */
 void wq_enqueue(wait_queue_t *wq, clist_node_t *node);
 

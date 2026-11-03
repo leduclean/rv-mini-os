@@ -13,7 +13,7 @@
 #include <kernel/file.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 #include <kernel/time.h>
@@ -24,134 +24,134 @@
 #include "arch/abi.h"
 #include "lib/bit.h"
 
-#define MAX_PROC 32
+#define MAX_TASK 32
 
-/** @brief Process table. */
+/** @brief Task table. */
 typedef struct {
-	uint8_t next_pid; ///< Pid given to the next spawned process.
-	uint8_t active_process; ///< Number of living processes, not TERMINATED.
-	clist_node_t head; ///< Head sentinel of the living processes clist.
+	uint8_t next_pid; ///< Pid given to the next spawned task.
+	uint8_t active_task; ///< Number of living tasks, not TERMINATED.
+	clist_node_t head; ///< Head sentinel of the living tasks clist.
 } ptable_t;
 
-/** @brief The one process table. */
-static ptable_t proc_table;
+/** @brief The one task table. */
+static ptable_t task_table;
 
-/** @brief Currently running process. */
-static process_t *active = NULL;
+/** @brief Currently running task. */
+static task_t *active = NULL;
 
-/** @brief Init the process table. */
-static void init_proc_table(void)
+/** @brief Init the task table. */
+static void init_task_table(void)
 {
-	clist_init_node(&proc_table.head);
-	proc_table.next_pid = 0;
-	proc_table.active_process = 0;
+	clist_init_node(&task_table.head);
+	task_table.next_pid = 0;
+	task_table.active_task = 0;
 }
 
 /**
- * @brief Remove a process from all the blocking queues it could wait on.
+ * @brief Remove a task from all the blocking queues it could wait on.
  *
  * @note This function is **not atomic**. The caller MUST ensure atomicity.
  *
- * @param proc Process to clear.
+ * @param task Task to clear.
  */
-static void remove_from_blocking_queues(process_t *proc)
+static void remove_from_blocking_queues(task_t *task)
 {
-	if (clist_is_in_list(&proc->sleep_node))
-		clist_remove(&proc->sleep_node);
-	if (clist_is_in_list(&proc->wait_node)) {
-		clist_remove(&proc->wait_node);
+	if (clist_is_in_list(&task->sleep_node))
+		clist_remove(&task->sleep_node);
+	if (clist_is_in_list(&task->wait_node)) {
+		clist_remove(&task->wait_node);
 	}
 }
 
 /**
- * @brief Remove a process from all the scheduling queues it could be in.
+ * @brief Remove a task from all the scheduling queues it could be in.
  *
  * @note This function is **not atomic**. The caller MUST ensure atomicity.
  *
- * @param proc Process to remove from the queues.
+ * @param task Task to remove from the queues.
  */
-static inline void remove_from_sched_queues(process_t *proc)
+static inline void remove_from_sched_queues(task_t *task)
 {
-	if (clist_is_in_list(&proc->ready_node))
-		clist_remove(&proc->ready_node);
-	remove_from_blocking_queues(proc);
+	if (clist_is_in_list(&task->ready_node))
+		clist_remove(&task->ready_node);
+	remove_from_blocking_queues(task);
 }
 
 /**
- * @brief Remove a process from all the queues it could be in.
+ * @brief Remove a task from all the queues it could be in.
  *
  * @note This function is **not atomic**. The caller MUST ensure atomicity.
  *
- * @param proc Process to remove from the queues.
+ * @param task Task to remove from the queues.
  */
-static inline void remove_from_all_queues(process_t *proc)
+static inline void remove_from_all_queues(task_t *task)
 {
-	if (clist_is_in_list(&proc->proc_node))
-		clist_remove(&proc->proc_node);
-	remove_from_sched_queues(proc);
+	if (clist_is_in_list(&task->task_node))
+		clist_remove(&task->task_node);
+	remove_from_sched_queues(task);
 }
 
 /**
- * @brief Reset all the nodes and the wait queues of a process.
+ * @brief Reset all the nodes and the wait queues of a task.
  *
- * @param proc Process to reset.
+ * @param task Task to reset.
  */
-static inline void init_process_queues(process_t *proc)
+static inline void init_task_queues(task_t *task)
 {
-	clist_init_node(&proc->proc_node);
-	clist_init_node(&proc->ready_node);
-	clist_init_node(&proc->wait_node);
-	clist_init_node(&proc->sleep_node);
-	clist_init_node(&proc->zombies);
-	wq_init(&proc->zombie_wq);
+	clist_init_node(&task->task_node);
+	clist_init_node(&task->ready_node);
+	clist_init_node(&task->wait_node);
+	clist_init_node(&task->sleep_node);
+	clist_init_node(&task->zombies);
+	wq_init(&task->zombie_wq);
 }
 
 /**
- * @brief Alloc a process squeleton ie without activating it or setting context.
+ * @brief Alloc a task squeleton ie without activating it or setting context.
  * 
- * @param name Name of the proc. 
- * @param prior Priority of the proc.
- * @param user User proc flag.
- * @param parent Parent of the proc.
- * @return The new proc.
- * @retval ERR_PTR(-EAGAIN) Process table full.
+ * @param name Name of the task. 
+ * @param prior Priority of the task.
+ * @param user User task flag.
+ * @param parent Parent of the task.
+ * @return The new task.
+ * @retval ERR_PTR(-EAGAIN) Task table full.
  * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
-static inline process_t *alloc_squeletton(const char *name, priority prior,
-					   bool user, process_t *parent)
+static inline task_t *alloc_squeletton(const char *name, priority prior,
+					   bool user, task_t *parent)
 {
-	if (proc_table.active_process >= MAX_PROC) {
+	if (task_table.active_task >= MAX_TASK) {
 		return ERR_PTR(-EAGAIN);
 	}
 
-	process_t *proc = calloc(1, sizeof(process_t));
-	if (!proc) {
+	task_t *task = calloc(1, sizeof(task_t));
+	if (!task) {
 		return ERR_PTR(-ENOMEM);
 	}
 
-	init_process_queues(proc);
+	init_task_queues(task);
 
-	strncpy(proc->name, name, sizeof(proc->name) - 1);
-	proc->user = user;
-	proc->parent = parent;
-	proc->priority = prior;
-	proc->pid = proc_table.next_pid++;
-	proc->tgid = proc->pid;
-	proc->state = NEW;
+	strncpy(task->name, name, sizeof(task->name) - 1);
+	task->user = user;
+	task->parent = parent;
+	task->priority = prior;
+	task->pid = task_table.next_pid++;
+	task->tgid = task->pid;
+	task->state = NEW;
 
-	return proc;
+	return task;
 }
 
 /**
- * @brief Activate with the scheduler a new process.
+ * @brief Activate with the scheduler a new task.
  *
- * @param p A pointer to the process.
+ * @param p A pointer to the task.
  */
-static void activate_process(process_t *p)
+static void activate_task(task_t *p)
 {
 	p->state = READY;
-	clist_push_back(&proc_table.head, &p->proc_node);
-	proc_table.active_process++;
+	clist_push_back(&task_table.head, &p->task_node);
+	task_table.active_task++;
 	scheduler_admit(p);
 	return;
 }
@@ -159,21 +159,21 @@ static void activate_process(process_t *p)
 /**
  * @brief Kernel privilege proessus entry point.
  */
-static void kproc_launcher(void)
+static void ktask_launcher(void)
 {
 	//NOTE: We force this because there is no guarantee,
-	// after a kprocess spawn to have irq enable.
+	// after a ktask spawn to have irq enable.
 	// (ctx switch does not preserve the sstatus)
 	irq_enable_s();
-	process_t *p = process_active();
+	task_t *p = task_active();
 	p->code();
 	scheduler_exit_group(0);
 }
 
-/** @brief Create the idle process and make it active. */
+/** @brief Create the idle task and make it active. */
 static int init_idle(void)
 {
-	process_t *p = process_kthread(process_idle, "idle", IDLE);
+	task_t *p = task_kthread(task_idle, "idle", IDLE);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);
 	}
@@ -182,12 +182,12 @@ static int init_idle(void)
 	return 0;
 }
 
-process_t *process_active(void)
+task_t *task_active(void)
 {
 	return active;
 }
 
-void process_switch_active(process_t *next)
+void task_switch_active(task_t *next)
 {
 	if (active->state == RUNNING)
 		active->state = READY;
@@ -196,9 +196,9 @@ void process_switch_active(process_t *next)
 	active = next;
 }
 
-const clist_node_t *process_table_clist(void)
+const clist_node_t *task_table_clist(void)
 {
-	return &proc_table.head;
+	return &task_table.head;
 }
 
 uint8_t priority_higher(priority prior, priority other)
@@ -206,29 +206,29 @@ uint8_t priority_higher(priority prior, priority other)
 	return prior < other;
 }
 
-void process_sleep(process_t *proc, uint32_t delay)
+void task_sleep(task_t *task, uint32_t delay)
 {
-	proc->state = SLEEPING;
-	proc->wake_up_time = delay + time_seconds();
+	task->state = SLEEPING;
+	task->wake_up_time = delay + time_seconds();
 }
 
-void process_block(process_t *proc)
+void task_block(task_t *task)
 {
-	proc->state = BLOCKED;
+	task->state = BLOCKED;
 }
 
-void process_wake(process_t *proc)
+void task_wake(task_t *task)
 {
 	irq_flags_t state = irq_save();
-	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
+	if ((task->state == SLEEPING) || (task->state == BLOCKED)) {
 		// Remove it from sleeping and blocked queue if remaining
-		remove_from_blocking_queues(proc);
-		proc->state = RUNNING;
+		remove_from_blocking_queues(task);
+		task->state = RUNNING;
 	}
 	irq_restore(state);
 }
 
-static void release_fds(process_t *p)
+static void release_fds(task_t *p)
 {
 	for (int i = 0; i < NOFILE; i++) {
 		struct file *f = p->fdtable[i];
@@ -238,21 +238,21 @@ static void release_fds(process_t *p)
 	}
 }
 
-void process_zombify(process_t *proc, int exit_code)
+void task_zombify(task_t *task, int exit_code)
 {
 	irq_flags_t state = irq_save();
 
-	process_t *parent = proc->parent;
+	task_t *parent = task->parent;
 	if (parent == NULL) {
-		panic("Zombify an orphan process is not permitted");
+		panic("Zombify an orphan task is not permitted");
 	}
 
-	proc->state = ZOMBIE;
-	proc->exit_code = exit_code;
+	task->state = ZOMBIE;
+	task->exit_code = exit_code;
 
-	remove_from_sched_queues(proc);
-	release_fds(proc);
-	clist_push_back(&parent->zombies, &proc->wait_node);
+	remove_from_sched_queues(task);
+	release_fds(task);
+	clist_push_back(&parent->zombies, &task->wait_node);
 
 	if (parent->state == BLOCKED) {
 		// Parent is waiting so we wake him up
@@ -263,33 +263,33 @@ void process_zombify(process_t *proc, int exit_code)
 	irq_restore(state);
 }
 
-void process_destroy(process_t *proc)
+void task_destroy(task_t *task)
 {
 	irq_flags_t state = irq_save();
-	if (process_active() == proc) {
-		panic("Trying to destroy the current process led to segfault. Use zombify instead");
+	if (task_active() == task) {
+		panic("Trying to destroy the current task led to segfault. Use zombify instead");
 	}
 
-	proc->state = TERMINATED;
-	remove_from_all_queues(proc);
+	task->state = TERMINATED;
+	remove_from_all_queues(task);
 
-	pte_t *root = proc->root_ptable;
-	if (proc->user && root) {
-		vpage_unmmap(proc->root_ptable, (void *)proc->tframe_va);
+	pte_t *root = task->root_ptable;
+	if (task->user && root) {
+		vpage_unmmap(task->root_ptable, (void *)task->tframe_va);
 		if (page_get_ref_count(root) == 1) {
-			vpage_tree_free(proc->root_ptable);
+			vpage_tree_free(task->root_ptable);
 		} else {
 			page_put(root);
 		}
 	}
 
-	free(proc);
-	proc_table.active_process--;
+	free(task);
+	task_table.active_task--;
 
 	irq_restore(state);
 }
 
-static void copy_fds(process_t *child, const process_t *parent, bool clone)
+static void copy_fds(task_t *child, const task_t *parent, bool clone)
 {
 	if (!parent) {
 		return;
@@ -307,7 +307,7 @@ static void copy_fds(process_t *child, const process_t *parent, bool clone)
 	}
 }
 
-static int load_elf_image(process_t *p, const uintptr_t elf)
+static int load_elf_image(task_t *p, const uintptr_t elf)
 {
 	int res = elf_verify_file_format(elf);
 	if (res < 0) {
@@ -405,11 +405,11 @@ static int transfer_argv(pte_t *old_ptable, pte_t *new_ptable,
 	return 0;
 }
 
-process_t *process_start_userland(const uintptr_t user_elf, const char *name,
+task_t *task_start_userland(const uintptr_t user_elf, const char *name,
 				  priority prior)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = alloc_squeletton(name, prior, true, process_active());
+	task_t *p = alloc_squeletton(name, prior, true, task_active());
 	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
@@ -419,25 +419,25 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 
 	int res = load_elf_image(p, user_elf);
 	if (res < 0) {
-		goto err_free_proc;
+		goto err_free_task;
 	}
 
 	uintptr_t sp;
 	res = transfer_argv(NULL, p->root_ptable, NULL, &sp);
 	if (res < 0) {
-		goto err_free_proc;
+		goto err_free_task;
 	}
 
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
 	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf), (void *)sp);
 
-	copy_fds(p, process_active(), false);
-	activate_process(p);
+	copy_fds(p, task_active(), false);
+	activate_task(p);
 	irq_restore(state);
 	return p;
 
-err_free_proc:
+err_free_task:
 	free(p);
 	p = ERR_PTR(res);
 err_restore_irq:
@@ -445,10 +445,10 @@ err_restore_irq:
 	return p;
 }
 
-process_t *process_kthread(void code(void), const char *name, priority prior)
+task_t *task_kthread(void code(void), const char *name, priority prior)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = alloc_squeletton(name, prior, false, process_active());
+	task_t *p = alloc_squeletton(name, prior, false, task_active());
 	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
@@ -458,11 +458,11 @@ process_t *process_kthread(void code(void), const char *name, priority prior)
 		p->ctx.ra = (uintptr_t)code;
 	} else {
 		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = (uintptr_t)kproc_launcher;
+		p->ctx.ra = (uintptr_t)ktask_launcher;
 	}
 
-	copy_fds(p, process_active(), false);
-	activate_process(p);
+	copy_fds(p, task_active(), false);
+	activate_task(p);
 	irq_restore(state);
 	return p;
 
@@ -471,16 +471,16 @@ err_restore_irq:
 	return p;
 }
 
-process_t *process_clone(process_t *parent, void *entry, void *args,
+task_t *task_clone(task_t *parent, void *entry, void *args,
 			 void *stack, unsigned long flags)
 {
 	if (!parent->user) {
-		panic("Only fork for user process is supported ");
+		panic("Only fork for user task is supported ");
 	}
 
 	int res = -ENOMEM;
 	irq_flags_t state = irq_save();
-	process_t *child = alloc_squeletton(parent->name, parent->priority,
+	task_t *child = alloc_squeletton(parent->name, parent->priority,
 					     parent->user, parent);
 	if (IS_ERR(child)) {
 		goto err_restore_irq;
@@ -488,7 +488,7 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 
 	tframe_t *t = page_alloc();
 	if (!t) {
-		goto err_free_proc;
+		goto err_free_task;
 	}
 	child->tframe_pa = t;
 
@@ -542,7 +542,7 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 
 	copy_fds(child, parent, flags & CLONE_FILES);
 
-	activate_process(child);
+	activate_task(child);
 	irq_restore(state);
 	return child;
 
@@ -554,7 +554,7 @@ err_free_map:
 	}
 err_free_tframe:
 	page_put(child->tframe_pa);
-err_free_proc:
+err_free_task:
 	free(child);
 	child = ERR_PTR(res);
 err_restore_irq:
@@ -562,17 +562,17 @@ err_restore_irq:
 	return child;
 }
 
-process_t *process_fork(process_t *parent)
+task_t *task_fork(task_t *parent)
 {
-	return process_clone(parent, NULL, NULL, NULL, 0);
+	return task_clone(parent, NULL, NULL, NULL, 0);
 }
 
-int process_exec(process_t *p, const uintptr_t elf, char *const argv[])
+int task_exec(task_t *p, const uintptr_t elf, char *const argv[])
 {
 	int res;
 
 	if (!p->user) {
-		panic("Process exec on non user is not supported");
+		panic("Task exec on non user is not supported");
 	}
 
 	// Save the state
@@ -608,7 +608,7 @@ err_restore_old_state:
 	return res;
 }
 
-int process_give_fd(process_t *p, struct file *f)
+int task_give_fd(task_t *p, struct file *f)
 {
 	for (int fd = 0; fd < NOFILE; fd++) {
 		if (p->fdtable[fd] == NULL) {
@@ -620,7 +620,7 @@ int process_give_fd(process_t *p, struct file *f)
 	return -EMFILE;
 }
 
-struct file *process_get_fd(const process_t *p, int fd)
+struct file *task_get_fd(const task_t *p, int fd)
 {
 	if (fd >= NOFILE || fd < 0) {
 		return NULL;
@@ -628,7 +628,7 @@ struct file *process_get_fd(const process_t *p, int fd)
 	return p->fdtable[fd];
 }
 
-int process_release_fd(process_t *p, int fd)
+int task_release_fd(task_t *p, int fd)
 {
 	struct file *f = p->fdtable[fd];
 	if (!f) {
@@ -641,7 +641,7 @@ int process_release_fd(process_t *p, int fd)
 	return 0;
 }
 
-int process_map_console(process_t *p)
+int task_map_console(task_t *p)
 {
 	struct file *f;
 	int res = fs_mknod("/dev/console", FILE_DEV_CONSOLE);
@@ -665,18 +665,18 @@ int process_map_console(process_t *p)
 	return 0;
 }
 
-int process_init(void)
+int task_init(void)
 {
 	int res;
 
-	init_proc_table();
+	init_task_table();
 	scheduler_init();
 	res = init_idle();
 
 	return res;
 }
 
-void process_idle(void)
+void task_idle(void)
 {
 	for (;;) {
 		hlt();

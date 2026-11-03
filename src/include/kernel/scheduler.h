@@ -6,7 +6,7 @@
 #pragma once
 #include <stdint.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/spinlock.h>
 
 /**
@@ -28,41 +28,41 @@ void scheduler_enable_preempt(void);
 void scheduler_rotate(void);
 
 /**
- * @brief Admit a process in its corresponding priority ready queue.
+ * @brief Admit a task in its corresponding priority ready queue.
  *
- * @param proc Process to admit.
+ * @param task Task to admit.
  */
-void scheduler_admit(process_t *proc);
+void scheduler_admit(task_t *task);
 
 /**
- * @brief Wake a process up and reschedule it in its ready queue.
+ * @brief Wake a task up and reschedule it in its ready queue.
  *
- * @param proc Process to make ready.
+ * @param task Task to make ready.
  */
-void scheduler_ready_process(process_t *proc);
+void scheduler_ready_task(task_t *task);
 
-/** @brief Wake every sleeping process whose wake up time is reached. */
+/** @brief Wake every sleeping task whose wake up time is reached. */
 void scheduler_wake_sleeping(void);
 
 /**
- * @brief Wake every process blocked on a wait queue.
+ * @brief Wake every task blocked on a wait queue.
  *
  * This function is supposed to be called on an event, to release the
- * processes blocked on this event.
+ * tasks blocked on this event.
  *
  * @param wq Wait queue associated with the block condition.
  */
 void scheduler_wake_waiting_queue(wait_queue_t *wq);
 
 /**
- * @brief Block the active process on a wait queue.
+ * @brief Block the active task on a wait queue.
  *
  * @param wq Wait queue to block on.
  */
 void scheduler_block_on(wait_queue_t *wq);
 
 /**
- * @brief Block the active process on a wait queue guarded by a 
+ * @brief Block the active task on a wait queue guarded by a 
  * lock.
  *
  * @param wq Wait queue to block on.
@@ -74,7 +74,7 @@ void scheduler_block_on(wait_queue_t *wq);
 void scheduler_block_on_locked(wait_queue_t *wq, spinlock_t *s);
 
 /**
- * @brief Block the active process on a wait queue, with a timeout.
+ * @brief Block the active task on a wait queue, with a timeout.
  *
  * @param wq Wait queue to block on.
  * @param timeout_secs Timeout in secondes, 0 to block without timeout.
@@ -85,7 +85,7 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs);
 void scheduler_init(void);
 
 /**
- * @brief Set the active process to sleeping state.
+ * @brief Set the active task to sleeping state.
  *
  * @param nbr_secondes Sleeping duration, in secondes.
  */

@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 
 extern char _trampoline_start[], _trampoline_end[];
 
@@ -30,17 +30,17 @@ int mmap_kernel(void);
 int iommap_kernel(void *addr, size_t size);
 
 /**
- * @brief Allocate and map what each user process owns (root pd and a trapframe).
+ * @brief Allocate and map what each user task owns (root pd and a trapframe).
  *
  * @note fork stops here. The tree owns the trapframe too:
  * vpage_tree_free(p->root_ptable) frees everything.
  *
- * @param p A pointer to the owner process.
+ * @param p A pointer to the owner task.
  * @retval 0 Success.
- * @retval -EINVAL @p p is not a user process.
+ * @retval -EINVAL @p p is not a user task.
  * @retval -ENOMEM Out of memory.
  */
-int mmap_uspace(process_t *p);
+int mmap_uspace(task_t *p);
 
 /**
  * @brief mmap_uspace, code, trampoline and stack. The no parent case.
@@ -50,11 +50,11 @@ int mmap_uspace(process_t *p);
  * @warning On failure nothing stays allocated, you don't need 
  * to free the tree by yourself.
  *
- * @param p A pointer to the owner process.
+ * @param p A pointer to the owner task.
  * @retval 0 Success.
  * @retval -Exxx See mmap_uspace().
  */
-int mmap_uimage(process_t *p);
+int mmap_uimage(task_t *p);
 
 /**
  * @brief Get the kernel satp. 

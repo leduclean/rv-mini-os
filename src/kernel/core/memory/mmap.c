@@ -10,7 +10,7 @@
 #include <kernel/ldsym.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/vpages.h>
 
 static pte_t *kroot;
@@ -98,7 +98,7 @@ err_free_root:
 	return res;
 }
 
-int mmap_uspace(process_t *p)
+int mmap_uspace(task_t *p)
 {
 	int res;
 	if (!p->user) {
@@ -138,7 +138,7 @@ out:
 	return res;
 }
 
-int mmap_uimage(process_t *p)
+int mmap_uimage(task_t *p)
 {
 	int res;
 

@@ -6,7 +6,7 @@
 # context: register a0
 # new_context: register a1
 #
-# Offsets follow struct ctx in kernel/process.h, keep both in sync.
+# Offsets follow struct ctx in kernel/task.h, keep both in sync.
 # gp is a link-time constant and tp is per-hart, neither belongs here.
 
 

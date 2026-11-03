@@ -25,7 +25,7 @@ void uart_putchar(char);
  * @brief Handler for the external irq triggered by the uart.
  *
  * @note Drains the received chars into the rx buffer, then wakes every
- * process blocked on a uart read.
+ * task blocked on a uart read.
  */
 void uart_irq_handler(void);
 
@@ -40,7 +40,7 @@ void uart_read(char *c);
  * @brief Spawn Uart daemons.
  *
  * @retval 0 Success.
- * @retval -Exxx See process_kthread().
+ * @retval -Exxx See task_kthread().
 
 
  */

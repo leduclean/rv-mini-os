@@ -19,7 +19,7 @@ void time_init(void);
 /**
  * @brief Handler for the timer irq.
  *
- * @note Advances the clock, displays it, wakes the sleeping processes,
+ * @note Advances the clock, displays it, wakes the sleeping tasks,
  * reschedules and rearms the timer.
  */
 void time_irq_handler(void);
@@ -28,7 +28,7 @@ void time_irq_handler(void);
  * @brief Spawn timer daemons.
  *
  * @retval 0 Success.
- * @retval -Exxx See process_kthread().
+ * @retval -Exxx See task_kthread().
 
 
  */

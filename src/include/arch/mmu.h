@@ -9,7 +9,7 @@ static inline void mmu_flush_tlb(void)
 }
 
 /**
- * @brief Update all the processus mapping of va in tlb.
+ * @brief Update all the task mapping of va in tlb.
  *
  * @param va A pointer to the virtual adress.
  */

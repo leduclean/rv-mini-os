@@ -9,7 +9,7 @@
 #include <arch/cpu.h>
 
 #include <kernel/mutex.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/spinlock.h>
 
@@ -26,7 +26,7 @@ uint8_t mutex_is_lock(const mutex_t *m)
 	return m->locked;
 }
 
-process_t *mutex_owner(const mutex_t *m)
+task_t *mutex_owner(const mutex_t *m)
 {
 	return m->owner;
 }
@@ -40,7 +40,7 @@ static int mutex_trylock_unlocked(mutex_t *m)
 
 	// If not locked take the ownership.
 	m->locked = 1;
-	m->owner = process_active();
+	m->owner = task_active();
 	return 0;
 }
 
@@ -71,7 +71,7 @@ void mutex_unlock(mutex_t *m)
 {
 	spinlock_lock(&m->lock);
 
-	process_t *current = process_active();
+	task_t *current = task_active();
 	if ((!m->locked) || (m->owner != current)) {
 		goto out;
 	}
@@ -79,9 +79,9 @@ void mutex_unlock(mutex_t *m)
 	if (!wq_is_empty(&m->wq)) {
 		// Wake first waiting and give him the ownership.
 		clist_node_t *node = wq_pop_head(&m->wq);
-		process_t *proc = container_of(node, process_t, wait_node);
-		m->owner = proc;
-		scheduler_ready_process(proc);
+		task_t *task = container_of(node, task_t, wait_node);
+		m->owner = task;
+		scheduler_ready_task(task);
 	} else {
 		// Unlock and reset owner.
 		m->locked = 0;

@@ -6,14 +6,14 @@
 #pragma once
 #include <stdint.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/spinlock.h>
 
-/** @brief Mutex, with its owner and the processes waiting for it. */
+/** @brief Mutex, with its owner and the tasks waiting for it. */
 typedef struct mutex {
 	uint8_t locked; ///< 1 if the mutex is held, 0 otherwise.
-	process_t *owner; ///< Process holding the mutex, NULL if free.
-	wait_queue_t wq; ///< Processes blocked waiting for the mutex.
+	task_t *owner; ///< Task holding the mutex, NULL if free.
+	wait_queue_t wq; ///< Tasks blocked waiting for the mutex.
 	spinlock_t lock; ///< Mutex internal structure lock.
 } mutex_t;
 
@@ -42,9 +42,9 @@ uint8_t mutex_is_lock(const mutex_t *m);
  * @brief Give the owner of the mutex.
  *
  * @param m Mutex to read.
- * @return Process owning @p m, NULL if it is free.
+ * @return Task owning @p m, NULL if it is free.
  */
-process_t *mutex_owner(const mutex_t *m);
+task_t *mutex_owner(const mutex_t *m);
 
 /**
  * @brief Take the ownership of a mutex, blocking until it is available.
@@ -74,8 +74,8 @@ void mutex_trylock_timeout(mutex_t *m);
 /**
  * @brief Release the ownership of a mutex.
  *
- * @note The ownership is handed over to the first waiting process, if any.
- * A process that is not the owner cannot unlock @p m.
+ * @note The ownership is handed over to the first waiting task, if any.
+ * A task that is not the owner cannot unlock @p m.
  *
  * @param m Mutex to unlock.
  */

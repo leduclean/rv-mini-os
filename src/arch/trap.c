@@ -8,7 +8,7 @@
 #include <arch/plic.h>
 #include <arch/trap.h>
 #include <kernel/mmap.h>
-#include <kernel/process.h>
+#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 #include <kernel/time.h>
@@ -134,7 +134,7 @@ void kerneltrap(void)
  */
 void usertrap(void)
 {
-	process_t *p = process_active();
+	task_t *p = task_active();
 	pt_regs_t *t = &p->tframe_pa->saved_regs;
 
 	unsigned long scause = t->scause;
@@ -198,6 +198,6 @@ void tframe_init(tframe_t *t, pte_t *root, unsigned long kstack_top)
 
 void trap_return_to_user(void)
 {
-	process_t *p = process_active();
+	task_t *p = task_active();
 	trap_return_va()(p->tframe_pa->saved_regs.satp, p->tframe_va);
 };

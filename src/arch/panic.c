@@ -7,7 +7,7 @@
 
 #include <arch/cpu.h>
 
-#include <kernel/process.h>
+#include <kernel/task.h>
 
 void _panic(const char *msg, const char *file, int line)
 {
@@ -15,10 +15,10 @@ void _panic(const char *msg, const char *file, int line)
 
 	printf("\n[PANIC] %s:%d: %s\n", file, line, msg);
 
-	// NULL before the first process is elected, panic must survive that.
-	const process_t *p = process_active();
+	// NULL before the first task is elected, panic must survive that.
+	const task_t *p = task_active();
 	if (p) {
-		printf("[PANIC] active process: %s (pid %d)\n", p->name,
+		printf("[PANIC] active task: %s (pid %d)\n", p->name,
 		       p->pid);
 	}
 

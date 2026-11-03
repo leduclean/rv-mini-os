@@ -10,10 +10,10 @@
 #include <kernel/spinlock.h>
 #include <kernel/waitqueue.h>
 
-/** @brief Counting semaphore and the processes waiting on it. */
+/** @brief Counting semaphore and the tasks waiting on it. */
 typedef struct semaphore {
 	int count; ///< Number of available ressources.
-	wait_queue_t wq; ///< Processes blocked waiting for a ressource.
+	wait_queue_t wq; ///< Tasks blocked waiting for a ressource.
 	spinlock_t
 		lock; ///< Lock protecting the inner structure of the semaphore.
 } semaphore_t;
@@ -32,7 +32,7 @@ typedef struct semaphore {
 void sem_init(semaphore_t *sem, int val);
 
 /**
- * @brief Post a ressource and wake the first waiting process, if any.
+ * @brief Post a ressource and wake the first waiting task, if any.
  *
  * @param sem Semaphore to release.
  */

@@ -23,12 +23,12 @@ typedef ssize_t (*read_cb)(struct file *f, char *buf, size_t count);
 
 /**
  * @class file
- * @brief File structure, this can be detained by multiple processes 
+ * @brief File structure, this can be detained by multiple tasks 
  * if the fork() syscall is used.
  *
  */
 struct file {
-	uint32_t refcnt; /**< Fork process keep might keep the same fd. */
+	uint32_t refcnt; /**< Fork task keep might keep the same fd. */
 	struct inode *i; /**< Inode of the file */
 	int64_t off; /** Should never be < 0 */
 	uint8_t mode;
