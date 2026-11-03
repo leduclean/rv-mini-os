@@ -1,88 +1,27 @@
-//TODO: would be cool to generate stub via SYSCALLS(X_STUB)
-
 #include "syscall.h"
 
 #include <stddef.h>
-#include <stdint.h>
 
-#include <kinterface.h>
 #include <syscall_def.h>
 
-extern unsigned long usyscall(unsigned long n, unsigned long a, unsigned long b,
-			      unsigned long c, unsigned long d, unsigned long e,
-			      unsigned long f);
+/**
+ * @brief Define all the user side syscall.
+ *
+ * @param ret Return type of the syscall.
+ * @param name Name of the syscall.
+ * @param args  Args required by the syscall.
+ */
+#define _X_USER(ret, name, args)                    \
+	[[gnu::naked]] ret name args                \
+	{                                           \
+		__asm__("li a7, %[sys_num] \n\t"    \
+			"ecall \n\t"                \
+			"ret \n\t"                  \
+			:                           \
+			: [sys_num] "i"(SYS_##name) \
+			: "a7");                    \
+	}
 
-#define SYSCALL_(n, a, b, c, d, e, f, ...) usyscall(n, a, b, c, d, e, f)
-#define SYSCALL(sys, ...) SYSCALL_(sys, ##__VA_ARGS__, 0, 0, 0, 0, 0, 0)
+SYSCALLS(_X_USER)
 
-void sleep(uint32_t sec)
-{
-	SYSCALL(SYS_SLEEP, sec);
-}
-
-void exit(uint8_t code)
-{
-	SYSCALL(SYS_EXIT, code);
-}
-
-void exit_group(uint8_t code)
-{
-	SYSCALL(SYS_EXIT_GROUP, code);
-}
-
-int8_t wait(void)
-{
-	return SYSCALL(SYS_WAIT);
-}
-
-int8_t waitpid(int8_t pid)
-{
-	return SYSCALL(SYS_WAITPID, pid);
-}
-
-uint8_t getpid(void)
-{
-	return SYSCALL(SYS_GETPID);
-}
-
-int8_t fork(void)
-{
-	return SYSCALL(SYS_FORK);
-}
-
-int8_t clone(void *entry, void *args, void *stack, unsigned long flags)
-{
-	return SYSCALL(SYS_CLONE, (unsigned long)entry, (unsigned long)args,
-		       (unsigned long)stack, flags);
-}
-
-int exec(const char *path, char *const argv[])
-{
-	return SYSCALL(SYS_EXEC, (unsigned long)path, (unsigned long)argv);
-}
-
-int open(const char *path, unsigned long flags)
-{
-	return SYSCALL(SYS_OPEN, (unsigned long)path, flags);
-}
-
-int close(int fd)
-{
-	return SYSCALL(SYS_CLOSE, (unsigned long)fd);
-}
-
-ssize_t write(int fd, const char *buf, size_t count)
-{
-	return SYSCALL(SYS_WRITE, fd, (unsigned long)buf, count);
-}
-
-ssize_t read(int fd, char *buf, size_t count)
-{
-	return SYSCALL(SYS_READ, fd, (unsigned long)buf, count);
-}
-
-int64_t seek(int fd, int64_t offset, int whence)
-{
-	return SYSCALL(SYS_SEEK, (unsigned long)fd, (unsigned long)offset,
-		       (unsigned long)whence);
-}
+#undef _X_USER_SYS

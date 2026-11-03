@@ -1,22 +1,17 @@
 #include <lib/stdio.h>
 
-
-
 #include <arch/cpu.h>
-
-#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
+#include <kernel/task.h>
 #include <user/syscall_def.h>
 
 typedef long (*syscall_fn)(unsigned long, unsigned long, unsigned long,
 			   unsigned long, unsigned long, unsigned long);
 
-#define X_TAB_ENTRY(enum, ret, name, args) \
-	[SYS_##enum] = (syscall_fn)(void *)sys_##name,
-
+#define X_TAB_ENTRY(ret, name, args) \
+	[SYS_##name] = (syscall_fn)(void *)sys_##name,
 static const syscall_fn syscall_tab[SYS_NBR] = { SYSCALLS(X_TAB_ENTRY) };
-
 #undef X_TAB_ENTRY
 
 long syscall_dispatch(unsigned long n, unsigned long a, unsigned long b,
