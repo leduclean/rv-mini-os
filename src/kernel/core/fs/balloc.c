@@ -7,6 +7,12 @@
 #include <kernel/balloc.h>
 #include <kernel/bcache.h>
 #include <kernel/fs.h>
+#include <kernel/fs_layout.h>
+
+static inline uint32_t bit_to_blkno(uint32_t bit_idx, uint32_t bbm_nb)
+{
+	return bit_idx + (bbm_nb * FS_BM_BITS_PER_BLK) + sb.data_start;
+}
 
 static int32_t _bbm_alloc(void)
 {
@@ -21,11 +27,18 @@ static int32_t _bbm_alloc(void)
 		int bit_idx = bm_find_first_zero(bm_blk->buf,
 						 FS_BM_BITS_PER_BLK);
 		if (bit_idx >= 0) {
+			uint32_t blkno = bit_to_blkno(bit_idx, i);
+
+			if (blkno >= sb.nb_blk) {
+				/* Next are zero bit are not associated with a block */
+				bcache_release(bm_blk);
+				break;
+			}
+
 			bm_set_bit(bm_blk->buf, bit_idx);
 			bcache_mark_dirty(bm_blk);
 			bcache_release(bm_blk);
-			return bit_idx + (i * FS_BM_BITS_PER_BLK) +
-			       sb.data_start;
+			return blkno;
 		}
 
 		bcache_release(bm_blk);
@@ -37,8 +50,7 @@ static int32_t _bbm_alloc(void)
 static int _bbm_free(uint32_t blkno)
 {
 	// Only data block free are allowed
-	if (blkno < sb.data_start ||
-	    blkno >= sb.data_start + sb.nb_dblk) {
+	if (blkno < sb.data_start || blkno >= sb.data_start + sb.nb_dblk) {
 		return -EINVAL;
 	}
 

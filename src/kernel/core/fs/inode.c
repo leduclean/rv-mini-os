@@ -22,9 +22,8 @@
 #include <kernel/fs.h>
 #include <kernel/inode.h>
 #include <kernel/mutex.h>
+#include <kernel/vpages.h>
 #include <user/kinterface.h>
-
-#include "kernel/vpages.h"
 
 #define INODE_CACHE_SIZE 64
 #define INODES_PER_BLK (FS_BLK_SIZE / sizeof(struct dinode))
@@ -42,6 +41,11 @@ static inline int _get_tab_idx(uint32_t id)
 	return id % INODES_PER_BLK;
 }
 
+static inline uint32_t bit_to_inode_id(uint32_t bit_idx, uint32_t bm_nb)
+{
+	return bit_idx + (bm_nb * FS_BM_BITS_PER_BLK);
+}
+
 int inode_init(void)
 {
 	struct inode *curr;
@@ -56,6 +60,11 @@ int inode_init(void)
 	return 0;
 }
 
+static inline uint32_t nb_inodes(void)
+{
+	return sb.nb_itab * INODES_PER_BLK;
+}
+
 static int32_t _ibm_alloc(void)
 {
 	for (uint32_t i = 0; i < sb.nb_ibm; i++) {
@@ -66,9 +75,16 @@ static int32_t _ibm_alloc(void)
 			return -EIO;
 		}
 
-		int bit_idx =
-			bm_find_first_zero(bm_blk->buf, FS_BM_BITS_PER_BLK);
+		int bit_idx = bm_find_first_zero(bm_blk->buf,
+						 FS_BM_BITS_PER_BLK);
 		if (bit_idx >= 0) {
+			uint32_t id = bit_to_inode_id(bit_idx, i);
+			if (id >= nb_inodes()) {
+				/* Next are zero bit are not associated with an inode */
+				bcache_release(bm_blk);
+				break;
+			}
+
 			bm_set_bit(bm_blk->buf, bit_idx);
 			bcache_mark_dirty(bm_blk);
 			bcache_release(bm_blk);
@@ -79,11 +95,6 @@ static int32_t _ibm_alloc(void)
 	}
 
 	return -ENOSPC;
-}
-
-static inline uint32_t nb_inodes(void)
-{
-	return sb.nb_itab * INODES_PER_BLK;
 }
 
 static int32_t _ibm_free(uint32_t id)
