@@ -20,6 +20,7 @@
 #include <kernel/balloc.h>
 #include <kernel/bcache.h>
 #include <kernel/fs.h>
+#include <kernel/fs_layout.h>
 #include <kernel/inode.h>
 #include <kernel/mutex.h>
 #include <kernel/vpages.h>
@@ -155,7 +156,7 @@ static struct inode *cache_request_locked(uint32_t id)
 }
 
 static int find_by_refcnt_cb_locked(clist_node_t *node,
-				     [[maybe_unused]] void *args)
+				    [[maybe_unused]] void *args)
 {
 	struct inode *i = container_of(node, struct inode, node);
 	int predicate = i->refcnt == 0;
@@ -168,8 +169,8 @@ static int find_by_refcnt_cb_locked(clist_node_t *node,
 static struct inode *find_reusable_locked(void)
 {
 	// LRU policy
-	clist_node_t *i_node = clist_find_rev(&icache,
-					      find_by_refcnt_cb_locked, NULL);
+	clist_node_t *i_node = clist_find_rev(&icache, find_by_refcnt_cb_locked,
+					      NULL);
 
 	if (!i_node) {
 		return NULL;
@@ -262,7 +263,7 @@ static int release_dir_blk_locked(struct inode *i)
 {
 
 	int res;
-	for (int idx = 0; idx < DINODE_DIR_ADDR; idx++) {
+	for (int idx = 0; idx < FS_INODE_DIR_DBLKNO; idx++) {
 		uint32_t blkno = i->content.dirblkno[idx];
 		if (blkno == 0) {
 			continue;
@@ -288,7 +289,7 @@ static int release_indir_locked(struct inode *i)
 	}
 
 	uint32_t *content = (uint32_t *)indir_blk->buf;
-	for (uint32_t i = 0; i < DINODE_INDIR_ADDR; i++) {
+	for (uint32_t i = 0; i < FS_INODE_INDIR_DBLKNO; i++) {
 		uint32_t blkno = content[i];
 		if (blkno == 0) {
 			continue;
@@ -319,21 +320,24 @@ static inline int32_t get_dir_blk(struct inode *i, uint32_t nth)
 
 static inline int32_t get_indir_blk(struct inode *i, uint32_t nth)
 {
+	// Rescale to the indirect index
+	nth -= FS_INODE_DIR_DBLKNO;
+
 	// One indirection lvl
 	struct cblk *indir_blk = bcache_read(i->content.indir);
 	if (!indir_blk) {
 		return -EIO;
 	}
 
-	uint32_t *content = (uint32_t *)indir_blk->buf;
-	uint32_t blkno = content[nth];
+	uint32_t *dblkno_tab = (uint32_t *)indir_blk->buf;
+	uint32_t blkno = dblkno_tab[nth];
 
 	if (blkno == 0) {
 		blkno = balloc();
 		if (blkno < 0) {
 			goto err_release;
 		}
-		content[nth] = blkno;
+		dblkno_tab[nth] = blkno;
 		bcache_mark_dirty(indir_blk);
 	}
 err_release:
@@ -344,11 +348,11 @@ err_release:
 int32_t _get_data_locked(struct inode *i, uint32_t nth)
 {
 	int32_t res;
-	if (nth >= DINODE_DIR_ADDR + DINODE_INDIR_ADDR) {
+	if (nth >= FS_INODE_DIR_DBLKNO + FS_INODE_INDIR_DBLKNO) {
 		return -EFBIG;
 	}
 
-	if (nth < DINODE_DIR_ADDR) {
+	if (nth < FS_INODE_DIR_DBLKNO) {
 		res = get_dir_blk(i, nth);
 
 	} else {
@@ -464,7 +468,7 @@ ssize_t inode_write(struct inode *i, bool user_src, const char *src,
 	if (offset > i->content.size) {
 		return -EINVAL;
 	}
-	if (offset + count > MAX_FILE_SIZE) {
+	if (offset + count > FS_MAX_FILE_SIZE) {
 		return -EFBIG;
 	}
 

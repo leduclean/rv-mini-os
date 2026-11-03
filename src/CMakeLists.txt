@@ -80,11 +80,10 @@ add_custom_command(
     OUTPUT
         ${DISK_IMG}
     COMMAND
-        qemu-img create -f raw ${DISK_IMG} ${DISK_SIZE_M}M
-    COMMAND
-        ${MKFS} ${DISK_IMG}
+        ${MKFS} ${DISK_IMG} $<TARGET_FILE:user.elf>
     DEPENDS
         ${MKFS}
+        user.elf
 )
 
 set(QEMU_DISK_OPTS

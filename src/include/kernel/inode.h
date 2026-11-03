@@ -15,9 +15,6 @@
 #include <kernel/mutex.h>
 #include <user/kinterface.h>
 
-#define DINODE_INDIR_ADDR (FS_BLK_SIZE / sizeof(uint32_t))
-#define MAX_FILE_SIZE (DINODE_DIR_ADDR + DINODE_INDIR_ADDR) * FS_BLK_SIZE
-
 /**
  * @class inode
  * @brief In memory node.

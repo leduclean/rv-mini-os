@@ -59,7 +59,20 @@ enum inode_type : uint8_t {
 	INODE_DEVICE,
 };
 
-#define DINODE_DIR_ADDR 12
+/**
+ * @name Inode data block descriptor.
+ * @{
+ */
+#define FS_INODE_DIR_DBLKNO \
+	12 /**< Number of direct dblock number in the inode.*/
+#define FS_INODE_INDIR_DBLKNO \
+	(FS_BLK_SIZE /        \
+	 sizeof(uint32_t)) /**< Number of block number in one indirect block. */
+#define FS_MAX_FILE_SIZE                                \
+	(FS_INODE_DIR_DBLKNO + FS_INODE_INDIR_DBLKNO) * \
+		FS_BLK_SIZE /** Max allowed file size */
+/** @} */
+
 /**
  * @class dinode
  * @brief In disk node.
@@ -70,7 +83,7 @@ struct dinode {
 	enum inode_type type;
 	uint8_t dev_id; /* INODE_DEVICE */
 	uint32_t nblink;
-	uint32_t dirblkno[DINODE_DIR_ADDR];
+	uint32_t dirblkno[FS_INODE_DIR_DBLKNO];
 	uint32_t indir;
 };
 
