@@ -580,5 +580,10 @@ char *strtok(char *s, const char *delim)
 	if (s)
 		holder = s;
 
-	return strsep(&holder, delim);
+	char *tok;
+	do {
+		tok = strsep(&holder, delim);
+	} while (tok && !*tok); /* skip empty token */
+
+	return tok;
 }
