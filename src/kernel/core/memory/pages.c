@@ -22,7 +22,7 @@ typedef struct page {
 } page_t;
 
 static clist_node_t free_pages;
-static inline void _push_free(void *page)
+static inline void push_free(void *page)
 {
 	page_t *p = page;
 	clist_init_node(&p->node);
@@ -67,7 +67,7 @@ void page_init(void)
 
 	clist_init_node(&free_pages);
 	for (char *p = _page_start; p < _page_end; p += PAGE_SIZE) {
-		_push_free(p);
+		push_free(p);
 	}
 }
 
@@ -95,7 +95,7 @@ void page_put(void *page)
 		panic("page_put() on a page nobody holds: double free");
 	}
 	if (--page_rc[page_idx(page)] == 0) {
-		_push_free(page);
+		push_free(page);
 	}
 	irq_restore(state);
 }

@@ -32,7 +32,7 @@ int8_t sys_wait(void)
 	return pid;
 }
 
-static inline int _find_pid_cb(clist_node_t *node, void *args)
+static inline int find_pid_cb(clist_node_t *node, void *args)
 {
 	int8_t pid = *(int8_t *)args;
 	process_t *p = container_of(node, process_t, wait_node);
@@ -47,7 +47,7 @@ int8_t sys_waitpid(int8_t pid)
 	clist_node_t *zombies = &parent->zombies;
 	clist_node_t *found_node = NULL;
 
-	while ((found_node = clist_find(zombies, _find_pid_cb, &pid)) == NULL) {
+	while ((found_node = clist_find(zombies, find_pid_cb, &pid)) == NULL) {
 		// Wait on its wait queue
 		scheduler_block_on(&parent->zombie_wq);
 	}

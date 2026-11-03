@@ -14,7 +14,7 @@
 #include <kernel/time.h>
 #include <kernel/vpages.h>
 
-static inline unsigned long _get_user_sstatus(void)
+static inline unsigned long get_user_sstatus(void)
 {
 	unsigned long val = csr_read(sstatus);
 
@@ -33,12 +33,12 @@ static inline unsigned long _get_user_sstatus(void)
  * @param entry Trap vector written in the mtvec register.
  *
  */
-static inline void _init_mtvec(void (*entry)(void))
+static inline void init_mtvec(void (*entry)(void))
 {
 	csr_write(mtvec, entry);
 }
 
-static inline void _init_stvec(void (*entry)(void))
+static inline void init_stvec(void (*entry)(void))
 {
 	csr_write(stvec, entry);
 }
@@ -50,7 +50,7 @@ static inline void _init_stvec(void (*entry)(void))
  * @param pc m/sepc register.
  * @param tval Trap value of the exception m/stval.
  */
-static inline void _panic_print(unsigned long cause, unsigned long pc,
+static inline void panic_print(unsigned long cause, unsigned long pc,
 				unsigned long tval)
 {
 	if (cause & XCAUSE_IRQ_BIT) {
@@ -67,14 +67,14 @@ static inline void _panic_print(unsigned long cause, unsigned long pc,
 /**
  * @brief Machine level trap panic.
  */
-static inline void _machine_trap_panic(void)
+static inline void machine_trap_panic(void)
 {
 	unsigned long mtval = csr_read(mtval);
 	unsigned long mepc = csr_read(mepc);
 	unsigned long mcause = csr_read(mcause);
 
 	printf("[PANIC]: FROM MACHINE \n");
-	_panic_print(mcause, mepc, mtval);
+	panic_print(mcause, mepc, mtval);
 
 	panic("unhandled machine trap");
 }
@@ -84,15 +84,15 @@ static inline void _machine_trap_panic(void)
  *
  * @param t A pointer to the saved register of the trap.
  */
-static inline void _kernel_trap_panic(unsigned long scause, unsigned long sepc,
+static inline void kernel_trap_panic(unsigned long scause, unsigned long sepc,
 				      unsigned long stval)
 {
 	printf("[PANIC]: FROM KERNEL \n");
-	_panic_print(scause, sepc, stval);
+	panic_print(scause, sepc, stval);
 	panic("unhandled kernel trap");
 }
 
-static inline void _handler_async_irq(unsigned long irq_cause)
+static inline void handler_async_irq(unsigned long irq_cause)
 {
 	switch (irq_cause) {
 	case S_IRQ_EXT:
@@ -116,12 +116,12 @@ void kerneltrap(void)
 	long irq_flag = scause & XCAUSE_IRQ_BIT;
 	if (irq_flag) {
 		unsigned long irq_cause = scause & ~XCAUSE_IRQ_BIT;
-		_handler_async_irq(irq_cause);
+		handler_async_irq(irq_cause);
 
 	} else {
 		//TODO: We do not handle exception from kernel to kernel.
 		unsigned long stval = csr_read(stval);
-		_kernel_trap_panic(scause, sepc, stval);
+		kernel_trap_panic(scause, sepc, stval);
 	};
 
 	// Restore initial csr for trap in trap handling
@@ -143,7 +143,7 @@ void usertrap(void)
 
 	if (irq_flag) {
 		unsigned long irq_cause = scause & ~XCAUSE_IRQ_BIT;
-		_handler_async_irq(irq_cause);
+		handler_async_irq(irq_cause);
 	} else {
 		switch (scause) {
 		case ECALL_UMODE:
@@ -170,7 +170,7 @@ void usertrap(void)
 		}
 
 		default: {
-			_kernel_trap_panic(scause, t->sepc, stval);
+			kernel_trap_panic(scause, t->sepc, stval);
 			break;
 		}
 		}
@@ -183,14 +183,14 @@ extern void kernelvec(void);
 
 void trap_init(void)
 {
-	_init_mtvec(_machine_trap_panic);
+	init_mtvec(machine_trap_panic);
 	// Kernel vec when starting the OS
-	_init_stvec(kernelvec);
+	init_stvec(kernelvec);
 }
 
 void tframe_init(tframe_t *t, pte_t *root, unsigned long kstack_top)
 {
-	t->saved_regs.sstatus = _get_user_sstatus();
+	t->saved_regs.sstatus = get_user_sstatus();
 	t->saved_regs.satp = mmap_satp(root);
 	t->kstack = kstack_top;
 	t->ksatp = mmap_kernel_satp();

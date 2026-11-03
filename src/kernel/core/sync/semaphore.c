@@ -20,7 +20,7 @@ void sem_init(semaphore_t *sem, int val)
 	sem->count = val;
 }
 
-static int _sem_try_take_unlocked(semaphore_t *sem)
+static int sem_try_take_unlocked(semaphore_t *sem)
 {
 	if (sem->count <= 0) {
 		return -EAGAIN;
@@ -34,7 +34,7 @@ int sem_try_take(semaphore_t *sem)
 	int res;
 	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
 
-	res = _sem_try_take_unlocked(sem);
+	res = sem_try_take_unlocked(sem);
 
 	spinlock_unlock_irq_restore(&sem->lock, flags);
 	return res;
@@ -44,7 +44,7 @@ void sem_wait(semaphore_t *sem)
 {
 	unsigned long flags = spinlock_lock_irq_save(&sem->lock);
 
-	if (_sem_try_take_unlocked(sem) < 0) {
+	if (sem_try_take_unlocked(sem) < 0) {
 		scheduler_block_on_locked(&sem->wq, &sem->lock);
 		irq_restore(flags);
 		return;

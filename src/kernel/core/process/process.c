@@ -40,7 +40,7 @@ static ptable_t proc_table;
 static process_t *active = NULL;
 
 /** @brief Init the process table. */
-static void _init_proc_table(void)
+static void init_proc_table(void)
 {
 	clist_init_node(&proc_table.head);
 	proc_table.next_pid = 0;
@@ -54,7 +54,7 @@ static void _init_proc_table(void)
  *
  * @param proc Process to clear.
  */
-static void _remove_from_blocking_queues(process_t *proc)
+static void remove_from_blocking_queues(process_t *proc)
 {
 	if (clist_is_in_list(&proc->sleep_node))
 		clist_remove(&proc->sleep_node);
@@ -70,11 +70,11 @@ static void _remove_from_blocking_queues(process_t *proc)
  *
  * @param proc Process to remove from the queues.
  */
-static inline void _remove_from_sched_queues(process_t *proc)
+static inline void remove_from_sched_queues(process_t *proc)
 {
 	if (clist_is_in_list(&proc->ready_node))
 		clist_remove(&proc->ready_node);
-	_remove_from_blocking_queues(proc);
+	remove_from_blocking_queues(proc);
 }
 
 /**
@@ -84,11 +84,11 @@ static inline void _remove_from_sched_queues(process_t *proc)
  *
  * @param proc Process to remove from the queues.
  */
-static inline void _remove_from_all_queues(process_t *proc)
+static inline void remove_from_all_queues(process_t *proc)
 {
 	if (clist_is_in_list(&proc->proc_node))
 		clist_remove(&proc->proc_node);
-	_remove_from_sched_queues(proc);
+	remove_from_sched_queues(proc);
 }
 
 /**
@@ -96,7 +96,7 @@ static inline void _remove_from_all_queues(process_t *proc)
  *
  * @param proc Process to reset.
  */
-static inline void _init_process_queues(process_t *proc)
+static inline void init_process_queues(process_t *proc)
 {
 	clist_init_node(&proc->proc_node);
 	clist_init_node(&proc->ready_node);
@@ -117,7 +117,7 @@ static inline void _init_process_queues(process_t *proc)
  * @retval ERR_PTR(-EAGAIN) Process table full.
  * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
-static inline process_t *_alloc_squeletton(const char *name, priority prior,
+static inline process_t *alloc_squeletton(const char *name, priority prior,
 					   bool user, process_t *parent)
 {
 	if (proc_table.active_process >= MAX_PROC) {
@@ -129,7 +129,7 @@ static inline process_t *_alloc_squeletton(const char *name, priority prior,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	_init_process_queues(proc);
+	init_process_queues(proc);
 
 	strncpy(proc->name, name, sizeof(proc->name) - 1);
 	proc->user = user;
@@ -147,7 +147,7 @@ static inline process_t *_alloc_squeletton(const char *name, priority prior,
  *
  * @param p A pointer to the process.
  */
-static void _activate_process(process_t *p)
+static void activate_process(process_t *p)
 {
 	p->state = READY;
 	clist_push_back(&proc_table.head, &p->proc_node);
@@ -159,7 +159,7 @@ static void _activate_process(process_t *p)
 /**
  * @brief Kernel privilege proessus entry point.
  */
-static void _kproc_launcher(void)
+static void kproc_launcher(void)
 {
 	//NOTE: We force this because there is no guarantee,
 	// after a kprocess spawn to have irq enable.
@@ -171,7 +171,7 @@ static void _kproc_launcher(void)
 }
 
 /** @brief Create the idle process and make it active. */
-static int _init_idle(void)
+static int init_idle(void)
 {
 	process_t *p = process_kthread(process_idle, "idle", IDLE);
 	if (IS_ERR(p)) {
@@ -222,7 +222,7 @@ void process_wake(process_t *proc)
 	irq_flags_t state = irq_save();
 	if ((proc->state == SLEEPING) || (proc->state == BLOCKED)) {
 		// Remove it from sleeping and blocked queue if remaining
-		_remove_from_blocking_queues(proc);
+		remove_from_blocking_queues(proc);
 		proc->state = RUNNING;
 	}
 	irq_restore(state);
@@ -250,7 +250,7 @@ void process_zombify(process_t *proc, int exit_code)
 	proc->state = ZOMBIE;
 	proc->exit_code = exit_code;
 
-	_remove_from_sched_queues(proc);
+	remove_from_sched_queues(proc);
 	release_fds(proc);
 	clist_push_back(&parent->zombies, &proc->wait_node);
 
@@ -271,7 +271,7 @@ void process_destroy(process_t *proc)
 	}
 
 	proc->state = TERMINATED;
-	_remove_from_all_queues(proc);
+	remove_from_all_queues(proc);
 
 	pte_t *root = proc->root_ptable;
 	if (proc->user && root) {
@@ -409,7 +409,7 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 				  priority prior)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = _alloc_squeletton(name, prior, true, process_active());
+	process_t *p = alloc_squeletton(name, prior, true, process_active());
 	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
@@ -433,7 +433,7 @@ process_t *process_start_userland(const uintptr_t user_elf, const char *name,
 	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf), (void *)sp);
 
 	copy_fds(p, process_active(), false);
-	_activate_process(p);
+	activate_process(p);
 	irq_restore(state);
 	return p;
 
@@ -448,7 +448,7 @@ err_restore_irq:
 process_t *process_kthread(void code(void), const char *name, priority prior)
 {
 	irq_flags_t state = irq_save();
-	process_t *p = _alloc_squeletton(name, prior, false, process_active());
+	process_t *p = alloc_squeletton(name, prior, false, process_active());
 	if (IS_ERR(p)) {
 		goto err_restore_irq;
 	}
@@ -458,11 +458,11 @@ process_t *process_kthread(void code(void), const char *name, priority prior)
 		p->ctx.ra = (uintptr_t)code;
 	} else {
 		p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
-		p->ctx.ra = (uintptr_t)_kproc_launcher;
+		p->ctx.ra = (uintptr_t)kproc_launcher;
 	}
 
 	copy_fds(p, process_active(), false);
-	_activate_process(p);
+	activate_process(p);
 	irq_restore(state);
 	return p;
 
@@ -480,7 +480,7 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 
 	int res = -ENOMEM;
 	irq_flags_t state = irq_save();
-	process_t *child = _alloc_squeletton(parent->name, parent->priority,
+	process_t *child = alloc_squeletton(parent->name, parent->priority,
 					     parent->user, parent);
 	if (IS_ERR(child)) {
 		goto err_restore_irq;
@@ -542,7 +542,7 @@ process_t *process_clone(process_t *parent, void *entry, void *args,
 
 	copy_fds(child, parent, flags & CLONE_FILES);
 
-	_activate_process(child);
+	activate_process(child);
 	irq_restore(state);
 	return child;
 
@@ -669,9 +669,9 @@ int process_init(void)
 {
 	int res;
 
-	_init_proc_table();
+	init_proc_table();
 	scheduler_init();
-	res = _init_idle();
+	res = init_idle();
 
 	return res;
 }

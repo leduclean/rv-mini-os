@@ -36,42 +36,42 @@ void bcache_init(void)
 	}
 }
 
-static inline int _get_sector(uint32_t blkno)
+static inline int get_sector(uint32_t blkno)
 {
 	return blkno * (FS_BLK_SIZE / VIRTIO_BLK_SIZE);
 }
 
-static inline bool _is_dirty_locked(struct cblk *blk)
+static inline bool is_dirty_locked(struct cblk *blk)
 {
 	return blk->flags & CBLK_FLAGS_DIRTY;
 }
 
-static inline bool _is_valid_locked(struct cblk *blk)
+static inline bool is_valid_locked(struct cblk *blk)
 {
 	return blk->flags & CBLK_FLAGS_VALID;
 }
 
-static inline void _set_dirty_locked(struct cblk *blk)
+static inline void set_dirty_locked(struct cblk *blk)
 {
 	blk->flags |= CBLK_FLAGS_DIRTY;
 }
 
-static inline void _clear_dirty_locked(struct cblk *blk)
+static inline void clear_dirty_locked(struct cblk *blk)
 {
 	blk->flags &= ~CBLK_FLAGS_DIRTY;
 }
 
-static inline void _set_valid_locked(struct cblk *blk)
+static inline void set_valid_locked(struct cblk *blk)
 {
 	blk->flags |= CBLK_FLAGS_VALID;
 }
 
-static inline void _clear_valid_locked(struct cblk *blk)
+static inline void clear_valid_locked(struct cblk *blk)
 {
 	blk->flags &= ~CBLK_FLAGS_VALID;
 }
 
-static int _match_blkno_cb_locked(clist_node_t *node, void *args)
+static int match_blkno_cb_locked(clist_node_t *node, void *args)
 {
 	uint32_t blkno = *(uint32_t *)args;
 	struct cblk *blk = container_of(node, struct cblk, node);
@@ -83,11 +83,11 @@ static int _match_blkno_cb_locked(clist_node_t *node, void *args)
 /**
  * @brief Performs a MRU cache request.
  */
-static struct cblk *_cache_request_locked(uint32_t blkno)
+static struct cblk *cache_request_locked(uint32_t blkno)
 {
 
 	// MRU policy
-	clist_node_t *blk_node = clist_find(&buf_list, _match_blkno_cb_locked,
+	clist_node_t *blk_node = clist_find(&buf_list, match_blkno_cb_locked,
 					    &blkno);
 
 	if (!blk_node) {
@@ -97,22 +97,22 @@ static struct cblk *_cache_request_locked(uint32_t blkno)
 	return container_of(blk_node, struct cblk, node);
 }
 
-static int _find_by_refcnt_cb_locked(clist_node_t *node,
+static int find_by_refcnt_cb_locked(clist_node_t *node,
 				     [[maybe_unused]] void *args)
 {
 	struct cblk *blk = container_of(node, struct cblk, node);
-	int predicate = blk->refcnt == 0 && !_is_dirty_locked(blk);
+	int predicate = blk->refcnt == 0 && !is_dirty_locked(blk);
 	return predicate;
 }
 
 /**
  * @brief Performs a LRU scan to find reusable block
  */
-static struct cblk *_find_reusable_locked(void)
+static struct cblk *find_reusable_locked(void)
 {
 	// LRU policy
 	clist_node_t *blk_node = clist_find_rev(
-		&buf_list, _find_by_refcnt_cb_locked, NULL);
+		&buf_list, find_by_refcnt_cb_locked, NULL);
 
 	if (!blk_node) {
 		return NULL;
@@ -125,10 +125,10 @@ void bcache_invalidate(uint32_t blkno)
 {
 	spinlock_lock(&cache_lock);
 	// Invalid cache entry
-	struct cblk *blk = _cache_request_locked(blkno);
+	struct cblk *blk = cache_request_locked(blkno);
 	if (blk) {
-		_clear_dirty_locked(blk);
-		_clear_valid_locked(blk);
+		clear_dirty_locked(blk);
+		clear_valid_locked(blk);
 		blk->blkno = UINT32_MAX;
 	}
 	spinlock_unlock(&cache_lock);
@@ -140,16 +140,16 @@ struct cblk *bcache_getblk(uint32_t blkno)
 	spinlock_lock(&cache_lock);
 
 	// HIT
-	blk = _cache_request_locked(blkno);
+	blk = cache_request_locked(blkno);
 	// MISS
 	if (!blk) {
-		blk = _find_reusable_locked();
+		blk = find_reusable_locked();
 		if (!blk) {
 			panic("BUFFER OVERFLOW: buffer all used");
 		}
 
 		blk->blkno = blkno;
-		_clear_valid_locked(blk);
+		clear_valid_locked(blk);
 	}
 	blk->refcnt++;
 
@@ -162,18 +162,18 @@ struct cblk *bcache_read(uint32_t blkno)
 {
 	struct cblk *blk = bcache_getblk(blkno);
 	// Mutex is acquire
-	bool is_valid = _is_valid_locked(blk);
+	bool is_valid = is_valid_locked(blk);
 
 	if (!is_valid) {
 		int res = virtio_blk_request(VIRTIO_BLK_T_IN,
-					     _get_sector(blkno), blk->buf,
+					     get_sector(blkno), blk->buf,
 					     FS_BLK_SIZE);
 		if (res < 0) {
 			bcache_release(blk);
 			return NULL;
 		}
 
-		_set_valid_locked(blk);
+		set_valid_locked(blk);
 	}
 
 	return blk;
@@ -181,22 +181,22 @@ struct cblk *bcache_read(uint32_t blkno)
 
 void bcache_mark_dirty(struct cblk *blk)
 {
-	_set_dirty_locked(blk);
+	set_dirty_locked(blk);
 }
 
 int bcache_sync(struct cblk *blk)
 {
 	int res;
-	if (!_is_dirty_locked(blk)) {
+	if (!is_dirty_locked(blk)) {
 		return 0;
 	}
 
-	res = virtio_blk_request(VIRTIO_BLK_T_OUT, _get_sector(blk->blkno),
+	res = virtio_blk_request(VIRTIO_BLK_T_OUT, get_sector(blk->blkno),
 				 blk->buf, FS_BLK_SIZE);
 	if (res < 0) {
 		return res;
 	}
-	_clear_dirty_locked(blk);
+	clear_dirty_locked(blk);
 
 	return 0;
 }

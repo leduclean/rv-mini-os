@@ -37,18 +37,18 @@ static priority highest_ready_tracking;
 /** @brief Processes sleeping on a timer, sorted by wake up date. */
 static clist_node_t sleeping_head;
 
-static inline bool _preempt_disabled(void)
+static inline bool preempt_disabled(void)
 {
 	return preempt_count > 0;
 }
 
-static inline void _delay_schedule(void)
+static inline void delay_schedule(void)
 {
 	need_resched = true;
 }
 
 /** @brief Init all the ready queues and the priority flag. */
-static void _init_ready_queues(void)
+static void init_ready_queues(void)
 {
 	// Reset all the node of the ready queue
 	for (int i = 0; i < PRIORITY_COUNT; i++) {
@@ -60,7 +60,7 @@ static void _init_ready_queues(void)
 }
 
 /** @brief Init the sleeping queue. */
-static void _init_sleep_queue(void)
+static void init_sleep_queue(void)
 {
 	clist_init_node(&sleeping_head);
 }
@@ -70,7 +70,7 @@ static void _init_sleep_queue(void)
  *
  * @param proc Process to enqueue.
  */
-static void _ready_queue_enqueue(process_t *proc)
+static void ready_queue_enqueue(process_t *proc)
 {
 	priority prior_class = proc->priority;
 	clist_node_t *rq = &ready_queues[prior_class];
@@ -82,7 +82,7 @@ static void _ready_queue_enqueue(process_t *proc)
  *
  * @param proc Process to remove.
  */
-static inline void _ready_queue_remove(process_t *proc)
+static inline void ready_queue_remove(process_t *proc)
 {
 	if (!clist_is_in_list(&proc->ready_node))
 		return;
@@ -97,7 +97,7 @@ static inline void _ready_queue_remove(process_t *proc)
  * @param rq Ready queue to rotate on.
  * @return Pointer to the next process.
  */
-static process_t *_rotate_ready_queue(clist_node_t *rq)
+static process_t *rotate_ready_queue(clist_node_t *rq)
 {
 	// Nothing to do if the queue is empty or there is only one element
 	if (clist_empty(rq) || rq->next->next == rq)
@@ -113,7 +113,7 @@ static process_t *_rotate_ready_queue(clist_node_t *rq)
  *
  * @return Pointer to the highest priority queue (clist).
  */
-static inline clist_node_t *_pick_highest(void)
+static inline clist_node_t *pick_highest(void)
 {
 	return &ready_queues[highest_ready_tracking];
 }
@@ -124,7 +124,7 @@ static inline clist_node_t *_pick_highest(void)
  * @note The scan is done incrementing the index, since the highest priority
  * is 0.
  */
-static void _refresh_highest_prio(void)
+static void refresh_highest_prio(void)
 {
 	// Test the supposate highest prio
 	if (!clist_empty(&ready_queues[highest_ready_tracking])) {
@@ -146,7 +146,7 @@ static void _refresh_highest_prio(void)
  *
  * @param proc Process to check on.
  */
-static void _update_highest(process_t *proc)
+static void update_highest(process_t *proc)
 {
 	priority prior_class = proc->priority;
 	if (priority_higher(prior_class, highest_ready_tracking)) {
@@ -159,7 +159,7 @@ static void _update_highest(process_t *proc)
  *
  * @param next Process to switch on.
  */
-static void _do_ctx_switch(process_t *next)
+static void do_ctx_switch(process_t *next)
 {
 	ctx_t *old_ctx = &process_active()->ctx;
 	process_switch_active(next);
@@ -171,7 +171,7 @@ static void _do_ctx_switch(process_t *next)
  *
  * @param proc Process that may preempt the active one.
  */
-static void _check_and_preempt(process_t *proc)
+static void check_and_preempt(process_t *proc)
 {
 
 	process_t *current = process_active();
@@ -183,11 +183,11 @@ static void _check_and_preempt(process_t *proc)
 	priority prior = proc->priority;
 	priority current_prior = current->priority;
 	if (priority_higher(prior, current_prior)) {
-		if (_preempt_disabled()) {
-			_delay_schedule();
+		if (preempt_disabled()) {
+			delay_schedule();
 		} else {
 			// Immediatly switch to this process
-			_do_ctx_switch(proc);
+			do_ctx_switch(proc);
 		}
 	}
 }
@@ -198,13 +198,13 @@ static void _check_and_preempt(process_t *proc)
  * @note Called on a terminaison or on a sleep, it switches on the head of
  * the highest priority ready queue.
  */
-static void _switch_out_active(void)
+static void switch_out_active(void)
 {
 	irq_flags_t flags = irq_save();
 
-	_refresh_highest_prio();
-	clist_node_t *next_node = clist_first(_pick_highest());
-	_do_ctx_switch(container_of(next_node, process_t, ready_node));
+	refresh_highest_prio();
+	clist_node_t *next_node = clist_first(pick_highest());
+	do_ctx_switch(container_of(next_node, process_t, ready_node));
 
 	irq_restore(flags);
 }
@@ -216,7 +216,7 @@ static void _switch_out_active(void)
  * @param other Node being inserted.
  * @return 1 if @p current wakes up after @p other, 0 otherwise.
  */
-static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other)
+static inline int wake_up_cmp(clist_node_t *current, clist_node_t *other)
 {
 	process_t *cur_proc = container_of(current, process_t, sleep_node);
 	process_t *other_proc = container_of(other, process_t, sleep_node);
@@ -228,10 +228,10 @@ static inline int _wake_up_cmp(clist_node_t *current, clist_node_t *other)
  *
  * @param proc Process to insert.
  */
-static void _insert_sleep(process_t *proc)
+static void insert_sleep(process_t *proc)
 {
 	clist_node_t *node = &proc->sleep_node;
-	clist_insert_sorted(&sleeping_head, node, _wake_up_cmp);
+	clist_insert_sorted(&sleeping_head, node, wake_up_cmp);
 }
 
 /**
@@ -241,7 +241,7 @@ static void _insert_sleep(process_t *proc)
  * @param arg Current time, in secondes.
  * @return -1 to break the for each iteration on the sorted list, 0 else.
  */
-static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
+static inline int wake_up_sleeping_cb(clist_node_t *node, void *arg)
 {
 	uint32_t now = *(uint32_t *)arg;
 	process_t *proc = container_of(node, process_t, sleep_node);
@@ -259,9 +259,9 @@ static inline int _wake_up_sleeping_cb(clist_node_t *node, void *arg)
  * @param proc Process to block.
  * @param wq Wait queue to block it on.
  */
-static inline void _move_to_wq(process_t *proc, wait_queue_t *wq)
+static inline void move_to_wq(process_t *proc, wait_queue_t *wq)
 {
-	_ready_queue_remove(proc);
+	ready_queue_remove(proc);
 	process_block(proc);
 	wq_enqueue(wq, &proc->wait_node);
 }
@@ -273,7 +273,7 @@ static inline void _move_to_wq(process_t *proc, wait_queue_t *wq)
  * @param args Additional args, unused.
  * @return 0 (invariant).
  */
-static inline int _wake_up_waiting_cb(clist_node_t *current, void *args)
+static inline int wake_up_waiting_cb(clist_node_t *current, void *args)
 {
 	// args is unused but needed for the for a for each callback
 	(void)args;
@@ -286,9 +286,9 @@ void scheduler_admit(process_t *proc)
 {
 	irq_flags_t flags = irq_save();
 
-	_ready_queue_enqueue(proc);
-	_update_highest(proc);
-	_check_and_preempt(proc);
+	ready_queue_enqueue(proc);
+	update_highest(proc);
+	check_and_preempt(proc);
 
 	irq_restore(flags);
 }
@@ -316,9 +316,9 @@ void scheduler_rotate(void)
 
 	irq_flags_t flags = irq_save();
 
-	process_t *next = _rotate_ready_queue(_pick_highest());
+	process_t *next = rotate_ready_queue(pick_highest());
 	if (next != process_active())
-		_do_ctx_switch(next);
+		do_ctx_switch(next);
 
 	irq_restore(flags);
 }
@@ -331,13 +331,13 @@ void scheduler_ready_process(process_t *proc)
 	process_wake(proc);
 
 	// Update the highest if needed
-	_update_highest(proc);
+	update_highest(proc);
 
 	// Insert in the correct run queue
-	_ready_queue_enqueue(proc);
+	ready_queue_enqueue(proc);
 
 	// Preempt if needed
-	_check_and_preempt(proc);
+	check_and_preempt(proc);
 	irq_restore(flags);
 }
 
@@ -349,11 +349,11 @@ void scheduler_exit(int exit_code)
 	process_t *current = process_active();
 
 	process_zombify(current, exit_code);
-	_switch_out_active();
+	switch_out_active();
 	panic("Zombie exit");
 }
 
-static inline int _exit_tgid_cb(clist_node_t *node, void *arg)
+static inline int exit_tgid_cb(clist_node_t *node, void *arg)
 {
 	uint8_t tgid = *(uint8_t *)arg;
 
@@ -376,7 +376,7 @@ void scheduler_exit_group(int exit_code)
 	(void)irq_save();
 
 	process_t *proc = process_active();
-	clist_for_each(process_table_clist(), _exit_tgid_cb, &proc->tgid);
+	clist_for_each(process_table_clist(), exit_tgid_cb, &proc->tgid);
 	scheduler_exit(exit_code);
 }
 
@@ -385,10 +385,10 @@ void scheduler_sleep(uint32_t nbr_secs)
 	irq_flags_t flags = irq_save();
 
 	process_t *proc = process_active();
-	_ready_queue_remove(proc);
+	ready_queue_remove(proc);
 	process_sleep(proc, nbr_secs);
-	_insert_sleep(proc);
-	_switch_out_active();
+	insert_sleep(proc);
+	switch_out_active();
 	irq_restore(flags);
 }
 
@@ -397,7 +397,7 @@ void scheduler_wake_sleeping(void)
 	irq_flags_t flags = irq_save();
 
 	uint32_t now = time_seconds();
-	clist_for_each(&sleeping_head, _wake_up_sleeping_cb, &now);
+	clist_for_each(&sleeping_head, wake_up_sleeping_cb, &now);
 
 	irq_restore(flags);
 }
@@ -407,8 +407,8 @@ void scheduler_block_on(wait_queue_t *wq)
 	irq_flags_t flags = irq_save();
 
 	process_t *proc = process_active();
-	_move_to_wq(proc, wq);
-	_switch_out_active();
+	move_to_wq(proc, wq);
+	switch_out_active();
 
 	irq_restore(flags);
 }
@@ -418,9 +418,9 @@ void scheduler_block_on_locked(wait_queue_t *wq, spinlock_t *s)
 	irq_flags_t flags = irq_save();
 	process_t *proc = process_active();
 
-	_move_to_wq(proc, wq);
+	move_to_wq(proc, wq);
 	spinlock_unlock(s);
-	_switch_out_active();
+	switch_out_active();
 
 	irq_restore(flags);
 }
@@ -430,12 +430,12 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs)
 	irq_flags_t flags = irq_save();
 
 	process_t *proc = process_active();
-	_move_to_wq(proc, wq);
+	move_to_wq(proc, wq);
 	if (timeout_secs > 0) {
 		process_sleep(proc, timeout_secs);
-		_insert_sleep(proc);
+		insert_sleep(proc);
 	}
-	_switch_out_active();
+	switch_out_active();
 
 	irq_restore(flags);
 }
@@ -443,12 +443,12 @@ void scheduler_block_on_with_timeout(wait_queue_t *wq, uint32_t timeout_secs)
 void scheduler_wake_waiting_queue(wait_queue_t *wq)
 {
 	irq_flags_t flags = irq_save();
-	wq_for_each_and_del(wq, _wake_up_waiting_cb, NULL);
+	wq_for_each_and_del(wq, wake_up_waiting_cb, NULL);
 	irq_restore(flags);
 }
 
 void scheduler_init(void)
 {
-	_init_ready_queues();
-	_init_sleep_queue();
+	init_ready_queues();
+	init_sleep_queue();
 }

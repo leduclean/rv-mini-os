@@ -115,7 +115,7 @@ struct virtio_pci_cap *_get_virtio_cap(const struct pci_device *dev,
 	return NULL;
 }
 
-static int _set_notify_addr(uint16_t notify_off)
+static int set_notify_addr(uint16_t notify_off)
 {
 	int res;
 
@@ -140,7 +140,7 @@ static int _set_notify_addr(uint16_t notify_off)
 	return 0;
 }
 
-static int _set_irq_addr(void)
+static int set_irq_addr(void)
 {
 	int res;
 
@@ -163,7 +163,7 @@ static int _set_irq_addr(void)
 /**
  * @brief Initialize the internal free list structure.
  */
-static void _init_free_list(void)
+static void init_free_list(void)
 {
 	struct virtq_desc *head = driver.vq.desc;
 	uint16_t queue_size = driver.vq.num;
@@ -176,7 +176,7 @@ static void _init_free_list(void)
 	spinlock_init(&driver.vq_lock);
 }
 
-static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
+static int setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 {
 	cfg->queue_select = VIRTIO_QUEUE_SELECT;
 
@@ -210,12 +210,12 @@ static int _setup_queues(volatile struct virtio_pci_common_cfg *cfg)
 	cfg->queue_device = (uint64_t)(addr);
 	driver.vq.used = (struct virtq_used *)(addr);
 
-	_init_free_list();
+	init_free_list();
 	cfg->queue_enable = 1;
 	return 0;
 }
 
-static int _setup_features(volatile struct virtio_pci_common_cfg *cfg)
+static int setup_features(volatile struct virtio_pci_common_cfg *cfg)
 {
 	cfg->device_status = 0;
 
@@ -246,7 +246,7 @@ static int _setup_features(volatile struct virtio_pci_common_cfg *cfg)
 	return 0;
 }
 
-static int _config_common(void)
+static int config_common(void)
 {
 	int res;
 	uintptr_t bar_addr;
@@ -265,22 +265,22 @@ static int _config_common(void)
 	volatile struct virtio_pci_common_cfg *cfg =
 		(struct virtio_pci_common_cfg *)(bar_addr + cap_cfg->offset);
 
-	res = _setup_features(cfg);
+	res = setup_features(cfg);
 	if (res < 0) {
 		return res;
 	}
 
-	res = _setup_queues(cfg);
+	res = setup_queues(cfg);
 	if (res < 0) {
 		return res;
 	}
 
-	res = _set_notify_addr(cfg->queue_notify_off);
+	res = set_notify_addr(cfg->queue_notify_off);
 	if (res < 0) {
 		return res;
 	}
 
-	res = _set_irq_addr();
+	res = set_irq_addr();
 	if (res < 0) {
 		return res;
 	}
@@ -294,7 +294,7 @@ static int _config_common(void)
 	return 0;
 }
 
-static int _config_pci(void)
+static int config_pci(void)
 {
 	int res;
 	struct pci_device dev;
@@ -337,12 +337,12 @@ static int _config_pci(void)
 int virtio_blk_init(void)
 {
 	int res;
-	res = _config_pci();
+	res = config_pci();
 	if (res < 0) {
 		return res;
 	}
 
-	res = _config_common();
+	res = config_common();
 	if (res < 0) {
 		return res;
 	}
@@ -352,12 +352,12 @@ int virtio_blk_init(void)
 	return 0;
 }
 
-static inline void _notify_device(void)
+static inline void notify_device(void)
 {
 	*driver.notify_addr = VIRTIO_QUEUE_SELECT;
 }
 
-static void _submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
+static void submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
 {
 
 	struct virtq_avail *avail = driver.vq.avail;
@@ -412,7 +412,7 @@ static void _submit_req(struct virtio_blk_req *req, void *data, uint32_t size)
  *
  * @param head_idx Head idx of the chain.
  */
-static void _release_desc_chain(uint16_t head_idx)
+static void release_desc_chain(uint16_t head_idx)
 {
 	struct virtq_desc *desc = driver.vq.desc;
 	struct virtq_desc *curr = &desc[head_idx];
@@ -469,13 +469,13 @@ int virtio_blk_request(uint8_t type, uint64_t sector, void *data, uint32_t size)
 	req.hdr.sector = sector;
 	sem_init(&req.completion_sem, 0);
 
-	_submit_req(&req, data, size);
+	submit_req(&req, data, size);
 	m2io_wmb();
-	_notify_device();
+	notify_device();
 
 	sem_wait(&req.completion_sem);
 
-	_release_desc_chain(req.head);
+	release_desc_chain(req.head);
 
 	uint16_t status = req.status;
 	if (status == VIRTIO_BLK_S_IOERR) {

@@ -19,34 +19,34 @@
 #define PLIC_THRESHOLD_CTX_STRIDE 0x1000 /* Threshold block per context */
 #define PLIC_CLAIM_COMPLETE_OFF 0x4 /* Claim/complete, after the threshold */
 
-static inline uint32_t _get_context(void)
+static inline uint32_t get_context(void)
 {
 	//FIX: Context in S mode for hart0 is 1
 	//in multihart not true
 	return 1;
 }
 
-static inline uintptr_t _priority_reg(uint32_t irq_id)
+static inline uintptr_t priority_reg(uint32_t irq_id)
 {
 	return PLIC_MMIO_BASE + PLIC_PRIORITY_BASE +
 	       PLIC_PRIORITY_SIZE * irq_id;
 }
 
-static inline uintptr_t _enable_reg(uint32_t ctx, uint32_t irq_id)
+static inline uintptr_t enable_reg(uint32_t ctx, uint32_t irq_id)
 {
 	return PLIC_MMIO_BASE + PLIC_ENABLE_BASE +
 	       PLIC_ENABLE_CTX_STRIDE * ctx + 4 * (irq_id / 32);
 }
 
-static inline uintptr_t _threshold_reg(uint32_t ctx)
+static inline uintptr_t threshold_reg(uint32_t ctx)
 {
 	return PLIC_MMIO_BASE + PLIC_THRESHOLD_BASE +
 	       PLIC_THRESHOLD_CTX_STRIDE * ctx;
 }
 
-static inline uintptr_t _claim_complete_reg(uint32_t ctx)
+static inline uintptr_t claim_complete_reg(uint32_t ctx)
 {
-	return _threshold_reg(ctx) + PLIC_CLAIM_COMPLETE_OFF;
+	return threshold_reg(ctx) + PLIC_CLAIM_COMPLETE_OFF;
 }
 
 static inline void plic_enable_s_external(void)
@@ -63,13 +63,13 @@ static inline void plic_enable_s_external(void)
  * @param irq_id Plic source id of the device.
  * @param priority Priority to set.
  */
-static void _plic_set_pty(uint32_t irq_id, uint32_t priority)
+static void plic_set_pty(uint32_t irq_id, uint32_t priority)
 {
 	if (priority > 7) {
 		// range is between 0 and 7.
 		priority = 7;
 	}
-	MMIO32(_priority_reg(irq_id)) = priority;
+	MMIO32(priority_reg(irq_id)) = priority;
 }
 
 /**
@@ -81,25 +81,25 @@ static void _plic_set_pty(uint32_t irq_id, uint32_t priority)
  *
  * @param threshold Threshold to set.
  */
-static void _set_priority_treshold(uint32_t threshold)
+static void set_priority_treshold(uint32_t threshold)
 {
 	if (threshold > 7) {
 		threshold = 7;
 	}
 
-	MMIO32(_threshold_reg(_get_context())) = threshold;
+	MMIO32(threshold_reg(get_context())) = threshold;
 }
 
 void plic_init(void)
 {
-	_set_priority_treshold(0);
+	set_priority_treshold(0);
 	plic_enable_s_external();
 }
 
 void plic_enable_irq(uint32_t irq_id, uint32_t priority)
 {
-	MMIO32(_enable_reg(_get_context(), irq_id)) |= 1u << (irq_id % 32);
-	_plic_set_pty(irq_id, priority);
+	MMIO32(enable_reg(get_context(), irq_id)) |= 1u << (irq_id % 32);
+	plic_set_pty(irq_id, priority);
 }
 
 /**
@@ -107,25 +107,25 @@ void plic_enable_irq(uint32_t irq_id, uint32_t priority)
  *
  * @return Plic source id of the pending interrupt.
  */
-static uint32_t _claim_plic(void)
+static uint32_t claim_plic(void)
 {
-	return MMIO32(_claim_complete_reg(_get_context()));
+	return MMIO32(claim_complete_reg(get_context()));
 }
 
 /**
  * @brief Complete the interrupt.
  *
- * @param irq Plic source id returned by _claim_plic().
+ * @param irq Plic source id returned by claim_plic().
  */
-static void _complete_plic(uint32_t irq)
+static void complete_plic(uint32_t irq)
 {
-	MMIO32(_claim_complete_reg(_get_context())) = irq;
+	MMIO32(claim_complete_reg(get_context())) = irq;
 }
 
 /** @brief Claim the external irq, dispatch it to its device and complete it. */
 void plic_handle_irq(void)
 {
-	uint32_t irq = _claim_plic();
+	uint32_t irq = claim_plic();
 	switch (irq) {
 	case UART_PLIC_ID:
 		uart_irq_handler();
@@ -134,5 +134,5 @@ void plic_handle_irq(void)
 		virtio_irq_handler();
 		break;
 	}
-	_complete_plic(irq);
+	complete_plic(irq);
 }

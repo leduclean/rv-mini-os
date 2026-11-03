@@ -20,23 +20,23 @@
 /** @brief Global irq tick counter. */
 static uint32_t ticks;
 
-static inline void _enable_sstc_extension(void)
+static inline void enable_sstc_extension(void)
 {
 	csr_set(menvcfg, MENVCFG_STCE);
 }
 
-static inline void _enable_stimecmp(void)
+static inline void enable_stimecmp(void)
 {
 	csr_set(mcounteren, MCOUNTEREN_TM);
 }
 
-static inline void _enable_s_timer(void)
+static inline void enable_s_timer(void)
 {
 	csr_set(sie, SIE_STIE);
 }
 
 /** @brief Arm the supervisor timer comparator for the next tick. */
-static inline void _update_timer(void)
+static inline void update_timer(void)
 {
 	unsigned long time = csr_read(time);
 	csr_write(stimecmp, time + DELAY);
@@ -53,7 +53,7 @@ static semaphore_t tick = SEMAPHORE_INITIALIZER(tick, 0);
 /**
  * @brief Dameon that handles the clock display
  */
-static void _clock_daemon(void)
+static void clock_daemon(void)
 {
 	for (;;) {
 		sem_wait(&clock);
@@ -72,7 +72,7 @@ static void _clock_daemon(void)
  * @brief Kernel Daemon that handles a time tick ie wakes sleeping process
  * and preempt if needed.
  */
-static void _tick_daemon(void)
+static void tick_daemon(void)
 {
 	for (;;) {
 		sem_wait(&tick);
@@ -83,12 +83,12 @@ static void _tick_daemon(void)
 
 int time_spawn_daemons(void)
 {
-	process_t *p = process_kthread(_clock_daemon, "clock daemon", HIGH);
+	process_t *p = process_kthread(clock_daemon, "clock daemon", HIGH);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);
 	}
 
-	p = process_kthread(_tick_daemon, "tick daemon", HIGH);
+	p = process_kthread(tick_daemon, "tick daemon", HIGH);
 	if (IS_ERR(p)) {
 		return PTR_ERR(p);
 	}
@@ -99,18 +99,18 @@ int time_spawn_daemons(void)
 
 void time_init(void)
 {
-	_enable_sstc_extension();
-	_enable_s_timer();
-	_enable_stimecmp();
+	enable_sstc_extension();
+	enable_s_timer();
+	enable_stimecmp();
 
 	ticks = 0;
-	_update_timer();
+	update_timer();
 }
 
 void time_irq_handler(void)
 {
 	// Ack the timer
-	_update_timer();
+	update_timer();
 	ticks++;
 	if (ticks % ITFREQ == 0) {
 		sem_post(&clock);

@@ -14,7 +14,7 @@ static inline uint32_t bit_to_blkno(uint32_t bit_idx, uint32_t bbm_nb)
 	return bit_idx + (bbm_nb * FS_BM_BITS_PER_BLK) + sb.data_start;
 }
 
-static int32_t _bbm_alloc(void)
+static int32_t bbm_alloc(void)
 {
 	for (uint32_t i = 0; i < sb.nb_dbm; i++) {
 		uint32_t bm_blk_no = sb.dbm_start + i;
@@ -47,7 +47,7 @@ static int32_t _bbm_alloc(void)
 	return -ENOSPC;
 }
 
-static int _bbm_free(uint32_t blkno)
+static int bbm_free(uint32_t blkno)
 {
 	// Only data block free are allowed
 	if (blkno < sb.data_start || blkno >= sb.data_start + sb.nb_dblk) {
@@ -72,13 +72,13 @@ static int _bbm_free(uint32_t blkno)
 
 int32_t balloc(void)
 {
-	int32_t blkno = _bbm_alloc();
+	int32_t blkno = bbm_alloc();
 	if (blkno < 0)
 		return blkno;
 
 	struct cblk *b = bcache_read(blkno);
 	if (!b) {
-		_bbm_free(blkno);
+		bbm_free(blkno);
 		return -EIO;
 	}
 
@@ -91,5 +91,5 @@ int32_t balloc(void)
 int bfree(uint32_t blkno)
 {
 	bcache_invalidate(blkno);
-	return _bbm_free(blkno);
+	return bbm_free(blkno);
 };

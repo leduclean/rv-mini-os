@@ -31,7 +31,7 @@ process_t *mutex_owner(const mutex_t *m)
 	return m->owner;
 }
 
-static int _mutex_trylock_unlocked(mutex_t *m)
+static int mutex_trylock_unlocked(mutex_t *m)
 {
 	if (m->locked) {
 		// Already locked
@@ -49,7 +49,7 @@ int mutex_trylock(mutex_t *m)
 	int res;
 	spinlock_lock(&m->lock);
 
-	res = _mutex_trylock_unlocked(m);
+	res = mutex_trylock_unlocked(m);
 
 	spinlock_unlock(&m->lock);
 	return res;
@@ -59,7 +59,7 @@ void mutex_lock(mutex_t *m)
 {
 	spinlock_lock(&m->lock);
 
-	if (_mutex_trylock_unlocked(m) < 0) {
+	if (mutex_trylock_unlocked(m) < 0) {
 		scheduler_block_on_locked(&m->wq, &m->lock);
 		return;
 	}

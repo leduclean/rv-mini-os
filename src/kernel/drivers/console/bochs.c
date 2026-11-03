@@ -30,8 +30,8 @@
 #define TEXT_COLOR 0xFFFFFF
 
 struct bochs_driver {
-	uintptr_t fb_base; /* framebuffer BAR, programmed by _config_pcie() */
-	uintptr_t cfg_base; /* config BAR, programmed by _config_pcie() */
+	uintptr_t fb_base; /* framebuffer BAR, programmed by config_pcie() */
+	uintptr_t cfg_base; /* config BAR, programmed by config_pcie() */
 };
 
 static struct bochs_driver driver;
@@ -43,7 +43,7 @@ static struct bochs_driver driver;
  * @retval -ENODEV Device missing.
  * @retval -Exxx See pci_get_bar_size(), pci_set_bar().
  */
-static int _config_pcie(void)
+static int config_pcie(void)
 {
 	int res;
 	int64_t size;
@@ -98,7 +98,7 @@ static int _config_pcie(void)
  * @retval 0 Success.
  * @retval -ENODEV Wrong device type id.
  */
-static int _config_screen(void)
+static int config_screen(void)
 {
 	// type id verification (12 MSB comparison)
 	if ((DISPI16(VBE_DISPI_INDEX_ID) & 0xFFF0) != VBE_DISPI_ID0) {
@@ -165,11 +165,11 @@ int console_init(void)
 	int res;
 	file_map_dev_cb(FILE_DEV_CONSOLE, console_write, console_read);
 
-	res = _config_pcie();
+	res = config_pcie();
 	if (res < 0) {
 		return res;
 	}
-	res = _config_screen();
+	res = config_screen();
 	if (res < 0) {
 		return res;
 	}
@@ -185,7 +185,7 @@ int console_init(void)
  * @retval 0 Success.
  * @retval -EINVAL Pixel out of range.
  */
-static int _pixel(uint32_t x, uint32_t y, uint32_t color)
+static int pixel(uint32_t x, uint32_t y, uint32_t color)
 {
 	if (x >= DISPLAY_WIDTH || y >= DISPLAY_HEIGHT) {
 		return -EINVAL;
@@ -209,7 +209,7 @@ static int _pixel(uint32_t x, uint32_t y, uint32_t color)
  * @retval 0 Success.
  * @retval -EINVAL Char out of range.
  */
-static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
+static int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 		       uint32_t bg_color)
 {
 	// Pixel conversion
@@ -223,11 +223,11 @@ static int _write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 	for (int row_off = 0; row_off < 8; row_off++) {
 		for (int c_off = 0; c_off < 8; c_off++) {
 			if ((uint8_t)tab[row_off] & (1 << c_off)) {
-				if (_pixel(col + c_off, row + row_off, color) !=
+				if (pixel(col + c_off, row + row_off, color) !=
 				    0)
 					return -EINVAL;
 			} else {
-				if (_pixel(col + c_off, row + row_off,
+				if (pixel(col + c_off, row + row_off,
 					   bg_color) != 0)
 
 					return -EINVAL;
@@ -248,25 +248,25 @@ static uint8_t cursor_col = 0;
  * @param col Column the line starts at, in pixels.
  * @param color Color of the line.
  */
-static void _draw_line(uint32_t row, uint32_t col, uint32_t color)
+static void draw_line(uint32_t row, uint32_t col, uint32_t color)
 {
 	for (int offset = 0; offset < 8; offset++) {
-		_pixel(col + offset, row, color);
+		pixel(col + offset, row, color);
 	}
 };
 
-static inline void _draw_cursor(void)
+static inline void draw_cursor(void)
 {
-	_draw_line(cursor_row * 8 + 7, cursor_col * 8, TEXT_COLOR);
+	draw_line(cursor_row * 8 + 7, cursor_col * 8, TEXT_COLOR);
 }
 
-static inline void _undraw_cursor(void)
+static inline void undraw_cursor(void)
 {
-	_draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
+	draw_line(cursor_row * 8 + 7, cursor_col * 8, BG_COLOR);
 }
 
 /** @brief Move the screen display to an upper line. */
-static void _scroll(void)
+static void scroll(void)
 {
 	// each caractere line has a width of 8 pixel
 	uint32_t (*const display_base)[DISPLAY_WIDTH * 8] =
@@ -289,11 +289,11 @@ static void _scroll(void)
  * @retval 0 Success.
  * @retval -EINVAL @p row is negative.
  */
-static int _set_cursor(int row, int col)
+static int set_cursor(int row, int col)
 {
-	_undraw_cursor();
+	undraw_cursor();
 	while (row >= MAX_ROWS) {
-		_scroll();
+		scroll();
 		row--;
 	}
 
@@ -305,17 +305,17 @@ static int _set_cursor(int row, int col)
 	cursor_col = col;
 
 	// Redraw the cursor
-	_draw_cursor();
+	draw_cursor();
 	return 0;
 }
 
 /** @brief Move the cursor one char forward, wrapping to the next line. */
-static void _advance_cursor(void)
+static void advance_cursor(void)
 {
 	if (cursor_col + 1 < MAX_COLS) {
-		_set_cursor(cursor_row, cursor_col + 1);
+		set_cursor(cursor_row, cursor_col + 1);
 	} else {
-		_set_cursor(cursor_row + 1, 0);
+		set_cursor(cursor_row + 1, 0);
 	}
 }
 
@@ -324,50 +324,50 @@ static void _advance_cursor(void)
  *
  * @param c Character to draw.
  */
-static void _put_char(char c)
+static void put_char(char c)
 {
 	// write char
-	_write_char(cursor_row, cursor_col, c, TEXT_COLOR, BG_COLOR);
-	_advance_cursor();
+	write_char(cursor_row, cursor_col, c, TEXT_COLOR, BG_COLOR);
+	advance_cursor();
 }
 
 /** @brief Remove all the chars on the screen and reset the cursor. */
-static void _clear_screen(void)
+static void clear_screen(void)
 {
 	for (int y = 0; y < DISPLAY_HEIGHT; y++) {
 		for (int x = 0; x < DISPLAY_WIDTH; x++) {
-			_pixel(x, y, BG_COLOR);
+			pixel(x, y, BG_COLOR);
 		}
 	}
-	_set_cursor(1, 0);
+	set_cursor(1, 0);
 }
 
 // Control char handling helpers
 
-static inline void _tab(void)
+static inline void tab(void)
 {
 	int distance = (-cursor_col) & 7;
 	if (distance + cursor_col >= MAX_COLS) {
-		_set_cursor(cursor_row + 1, 0);
+		set_cursor(cursor_row + 1, 0);
 	} else {
-		_set_cursor(cursor_row, cursor_col + distance);
+		set_cursor(cursor_row, cursor_col + distance);
 	}
 }
 
-static inline void _backspace(void)
+static inline void backspace(void)
 {
 	if (cursor_col > 0) {
-		_set_cursor(cursor_row, cursor_col - 1);
+		set_cursor(cursor_row, cursor_col - 1);
 	}
 }
 
-static inline void _newline(void)
+static inline void newline(void)
 {
-	_set_cursor(cursor_row + 1, 0);
+	set_cursor(cursor_row + 1, 0);
 }
-static inline void _carriage_return(void)
+static inline void carriage_return(void)
 {
-	_set_cursor(cursor_row, 0);
+	set_cursor(cursor_row, 0);
 }
 
 /**
@@ -375,28 +375,28 @@ static inline void _carriage_return(void)
  *
  * @param c Character to handle.
  */
-static void _handle_char(char c)
+static void handle_char(char c)
 {
 	// We only treat those char
 	if (c >= 32 && c < 127) {
-		_put_char(c);
+		put_char(c);
 	} else {
 		// Control char handling
 		switch (c) {
 		case '\b':
-			_backspace();
+			backspace();
 			break;
 		case '\t':
-			_tab();
+			tab();
 			break;
 		case '\n':
-			_newline();
+			newline();
 			break;
 		case '\f':
-			_clear_screen();
+			clear_screen();
 			break;
 		case '\r':
-			_carriage_return();
+			carriage_return();
 			break;
 		}
 	}
@@ -409,7 +409,7 @@ void console_putbytes(const char *s, int len)
 		if (driver.fb_base) {
 			// Do not use screen until it is initialized.
 			// TODO: We could replay this delayed print
-			_handle_char(s[i]);
+			handle_char(s[i]);
 		}
 	};
 };
@@ -427,6 +427,6 @@ void console_display_top_right(const char *s, int len)
 
 	uint8_t col = MAX_COLS - len;
 	for (int i = 0; i < len; i++) {
-		_write_char(0, col + i, s[i], TEXT_COLOR, BG_COLOR);
+		write_char(0, col + i, s[i], TEXT_COLOR, BG_COLOR);
 	}
 }

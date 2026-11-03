@@ -37,18 +37,18 @@
  * @param lvl The lvl of indirection in the tree.
  * @return The corresponding vpn.
  */
-static inline unsigned long _get_va_vpn(const void *va, uint8_t lvl)
+static inline unsigned long get_va_vpn(const void *va, uint8_t lvl)
 {
 	return ((unsigned long)va >> (PAGE_SHIFT + VA_VPN_BITS * lvl)) &
 	       VA_VPN_MASK;
 }
 
-static inline pte_t *_get_pte(pte_t *table, const void *va, int lvl)
+static inline pte_t *get_pte(pte_t *table, const void *va, int lvl)
 {
-	return &table[_get_va_vpn(va, lvl)];
+	return &table[get_va_vpn(va, lvl)];
 }
 
-static inline pte_t *_get_next_lvl_pte(const pte_t pte)
+static inline pte_t *get_next_lvl_pte(const pte_t pte)
 {
 	return (pte_t *)((pte >> PTE_PPN_SHIFT) << PAGE_SHIFT);
 }
@@ -63,7 +63,7 @@ int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 	int error_lvl = -1;
 
 	for (int lvl = LEVELS - 1; lvl > 0; lvl--) {
-		pte_t *pte = _get_pte(table, va, lvl);
+		pte_t *pte = get_pte(table, va, lvl);
 
 		if (!(*pte & PTE_V)) {
 			void *next = page_alloc();
@@ -78,10 +78,10 @@ int vpage_map(pte_t *root, const void *va, void *pa, unsigned long flags)
 		}
 
 		// Go to the next level of indirection
-		table = _get_next_lvl_pte(*pte);
+		table = get_next_lvl_pte(*pte);
 	}
 
-	pte_t *leaf_pte = _get_pte(table, va, 0);
+	pte_t *leaf_pte = get_pte(table, va, 0);
 	unsigned long pte_flags = flags | PTE_V | PTE_A;
 
 	if (flags & PTE_W)
@@ -100,7 +100,7 @@ err_release_prv:
 	return -ENOMEM;
 }
 
-static inline bool _is_a_next_lvl_ptr(pte_t pte)
+static inline bool is_a_next_lvl_ptr(pte_t pte)
 {
 	return (!(pte & PTE_X) && !(pte & PTE_W) && !(pte & PTE_R));
 }
@@ -117,15 +117,15 @@ static void walk_free(pte_t *table, int lvl)
 		pte_t pte = table[i];
 
 		if (pte & PTE_V) {
-			if (lvl > 0 && _is_a_next_lvl_ptr(pte)) {
+			if (lvl > 0 && is_a_next_lvl_ptr(pte)) {
 				// Go to the next lvl and free all entry too
-				walk_free(_get_next_lvl_pte(pte), lvl - 1);
+				walk_free(get_next_lvl_pte(pte), lvl - 1);
 			} else {
 				// Leaf pte
 				// Free only valid and not shared leaf
 				if (pte & (PTE_V) && !(pte & PTE_G) &&
-				    !_is_a_next_lvl_ptr(pte)) {
-					void *page = _get_next_lvl_pte(pte);
+				    !is_a_next_lvl_ptr(pte)) {
+					void *page = get_next_lvl_pte(pte);
 					page_put((void *)page);
 				}
 				// Reset the entry
@@ -173,15 +173,15 @@ static pte_t *walk_leaf(pte_t *root, const void *va)
 	pte_t *table = root;
 
 	for (int l = LEVELS - 1; l >= 0; l--) {
-		pte_t *pte = _get_pte(table, va, l);
+		pte_t *pte = get_pte(table, va, l);
 
 		if (!(*pte & PTE_V)) {
 			return NULL;
 		}
-		if (!_is_a_next_lvl_ptr(*pte)) {
+		if (!is_a_next_lvl_ptr(*pte)) {
 			return pte;
 		}
-		table = _get_next_lvl_pte(*pte);
+		table = get_next_lvl_pte(*pte);
 	}
 	return NULL;
 }
@@ -193,7 +193,7 @@ int vpage_unmmap(pte_t *root, void *va)
 		return -EINVAL;
 	}
 
-	void *page = _get_next_lvl_pte(*leaf);
+	void *page = get_next_lvl_pte(*leaf);
 	page_put(page);
 	*leaf = 0;
 	mmu_flush_tlb();
@@ -206,7 +206,7 @@ static inline uint32_t get_flags(pte_t pte)
 	return pte & PTE_FLAGS_MASK;
 }
 
-static inline void *_get_pa_from_va(pte_t *root, const void *va,
+static inline void *get_pa_from_va(pte_t *root, const void *va,
 				    unsigned long needed_flags)
 {
 	pte_t *leaf = walk_leaf(root, va);
@@ -223,13 +223,13 @@ static inline void *_get_pa_from_va(pte_t *root, const void *va,
 		return NULL;
 	}
 
-	unsigned long *page = _get_next_lvl_pte(*leaf);
+	unsigned long *page = get_next_lvl_pte(*leaf);
 	return (char *)page + ((unsigned long)va & OFFSET_MASK);
 }
 
 int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 {
-	void *pa = _get_pa_from_va(root, va, PTE_V | PTE_U | PTE_R);
+	void *pa = get_pa_from_va(root, va, PTE_V | PTE_U | PTE_R);
 	if (!pa) {
 		return -EFAULT;
 	}
@@ -241,7 +241,7 @@ int vpage_copyin(pte_t *root, void *dst, const void *va, size_t count)
 
 ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 {
-	const char *pa = _get_pa_from_va(root, (void *)va,
+	const char *pa = get_pa_from_va(root, (void *)va,
 					 PTE_V | PTE_U | PTE_R);
 	if (!pa) {
 		return -EFAULT;
@@ -265,7 +265,7 @@ ssize_t vpage_copyinstr(pte_t *root, char *dst, const char *va, size_t max)
 
 int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
 {
-	void *pa = _get_pa_from_va(root, va, PTE_V | PTE_U | PTE_W);
+	void *pa = get_pa_from_va(root, va, PTE_V | PTE_U | PTE_W);
 	if (!pa) {
 		return -EFAULT;
 	}
@@ -277,7 +277,7 @@ int vpage_copyout(pte_t *root, void *va, const void *src, size_t count)
 
 ssize_t vpage_copyoutstr(pte_t *root, char *va, const char *src, size_t max)
 {
-	char *pa = _get_pa_from_va(root, (void *)va, PTE_V | PTE_U | PTE_W);
+	char *pa = get_pa_from_va(root, (void *)va, PTE_V | PTE_U | PTE_W);
 	if (!pa) {
 		return -EFAULT;
 	}
@@ -299,7 +299,7 @@ int vpage_handle_cow(pte_t *root, const void *va)
 		return -EFAULT;
 	}
 
-	void *page = (void *)(_get_next_lvl_pte(*leaf));
+	void *page = (void *)(get_next_lvl_pte(*leaf));
 	void *page_va = (void *)((unsigned long)va & ~OFFSET_MASK);
 
 	// Fast path no copy
@@ -326,7 +326,7 @@ int vpage_handle_cow(pte_t *root, const void *va)
 	return 0;
 }
 
-static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
+static int copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 {
 	for (int i = 0; i < PTE_ENTRY_PER_TABLE; i++) {
 		pte_t pte = src[i];
@@ -338,8 +338,8 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 					  << (PAGE_SHIFT + VA_VPN_BITS * lvl));
 
 		int res;
-		if (_is_a_next_lvl_ptr(pte)) {
-			res = _copy_level(dst, _get_next_lvl_pte(pte), lvl - 1,
+		if (is_a_next_lvl_ptr(pte)) {
+			res = copy_level(dst, get_next_lvl_pte(pte), lvl - 1,
 					  child_va);
 			if (res < 0) {
 				return res;
@@ -347,7 +347,7 @@ static int _copy_level(pte_t *dst, pte_t *src, int lvl, unsigned long va)
 
 		} else {
 			// leaf level get a reference to the page
-			void *page = _get_next_lvl_pte(pte);
+			void *page = get_next_lvl_pte(pte);
 			if (child_va != TRAPFRAME) {
 				// Set cow on writable page.
 				if (pte & PTE_W) {
@@ -375,7 +375,7 @@ int vpage_tree_copy(pte_t *dst, pte_t *src)
 	}
 
 	int res;
-	res = _copy_level(dst, src, LEVELS - 1, 0);
+	res = copy_level(dst, src, LEVELS - 1, 0);
 	if (res < 0) {
 		return res;
 	}
