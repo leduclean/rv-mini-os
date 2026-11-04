@@ -5,16 +5,15 @@
 #include <lib/string.h>
 
 #include <kernel/elf.h>
+#include <kernel/file.h>
 #include <kernel/ldsym.h>
 #include <kernel/pages.h>
 #include <kernel/vpages.h>
 
-#define ELF_HDR_NIDENT 16 /**< Number of id in the elf header */
+#define ELF_MAX_PHDR 16 /**< Max number of program header */
 
 /**
- * @name The header identificator indexes
- * @{
- */
+ * @name The header identificator indexes @{ */
 #define ELF_HDR_IDENT_MAG_NIDENT 4 /**< Number of magic file id. */
 #define ELF_HDR_IDENT_CLASS 4 /**< File class. */
 #define ELF_HDR_IDENT_DATA 5 /**< Data encoding. */
@@ -78,10 +77,24 @@ struct elf_phdr {
 	uint64_t align;
 };
 
-int elf_verify_file_format(const uintptr_t file)
+int elf_load_hdr(struct file *f, struct elf_hdr *hdr)
 {
-	struct elf_hdr *hdr = (struct elf_hdr *)file;
 
+	int res;
+	res = file_seek(f, 0, SEEK_SET);
+	if (res < 0) {
+		return res;
+	}
+	res = file_read(f, false, (void *)hdr, sizeof(*hdr));
+	if (res < 0) {
+		return res;
+	}
+
+	return 0;
+}
+
+int elf_verify_file_format(const struct elf_hdr *hdr)
+{
 	if (memcmp(hdr->ident, ELF_MAGIC_STR, ELF_HDR_IDENT_MAG_NIDENT) != 0) {
 		return -ENOEXEC;
 	}
@@ -105,17 +118,28 @@ int elf_verify_file_format(const uintptr_t file)
 	return 0;
 }
 
-static int load_phdr(uintptr_t file, struct elf_phdr *phdr[])
+static int load_phdr(struct file *f, const struct elf_hdr *hdr,
+		     struct elf_phdr phdr[])
 {
-	struct elf_hdr *hdr = (struct elf_hdr *)file;
-	if (hdr->phdr_num == 0) {
+	if (hdr->phdr_num == 0 || hdr->phdr_num > ELF_MAX_PHDR) {
 		return -ENOEXEC;
 	}
 	if (hdr->phdr_size != sizeof(struct elf_phdr)) {
 		return -ENOEXEC;
 	}
 
-	*phdr = (struct elf_phdr *)(file + (uintptr_t)hdr->phdroff);
+	int res;
+	res = file_seek(f, hdr->phdroff, SEEK_SET);
+	if (res < 0) {
+		return res;
+	}
+
+	res = file_read(f, false, (void *)phdr,
+			hdr->phdr_num * sizeof(struct elf_phdr));
+	if (res < 0) {
+		return res;
+	}
+
 	return hdr->phdr_num;
 }
 
@@ -159,8 +183,15 @@ static unsigned long phdr_flag_to_pte_flag(uint32_t flags)
 	return pte_flag;
 }
 
-static int map_phdr(pte_t *root, uintptr_t file, const struct elf_phdr *phdr)
+static int map_phdr(pte_t *root, struct file *f, const struct elf_phdr *phdr)
 {
+	int res;
+
+	res = file_seek(f, phdr->offset, SEEK_SET);
+	if (res < 0) {
+		return res;
+	}
+
 	for (size_t off = 0; off < phdr->memsz; off += PAGE_SIZE) {
 
 		void *page = page_alloc();
@@ -173,11 +204,14 @@ static int map_phdr(pte_t *root, uintptr_t file, const struct elf_phdr *phdr)
 			size_t n = phdr->filesz - off < PAGE_SIZE
 					   ? phdr->filesz - off
 					   : PAGE_SIZE;
-			memcpy(page, (void *)(file + phdr->offset + off), n);
+			res = file_read(f, false, page, n);
+			if (res < 0) {
+				return res;
+			}
 		}
 
-		int res = vpage_map_user(root, (void *)phdr->va + off, page,
-					 phdr_flag_to_pte_flag(phdr->flags));
+		res = vpage_map_user(root, (void *)phdr->va + off, page,
+				     phdr_flag_to_pte_flag(phdr->flags));
 		if (res < 0) {
 			page_put(page);
 			return res;
@@ -187,12 +221,11 @@ static int map_phdr(pte_t *root, uintptr_t file, const struct elf_phdr *phdr)
 	return 0;
 }
 
-int elf_map(pte_t *root, const uintptr_t file)
+int elf_map(pte_t *root, struct file *f, const struct elf_hdr *hdr)
 {
 
-	struct elf_phdr *phdr_tab;
-
-	int nb_phdr = load_phdr(file, &phdr_tab);
+	struct elf_phdr phdr_tab[ELF_MAX_PHDR];
+	int nb_phdr = load_phdr(f, hdr, phdr_tab);
 	if (nb_phdr < 0) {
 		return nb_phdr;
 	}
@@ -206,17 +239,11 @@ int elf_map(pte_t *root, const uintptr_t file)
 			return -ENOEXEC;
 		}
 
-
-		int res = map_phdr(root, file, &phdr_tab[i]);
+		int res = map_phdr(root, f, &phdr_tab[i]);
 		if (res < 0) {
 			return res;
 		}
 	}
 
 	return 0;
-}
-
-uintptr_t elf_get_entry(const uintptr_t file)
-{
-	return ((struct elf_hdr *)file)->entry;
 }

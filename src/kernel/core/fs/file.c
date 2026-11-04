@@ -67,7 +67,31 @@ void file_map_dev_cb(int dev_id, write_cb w_op, read_cb r_op)
 	dev_map[dev_id].w_op = w_op;
 }
 
-static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
+static ssize_t file_reader(struct file *f, bool user, char *dst, size_t count)
+{
+	int res;
+	ssize_t readed;
+	struct inode *i = f->i;
+
+	res = inode_lock(i);
+	if (res < 0) {
+		return -EIO;
+	}
+
+	readed = inode_read(i, user, dst, f->off, count);
+	if (readed < 0) {
+		goto err_release_inode;
+	}
+
+	f->off += readed;
+	res = readed;
+err_release_inode:
+	inode_unlock(i);
+	return res;
+}
+
+static ssize_t file_writer(struct file *f, bool user, const char *src,
+			   size_t count)
 {
 	int res;
 	ssize_t written;
@@ -78,7 +102,7 @@ static ssize_t file_write(struct file *f, const char *ubuf, size_t count)
 		return -EIO;
 	}
 
-	written = inode_write(i, true, ubuf, f->off, count);
+	written = inode_write(i, user, src, f->off, count);
 	if (written < 0) {
 		goto err_release_inode;
 	}
@@ -95,33 +119,27 @@ err_release_inode:
 	return res;
 }
 
-static ssize_t file_read(struct file *f, char *ubuf, size_t count)
-{
-	int res;
-	ssize_t readed;
-	struct inode *i = f->i;
-
-	res = inode_lock(i);
-	if (res < 0) {
-		return -EIO;
-	}
-
-	readed = inode_read(i, true, ubuf, f->off, count);
-	if (readed < 0) {
-		goto err_release_inode;
-	}
-
-	f->off += readed;
-	res = readed;
-err_release_inode:
-	inode_unlock(i);
-	return res;
-}
-
 static void link_dev_cb(struct file *f, int dev_id)
 {
 	f->r_op = dev_map[dev_id].r_op;
 	f->w_op = dev_map[dev_id].w_op;
+}
+
+ssize_t file_write(struct file *f, bool user, const char *src, size_t count)
+{
+	if (!(f->mode & O_W)) {
+		return -EBADF;
+	}
+	return f->w_op(f, user, src, count);
+}
+
+ssize_t file_read(struct file *f, bool user, char *dst, size_t count)
+{
+	if (!(f->mode & O_R)) {
+		return -EBADF;
+	};
+
+	return f->r_op(f, user, dst, count);
 }
 
 struct file *file_open(const char *path, unsigned long flags)
@@ -146,8 +164,8 @@ struct file *file_open(const char *path, unsigned long flags)
 	if (i->content.type == INODE_DEVICE) {
 		link_dev_cb(f, i->content.dev_id);
 	} else {
-		f->r_op = file_read;
-		f->w_op = file_write;
+		f->r_op = file_reader;
+		f->w_op = file_writer;
 	}
 
 	inode_unlock(i);

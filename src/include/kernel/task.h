@@ -200,8 +200,8 @@ task_t *task_kthread(void code(void), const char *name, priority prior);
  * @return The spawned task.
  * @retval ERR_PTR(-Exxx) See task_kthread(), task_exec().
  */
-task_t *task_start_userland(const uintptr_t elf, const char *name,
-				  priority prior);
+task_t *task_start_userland(struct file *user_elf, const char *name,
+			    priority prio);
 
 /**
  * @brief Clone a task with granularity on which to copy or not.
@@ -215,8 +215,8 @@ task_t *task_start_userland(const uintptr_t elf, const char *name,
  * @retval ERR_PTR(-EAGAIN) Task table full.
  * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
-task_t *task_clone(task_t *parent, void *entry, void *args,
-			 void *stack, unsigned long flags);
+task_t *task_clone(task_t *parent, void *entry, void *args, void *stack,
+		   unsigned long flags);
 
 /**
  * @brief Duplicate a task state making a copy of it execution state.
@@ -243,7 +243,7 @@ task_t *task_fork(task_t *parent);
  * @retval -ENAMETOOLONG An argument exceeds MAXNAME.
  * @retval -ENOMEM Out of memory.
  */
-int task_exec(task_t *p, const uintptr_t elf, char *const argv[]);
+int task_exec(task_t *p, struct file *elf, char *const argv[]);
 
 /**
  * @brief Attribute a in-task file descriptor number to a file descriptor.

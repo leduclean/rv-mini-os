@@ -13,9 +13,9 @@
 #include <kernel/file.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
-#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
+#include <kernel/task.h>
 #include <kernel/time.h>
 #include <kernel/vpages.h>
 #include <kernel/waitqueue.h>
@@ -118,7 +118,7 @@ static inline void init_task_queues(task_t *task)
  * @retval ERR_PTR(-ENOMEM) Out of memory.
  */
 static inline task_t *alloc_squeletton(const char *name, priority prior,
-					   bool user, task_t *parent)
+				       bool user, task_t *parent)
 {
 	if (task_table.active_task >= MAX_TASK) {
 		return ERR_PTR(-EAGAIN);
@@ -307,9 +307,16 @@ static void copy_fds(task_t *child, const task_t *parent, bool clone)
 	}
 }
 
-static int load_elf_image(task_t *p, const uintptr_t elf)
+static int load_elf_image(task_t *p, struct file *elf, uintptr_t *entry)
 {
-	int res = elf_verify_file_format(elf);
+	int res;
+	struct elf_hdr hdr;
+	res = elf_load_hdr(elf, &hdr);
+	if (res < 0) {
+		return res;
+	}
+
+	res = elf_verify_file_format(&hdr);
 	if (res < 0) {
 		return res;
 	}
@@ -319,11 +326,13 @@ static int load_elf_image(task_t *p, const uintptr_t elf)
 		return res;
 	}
 
-	res = elf_map(p->root_ptable, elf);
+	res = elf_map(p->root_ptable, elf, &hdr);
 	if (res < 0) {
 		vpage_tree_free(p->root_ptable);
 		return res;
 	}
+
+	*entry = hdr.entry;
 
 	return 0;
 }
@@ -405,8 +414,8 @@ static int transfer_argv(pte_t *old_ptable, pte_t *new_ptable,
 	return 0;
 }
 
-task_t *task_start_userland(const uintptr_t user_elf, const char *name,
-				  priority prior)
+task_t *task_start_userland(struct file *user_elf, const char *name,
+			    priority prior)
 {
 	irq_flags_t state = irq_save();
 	task_t *p = alloc_squeletton(name, prior, true, task_active());
@@ -417,7 +426,8 @@ task_t *task_start_userland(const uintptr_t user_elf, const char *name,
 	p->ctx.sp = (uint64_t)&p->kstack[KSTACK_SIZE];
 	p->ctx.ra = (uintptr_t)trap_return_to_user;
 
-	int res = load_elf_image(p, user_elf);
+	uintptr_t entry;
+	int res = load_elf_image(p, user_elf, &entry);
 	if (res < 0) {
 		goto err_free_task;
 	}
@@ -430,7 +440,7 @@ task_t *task_start_userland(const uintptr_t user_elf, const char *name,
 
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
-	tframe_start(p->tframe_pa, (void *)elf_get_entry(user_elf), (void *)sp);
+	tframe_start(p->tframe_pa, (void *)entry, (void *)sp);
 
 	copy_fds(p, task_active(), false);
 	activate_task(p);
@@ -471,8 +481,8 @@ err_restore_irq:
 	return p;
 }
 
-task_t *task_clone(task_t *parent, void *entry, void *args,
-			 void *stack, unsigned long flags)
+task_t *task_clone(task_t *parent, void *entry, void *args, void *stack,
+		   unsigned long flags)
 {
 	if (!parent->user) {
 		panic("Only fork for user task is supported ");
@@ -481,7 +491,7 @@ task_t *task_clone(task_t *parent, void *entry, void *args,
 	int res = -ENOMEM;
 	irq_flags_t state = irq_save();
 	task_t *child = alloc_squeletton(parent->name, parent->priority,
-					     parent->user, parent);
+					 parent->user, parent);
 	if (IS_ERR(child)) {
 		goto err_restore_irq;
 	}
@@ -567,7 +577,7 @@ task_t *task_fork(task_t *parent)
 	return task_clone(parent, NULL, NULL, NULL, 0);
 }
 
-int task_exec(task_t *p, const uintptr_t elf, char *const argv[])
+int task_exec(task_t *p, struct file *elf, char *const argv[])
 {
 	int res;
 
@@ -580,7 +590,8 @@ int task_exec(task_t *p, const uintptr_t elf, char *const argv[])
 	pte_t *old_ptable = p->root_ptable;
 	tframe_t *old_tframe = p->tframe_pa;
 
-	res = load_elf_image(p, elf);
+	uintptr_t entry;
+	res = load_elf_image(p, elf, &entry);
 	if (res < 0) {
 		goto err_restore_old_state;
 	}
@@ -593,7 +604,7 @@ int task_exec(task_t *p, const uintptr_t elf, char *const argv[])
 
 	tframe_init(p->tframe_pa, p->root_ptable,
 		    (unsigned long)&p->kstack[KSTACK_SIZE]);
-	tframe_start(p->tframe_pa, (void *)elf_get_entry(elf), (void *)sp);
+	tframe_start(p->tframe_pa, (void *)entry, (void *)sp);
 
 	// Once all has worked free all the old ressources.
 	vpage_tree_free(old_ptable);

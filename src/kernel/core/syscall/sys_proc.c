@@ -4,9 +4,10 @@
 
 #include <arch/cpu.h>
 #include <arch/trap.h>
-#include <kernel/task.h>
+#include <kernel/file.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
+#include <kernel/task.h>
 
 extern char _user_elf_start[];
 
@@ -34,29 +35,27 @@ int8_t sys_clone(void *entry, void *args, void *stack, unsigned long flags)
 		return PTR_ERR(child);
 	}
 
-
 	return child->pid;
 }
 
 int sys_exec(const char *path, char *const argv[])
 {
-	//TODO: handle argv
-
-	(void)argv;
-	(void)path;
+	int res;
 	task_t *p = task_active();
 
-	// Copy the virtual uaddres to a kernel buffer
-	// char kpath[MAXNAME];
-	// vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
-	//    // Read only the content because elf file is copied before being executed
-	// struct file *f = file_open(kpath, O_R);
-	// if (!f) {
-	// 	return -1;
-	// }
-	//
-	//TODO: stub before fs mkfs
-	return task_exec(p, (uintptr_t)_user_elf_start, argv);
+	char kpath[MAXNAME];
+	res = vpage_copyinstr(p->root_ptable, kpath, path, MAXNAME);
+	if (res < 0) {
+		return res;
+	}
+
+	struct file *user_elf = file_open(kpath, O_R);
+	if (IS_ERR(user_elf)) {
+		return PTR_ERR(user_elf);
+	};
+	res = task_exec(p, user_elf, argv);
+	file_put(user_elf);
+	return res;
 }
 
 void sys_exit(uint8_t code)

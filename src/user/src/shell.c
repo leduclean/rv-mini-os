@@ -39,7 +39,7 @@ int sh(void)
 				printf("Shell: Failed to fork \n");
 				exit_group(1);
 			} else if (pid == 0) {
-				res = exec(argv[0], argv);
+				res = exec("/user.elf", argv);
 				if (res < 0) {
 					printf("Shell: Failed to exec \n");
 					exit_group(1);

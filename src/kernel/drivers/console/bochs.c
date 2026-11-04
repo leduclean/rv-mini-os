@@ -15,8 +15,8 @@
 #include <kernel/file.h>
 #include <kernel/fs.h>
 #include <kernel/mmap.h>
-#include <kernel/task.h>
 #include <kernel/syscall.h>
+#include <kernel/task.h>
 #include <kernel/vpages.h>
 
 #include "bochs_regs.h"
@@ -122,39 +122,47 @@ static int config_screen(void)
 	return 0;
 };
 
-static ssize_t console_write([[maybe_unused]] struct file *f, const char *ubuf,
-			     size_t count)
+static ssize_t console_write([[maybe_unused]] struct file *f, bool user,
+			     const char *src, size_t count)
 {
+
 	char kbuf[SYS_BUFFER_SIZE];
-	if (count > SYS_BUFFER_SIZE) {
-		return -EINVAL;
+	if (user) {
+		if (count > SYS_BUFFER_SIZE) {
+			return -EINVAL;
+		}
+		int res = vpage_copyin(task_active()->root_ptable, kbuf, src,
+				       count);
+		if (res < 0) {
+			return res;
+		}
+
+		src = kbuf;
 	}
 
-	int res = vpage_copyin(task_active()->root_ptable, kbuf, ubuf,
-			       count);
-	if (res < 0) {
-		return res;
-	}
-
-	console_putbytes(kbuf, count);
+	console_putbytes(src, count);
 	return count;
 }
 
-static ssize_t console_read([[maybe_unused]] struct file *f, char *ubuf,
-			    size_t count)
+static ssize_t console_read([[maybe_unused]] struct file *f, bool user,
+			    char *dst, size_t count)
 {
-	if (count > SYS_BUFFER_SIZE) {
+	char kbuf[SYS_BUFFER_SIZE];
+	if (user && count > SYS_BUFFER_SIZE) {
 		return -EINVAL;
 	}
-	char kbuf[SYS_BUFFER_SIZE];
+
+	char *buf = user ? kbuf : dst;
 	for (size_t i = 0; i < count; i++) {
-		uart_read(&kbuf[i]);
+		uart_read(&buf[i]);
 	}
 
-	int res = vpage_copyout(task_active()->root_ptable, ubuf, kbuf,
-				count);
-	if (res < 0) {
-		return res;
+	if (user) {
+		int res = vpage_copyout(task_active()->root_ptable, dst, buf,
+					count);
+		if (res < 0) {
+			return res;
+		}
 	}
 
 	return count;
@@ -210,7 +218,7 @@ static int pixel(uint32_t x, uint32_t y, uint32_t color)
  * @retval -EINVAL Char out of range.
  */
 static int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
-		       uint32_t bg_color)
+		      uint32_t bg_color)
 {
 	// Pixel conversion
 	row *= 8;
@@ -228,7 +236,7 @@ static int write_char(uint32_t row, uint32_t col, char c, uint32_t color,
 					return -EINVAL;
 			} else {
 				if (pixel(col + c_off, row + row_off,
-					   bg_color) != 0)
+					  bg_color) != 0)
 
 					return -EINVAL;
 			}

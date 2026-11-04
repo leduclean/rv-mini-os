@@ -3,18 +3,16 @@
 
 #include <lib/err.h>
 #include <lib/string.h>
-#include <user/kinterface.h>
-
-#include <arch/cpu.h>
 
 #include <drivers/console.h>
 #include <drivers/uart.h>
 
+#include <arch/cpu.h>
 #include <kernel/file.h>
 #include <kernel/inode.h>
-#include <kernel/task.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
+#include <kernel/task.h>
 #include <kernel/vpages.h>
 #include <user/kinterface.h>
 
@@ -50,10 +48,7 @@ ssize_t sys_write(int fd, const char *ubuf, size_t count)
 		return -EBADF;
 	}
 
-	if (!(f->mode & O_W)) {
-		return -EBADF;
-	}
-	return f->w_op(f, ubuf, count);
+	return file_write(f, true, ubuf, count);
 }
 
 ssize_t sys_read(int fd, char *ubuf, size_t count)
@@ -64,10 +59,7 @@ ssize_t sys_read(int fd, char *ubuf, size_t count)
 		return -EBADF;
 	}
 
-	if (!(f->mode & O_R)) {
-		return -EBADF;
-	}
-	return f->r_op(f, ubuf, count);
+	return file_read(f, true, ubuf, count);
 }
 
 int sys_close(int fd)
@@ -85,5 +77,4 @@ int64_t sys_seek(int fd, int64_t offset, int whence)
 	}
 
 	return file_seek(f, offset, whence);
-
 }

@@ -13,12 +13,14 @@
 #include <arch/cpu.h>
 #include <arch/plic.h>
 #include <arch/trap.h>
+#include <kernel/file.h>
 #include <kernel/fs.h>
 #include <kernel/memory.h>
 #include <kernel/mmap.h>
 #include <kernel/pages.h>
 #include <kernel/task.h>
 #include <kernel/time.h>
+#include <user/kinterface.h>
 
 /**
  * @brief User elf included via user_app.S.
@@ -42,12 +44,17 @@ static void init(void)
 		panic("[FAILURE] Console map has failed");
 	}
 
-	task_t *p = task_start_userland((uintptr_t)_user_elf_start,
-					      "User", NORMAL);
+	struct file *user_elf = file_open("/user.elf", O_R);
+	if (IS_ERR(user_elf)) {
+		panic("[FAILURE] User Init elf image not mounted in the fs");
+	};
+
+	task_t *p = task_start_userland(user_elf, "User", NORMAL);
 	if (IS_ERR(p)) {
 		printf("[FAILURE]: failed to enter userland (%ld)\n",
 		       PTR_ERR(p));
 	}
+	file_put(user_elf);
 }
 
 /** @brief Kernel entry point, called by crt0 once the bss is cleared. */

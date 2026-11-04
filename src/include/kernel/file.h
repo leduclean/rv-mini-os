@@ -18,14 +18,14 @@
 #define FILE_DEV_CONSOLE 0 /* Define the dev_id of the console */
 
 struct file;
-typedef ssize_t (*write_cb)(struct file *f, const char *buf, size_t count);
-typedef ssize_t (*read_cb)(struct file *f, char *buf, size_t count);
+typedef ssize_t (*write_cb)(struct file *f, bool user, const char *buf,
+			    size_t count);
+typedef ssize_t (*read_cb)(struct file *f, bool user, char *buf, size_t count);
 
 /**
  * @class file
  * @brief File structure, this can be detained by multiple tasks 
- * if the fork() syscall is used.
- *
+ * if the fork() syscall is used. 
  */
 struct file {
 	uint32_t refcnt; /**< Fork task keep might keep the same fd. */
@@ -73,6 +73,39 @@ struct file *file_get(struct file *f);
  * @param f A pointer to the reference of the file to release.
  */
 void file_put(struct file *f);
+
+/**
+ * @brief Read up to count @count bytes from the @f content to the @dst.
+ *
+ * @param f The file to read.
+ * @param user Weither the read is from a user buffer or not.
+ * @param dst Destination buffer.
+ * @param count number of bytes to read.
+ *
+ * @return Number of bytes read.
+ * @retval -EINVAL Range past the end of file or @p count too big.
+ * @retval -EFAULT Bad address.
+ * @retval -EIO Disk failure.
+ */
+ssize_t file_read(struct file *f, bool user, char *dst, size_t count);
+
+/**
+ * @brief Write up to count @count bytes from the @src to the @f content.
+ *
+ * @param f The file to write.
+ * @param user Weither the write is from a user buffer or not.
+ * @param src Source buffer.
+ * @param count Number of bytes to write.
+ *
+ * @return Number of bytes written.
+ * @retval -EBADF @p fd is not open for writing.
+ * @retval -EINVAL Bad offset or @p count too big.
+ * @retval -EFBIG File would exceed its max size.
+ * @retval -EFAULT Bad address.
+ * @retval -ENOSPC Disk full.
+ * @retval -EIO Disk failure.
+ */
+ssize_t file_write(struct file *f, bool user, const char *src, size_t count);
 
 /**
  * @brief Move the read write file offset.
