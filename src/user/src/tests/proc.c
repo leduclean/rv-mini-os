@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <err.h>
 #include <kinterface.h>
 
 #include "cmd_registry.h"
@@ -85,7 +86,7 @@ void cmd_fork_exec_test([[maybe_unused]] int argc,
 	}
 	if (pid == 0) {
 		char *const argv_test[EXEC_MAX_ARGS] = TEST_ARGV;
-		pid = exec(argv[0], argv_test);
+		pid = exec("/user.elf", argv_test);
 		if (pid < 0) {
 			TEST_ERROR("exec failed: %d", pid);
 		}
@@ -99,10 +100,13 @@ void cmd_exec_test([[maybe_unused]] int argc,
 {
 	int8_t res;
 	char *const argv_test[EXEC_MAX_ARGS] = TEST_ARGV;
-	res = exec(argv[0], argv_test);
+	res = exec("/user.elf", argv_test);
 	if (res < 0) {
 		TEST_ERROR("exec failed: %d", res);
 	}
+
+	TEST_ASSERT_EQ(exec("/nofile", NULL), -ENOENT);
+	TEST_ASSERT_EQ(exec("/dev/console", NULL), -ENOEXEC);
 }
 
 void cmd_segfault([[maybe_unused]] int argc,
